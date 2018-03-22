@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mediporta.KsKoSample.Extensions;
+using System;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ using OwncloudClient = owncloudsharp.Client;
 /// <summary>
 /// Sample owncloud demo app using https://github.com/bnoffer/owncloud-sharp
 /// </summary>
-namespace DemoConsoleApp
+namespace Mediporta.KsKoSample.Console
 {
     class Program
     {
@@ -30,11 +31,11 @@ namespace DemoConsoleApp
             }
             catch (Exception e)
             {
-                Console.Write($"Exception: {e.Message}");
+                System.Console.Write($"Exception: {e.Message}");
             }
             finally
             {
-                Console.ReadKey();
+                System.Console.ReadKey();
             }
         }
 
@@ -46,20 +47,20 @@ namespace DemoConsoleApp
             if (!client.Delete(remotePath))
                 throw new Exception("Cannot delete file.");
 
-            Console.WriteLine("Test file deleted.");
+            System.Console.WriteLine("Test file deleted.");
         }
 
         private static void TryCompare(Stream uploadFile, Stream downloadFile)
         {
-            if (!StreamsIdentical(uploadFile, downloadFile))
+            if (!StreamExtensions.StreamsAreIdentical(uploadFile, downloadFile))
                 throw new Exception("File streams not equal.");
 
-            Console.WriteLine("Files are identical.");
+            System.Console.WriteLine("Files are identical.");
         }
 
         private static Stream TryDownload(OwncloudClient client)
         {
-            Console.WriteLine("Downloading file...");
+            System.Console.WriteLine("Downloading file...");
 
             return client.Download(remotePath);
         }
@@ -68,7 +69,7 @@ namespace DemoConsoleApp
         {
             using (var fileStream = File.OpenRead(localPath))
             {
-                Console.WriteLine("Uploading file...");
+                System.Console.WriteLine("Uploading file...");
 
                 if (!client.Upload(remotePath, fileStream, "application/zip"))
                     throw new Exception("Upload failed.");
@@ -86,33 +87,6 @@ namespace DemoConsoleApp
                 throw new ArgumentException(nameof(credentials));
 
             return new OwncloudClient(ConfigurationSettings.AppSettings["OwncloudUrl"], credentials[0], credentials[1]);
-        }
-
-        static bool StreamsIdentical(Stream first, Stream second)
-        {
-            const int bytesToRead = sizeof(Int64);
-
-            first.Position = 0;
-            second.Position = 0;
-
-            if (first.Length != second.Length)
-                return false;
-
-            int iterations = (int)Math.Ceiling((double)first.Length / bytesToRead);
-
-            byte[] one = new byte[bytesToRead];
-            byte[] two = new byte[bytesToRead];
-
-            for (int i = 0; i < iterations; i++)
-            {
-                first.Read(one, 0, bytesToRead);
-                second.Read(two, 0, bytesToRead);
-
-                if (BitConverter.ToInt64(one, 0) != BitConverter.ToInt64(two, 0))
-                    return false;
-            }
-
-            return true;
         }
     }
 }
