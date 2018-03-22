@@ -2,25 +2,28 @@
 using System.IO;
 using System.Reflection;
 using Mediporta.KsKoSample.Extensions;
+using Mediporta.KsKoSample.Tests.Factories;
 using NUnit.Framework;
-using OwncloudClient = owncloudsharp.Client;
+
 
 namespace Mediporta.KsKoSample.Tests
 {
     public class UploadDownloadTests
     {
         private string remotePath;
+        private TestClientFactory testClientFactory;
 
         [SetUp]
         public void Setup()
         {
             remotePath = $"/{Guid.NewGuid().ToString("N")}.zip";
+            testClientFactory = new TestClientFactory();
         }
 
         [TearDown]
         public void TearDown()
         {
-            var client = GetTestClient();
+            var client = testClientFactory.GetTestClient();
 
             client.Delete(remotePath);
         }
@@ -28,7 +31,7 @@ namespace Mediporta.KsKoSample.Tests
         [Test]
         public void It_can_upload_and_download_correct_file()
         {
-            var client = GetTestClient();
+            var client = testClientFactory.GetTestClient();
 
             var uploadResult = client.Upload(remotePath, GetSampleFile(), "application/zip");
 
@@ -40,12 +43,7 @@ namespace Mediporta.KsKoSample.Tests
             Assert.That(existResult, Is.True);
             Assert.That(StreamExtensions.StreamsAreIdentical(GetSampleFile(), downloadStream));
         }
-
-        private OwncloudClient GetTestClient()
-        {
-            return new OwncloudClient("https://ks-ko.mediporta.pl", "pps-897354", "idjcL6xLCKuJyOmh9o03");
-        }
-
+        
         private Stream GetSampleFile()
         {
             return Assembly.GetExecutingAssembly().GetManifestResourceStream("Mediporta.KsKoSample.Tests.sampleInput.zip");
