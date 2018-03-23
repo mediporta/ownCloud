@@ -129,3 +129,9 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/windows,phpstorm,intellij
+apps/
+assets/
+config/
+data/
+.user.ini
+.htaccess
