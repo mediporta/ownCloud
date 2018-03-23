@@ -91,6 +91,7 @@
     <Compile Include="PermissionTests.cs" />
     <Compile Include="UploadDownloadTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Webdav\CustomWebdavClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

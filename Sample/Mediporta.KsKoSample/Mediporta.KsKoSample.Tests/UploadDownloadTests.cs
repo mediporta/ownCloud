@@ -37,10 +37,15 @@ namespace Mediporta.KsKoSample.Tests
 
             var existResult = client.Exists(remotePath);
 
+            var ocHash = testClientFactory.GetCustomWebdavClient().GetHash(remotePath);
+
+            var fileHash = CryptoExtensions.ComputeSha1Hash(GetSampleFile());
+            
             var downloadStream = client.Download(remotePath);
 
             Assert.That(uploadResult, Is.True);
             Assert.That(existResult, Is.True);
+            Assert.That(fileHash, Is.EqualTo(ocHash));
             Assert.That(StreamExtensions.StreamsAreIdentical(GetSampleFile(), downloadStream));
         }
         
