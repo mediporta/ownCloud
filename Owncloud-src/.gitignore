@@ -134,4 +134,4 @@ assets/
 config/
 data/
 .user.ini
-*/.htaccess
+.htaccess
