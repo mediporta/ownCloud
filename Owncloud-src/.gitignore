@@ -132,6 +132,7 @@ $RECYCLE.BIN/
 apps/
 assets/
 config/
-data/
+data
 .user.ini
 .htaccess
+.vs/

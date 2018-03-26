@@ -24,11 +24,8 @@ body {
 }
 
 #body-login {
-	text-align: center;
-	background-image: url('../img/background.jpg');
-	background-position: 50% 50%;
-	background-repeat: no-repeat;
-	background-size: cover;
+    text-align: center;
+    background: radial-gradient(#60b4e5 65%, #6095e5);
 }
 
 .two-factor-provider {

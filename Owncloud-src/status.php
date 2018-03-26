@@ -31,6 +31,7 @@
  */
 
 try {
+
 	require_once __DIR__ . '/lib/base.php';
 
 	# show the version details based on config.php parameter, 
