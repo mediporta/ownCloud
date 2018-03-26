@@ -1,4 +1,5 @@
 <?php
+/* MODIFIED BY MEDIPORTA TEAM */
 /**
  * @author Jörn Friedrich Dreyer <jfd@butonic.de>
  * @author Lukas Reschke <lukas@statuscode.ch>
@@ -27,6 +28,8 @@
  *
  */
 
+require_once 'vendor/autoload.php';
+
 // Show warning if a PHP version below 5.6.0 is used, this has to happen here
 // because base.php will already use 5.6 syntax.
 if (version_compare(PHP_VERSION, '5.6.0') === -1) {
@@ -50,7 +53,6 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 }
 
 try {
-
 	require_once __DIR__ . '/lib/base.php';
 	OC::handleRequest();
 
@@ -60,15 +62,23 @@ try {
 	//show the user a detailed error page
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printExceptionErrorPage($ex);
+	
+	trackExceptionWithTelemetry($ex);
 } catch (\OC\HintException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printErrorPage($ex->getMessage(), $ex->getHint());
+
+	trackExceptionWithTelemetry($ex);
 } catch (\OC\User\LoginException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
+
+	trackExceptionWithTelemetry($ex);
 } catch (\OCP\Files\ForbiddenException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
+
+	trackExceptionWithTelemetry($ex);
 } catch (Exception $ex) {
 	try {
 		\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
@@ -76,6 +86,8 @@ try {
 		//show the user a detailed error page
 		OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 		OC_Template::printExceptionErrorPage($ex);
+
+		trackExceptionWithTelemetry($ex);
 	} catch (\Exception $ex2) {
 		// with some env issues, it can happen that the logger couldn't log properly,
 		// so print out the exception directly
@@ -88,4 +100,13 @@ try {
 	\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	OC_Template::printExceptionErrorPage($ex);
+
+	trackExceptionWithTelemetry($ex);
+}
+
+function trackExceptionWithTelemetry(Exception $ex) {
+	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
+	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
+	$telemetryClient->trackException($ex);
+	$telemetryClient->flush();
 }

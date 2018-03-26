@@ -28,6 +28,8 @@
  *
  */
 
+require_once 'vendor/autoload.php';
+
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\Server;
@@ -113,6 +115,12 @@ try {
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
 	// this policy with a softer one if debug mode is enabled.
 	header("Content-Security-Policy: default-src 'none';");
+
+	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
+	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
+	$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+	$telemetryClient->trackRequest($_SERVER['PHP_SELF'], $url, time());
+	$telemetryClient->flush();
 
 	if (\OCP\Util::needUpgrade()) {
 		// since the behavior of apps or remotes are unpredictable during
