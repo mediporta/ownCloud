@@ -834,12 +834,6 @@ class OC {
 
 		\OC::$server->getEventLogger()->start('handle_request', 'Handle request');
 
-		$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-		$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
-		$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		$telemetryClient->trackRequest($_SERVER['PHP_SELF'], $url, time());
-		$telemetryClient->flush();
-
 		$systemConfig = \OC::$server->getSystemConfig();
 		// load all the classpaths from the enabled apps so they are available
 		// in the routing files of each app

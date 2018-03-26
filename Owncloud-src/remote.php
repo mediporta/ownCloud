@@ -46,6 +46,7 @@ class RemoteException extends Exception {
  * @param Exception | Error $e
  */
 function handleException($e) {
+	$telemetryException = $e;
 	$request = \OC::$server->getRequest();
 	// in case the request content type is text/xml - we assume it's a WebDAV request
 	$isXmlContentType = strpos($request->getHeader('Content-Type'), 'text/xml');
@@ -116,11 +117,13 @@ try {
 	// this policy with a softer one if debug mode is enabled.
 	header("Content-Security-Policy: default-src 'none';");
 
-	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
 	$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-	$telemetryClient->trackRequest($_SERVER['PHP_SELF'], $url, time());
-	$telemetryClient->flush();
+	$telemetryException = null;
+	$telemetryTimeStart = null;
+	$telemetryTimeEnd = null;
+	$telemetryUrlSelf = $_SERVER['PHP_SELF'];
+
+	$telemetryTimeStart = round(microtime(true) * 1000);
 
 	if (\OCP\Util::needUpgrade()) {
 		// since the behavior of apps or remotes are unpredictable during
@@ -176,4 +179,18 @@ try {
 	handleException($ex);
 } catch (Error $e) {
 	handleException($e);
+}
+finally {
+	$telemetryTimeEnd = round(microtime(true) * 1000);
+	$timePassed = $telemetryTimeEnd - $telemetryTimeStart;
+	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
+	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
+
+	if($telemetryException != null) {
+		$telemetryClient->trackException($ex);
+		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 500, false);
+	} else {
+		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
+	}
+	$telemetryClient->flush();
 }
