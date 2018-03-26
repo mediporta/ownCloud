@@ -30,7 +30,15 @@
  *
  */
 
+$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+$telemetryException = null;
+$telemetryTimeStart = null;
+$telemetryTimeEnd = null;
+$telemetryUrlSelf = $_SERVER['PHP_SELF'];
+
 try {
+
+	$telemetryTimeStart = round(microtime(true) * 1000);
 
 	require_once __DIR__ . '/lib/base.php';
 
@@ -51,4 +59,25 @@ try {
 } catch (Exception $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	\OCP\Util::writeLog('remote', $ex->getMessage(), \OCP\Util::FATAL);
+	trackExceptionWithTelemetry($ex);
+}
+
+function executeTelemetry(){
+	$telemetryTimeEnd = round(microtime(true) * 1000);
+	$timePassed = $telemetryTimeEnd - $telemetryTimeStart;
+	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
+	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
+
+	if($telemetryException != null) {
+		$telemetryClient->trackException($ex);
+		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 500, false);
+	} else {
+		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
+	}
+	$telemetryClient->flush();
+}
+
+function trackExceptionWithTelemetry(Exception $ex) {
+	$telemetryException = $ex;
+	executeTelemetry();
 }
