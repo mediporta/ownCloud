@@ -53,7 +53,6 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 }
 
 $url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-$telemetryException = null;
 
 try {
 	require_once __DIR__ . '/lib/base.php';
@@ -62,7 +61,7 @@ try {
 
 	OC::handleRequest();
 
-	executeTelemetry();
+	executeTelemetry(null);
 
 } catch(\OC\ServiceUnavailableException $ex) {
 	\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
@@ -71,22 +70,22 @@ try {
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printExceptionErrorPage($ex);
 	
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 } catch (\OC\HintException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printErrorPage($ex->getMessage(), $ex->getHint());
 
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 } catch (\OC\User\LoginException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
 
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 } catch (\OCP\Files\ForbiddenException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
 
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 } catch (Exception $ex) {
 	try {
 		\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
@@ -95,7 +94,7 @@ try {
 		OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 		OC_Template::printExceptionErrorPage($ex);
 
-		trackExceptionWithTelemetry($ex);
+		executeTelemetry($ex);
 	} catch (\Exception $ex2) {
 		// with some env issues, it can happen that the logger couldn't log properly,
 		// so print out the exception directly
@@ -109,10 +108,10 @@ try {
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	OC_Template::printExceptionErrorPage($ex);
 
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 }
 
-function executeTelemetry(){
+function executeTelemetry($telemetryException){
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
@@ -124,11 +123,4 @@ function executeTelemetry(){
 		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
 	}
 	$telemetryClient->flush();
-
-	// echo 'alert("' + round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000) + '")';
-}
-
-function trackExceptionWithTelemetry(Exception $ex) {
-	$telemetryException = $ex;
-	executeTelemetry();
 }

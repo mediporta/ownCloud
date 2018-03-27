@@ -31,7 +31,6 @@
  */
 
 $url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-$telemetryException = null;
 $telemetryUrlSelf = $_SERVER['PHP_SELF'];
 
 try {
@@ -52,13 +51,15 @@ try {
 		echo json_encode($values);
 	}
 
+	executeTelemetry(null);
+
 } catch (Exception $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	\OCP\Util::writeLog('remote', $ex->getMessage(), \OCP\Util::FATAL);
-	trackExceptionWithTelemetry($ex);
+	executeTelemetry($ex);
 }
 
-function executeTelemetry(){
+function executeTelemetry($telemetryException){
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
@@ -70,9 +71,4 @@ function executeTelemetry(){
 		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
 	}
 	$telemetryClient->flush();
-}
-
-function trackExceptionWithTelemetry(Exception $ex) {
-	$telemetryException = $ex;
-	executeTelemetry();
 }
