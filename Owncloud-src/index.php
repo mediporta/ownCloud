@@ -113,7 +113,7 @@ try {
 }
 
 function executeTelemetry(){
-	$timePassed = (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])/100;
+	$timePassed = (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
 
