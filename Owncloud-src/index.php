@@ -113,7 +113,7 @@ try {
 }
 
 function executeTelemetry(){
-	$timePassed = (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"]);
+	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
 
@@ -124,6 +124,8 @@ function executeTelemetry(){
 		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
 	}
 	$telemetryClient->flush();
+
+	// echo 'alert("' + round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000) + '")';
 }
 
 function trackExceptionWithTelemetry(Exception $ex) {
