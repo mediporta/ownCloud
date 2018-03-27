@@ -32,13 +32,9 @@
 
 $url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 $telemetryException = null;
-$telemetryTimeStart = null;
-$telemetryTimeEnd = null;
 $telemetryUrlSelf = $_SERVER['PHP_SELF'];
 
 try {
-
-	$telemetryTimeStart = round(microtime(true) * 1000);
 
 	require_once __DIR__ . '/lib/base.php';
 
@@ -63,8 +59,7 @@ try {
 }
 
 function executeTelemetry(){
-	$telemetryTimeEnd = round(microtime(true) * 1000);
-	$timePassed = $telemetryTimeEnd - $telemetryTimeStart;
+	$timePassed = (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])/100;
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
 

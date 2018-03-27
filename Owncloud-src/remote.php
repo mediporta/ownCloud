@@ -119,11 +119,7 @@ try {
 
 	$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 	$telemetryException = null;
-	$telemetryTimeStart = null;
-	$telemetryTimeEnd = null;
 	$telemetryUrlSelf = $_SERVER['PHP_SELF'];
-
-	$telemetryTimeStart = round(microtime(true) * 1000);
 
 	if (\OCP\Util::needUpgrade()) {
 		// since the behavior of apps or remotes are unpredictable during
@@ -181,8 +177,7 @@ try {
 	handleException($e);
 }
 finally {
-	$telemetryTimeEnd = round(microtime(true) * 1000);
-	$timePassed = $telemetryTimeEnd - $telemetryTimeStart;
+	$timePassed = (microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])/100;
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
 	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
 
