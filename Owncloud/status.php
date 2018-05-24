@@ -68,9 +68,9 @@ function executeTelemetry($telemetryException){
 
 	if($telemetryException != null) {
 		$telemetryClient->trackException($ex);
-		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 500, false);
+		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 500, false);
 	} else {
-		$telemetryClient->trackRequest($telemetryUrlSelf, $url, time(), $timePassed, 200, true);
+		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 200, true);
 	}
 	$telemetryClient->flush();
 }
