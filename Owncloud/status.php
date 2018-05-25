@@ -66,6 +66,8 @@
 }
 
 function executeTelemetry($telemetryException){
+	global $instrumentationKey;
+	
 	if($instrumentationKey == 'NULL')
 		return;
 
