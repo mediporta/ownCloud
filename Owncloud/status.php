@@ -30,7 +30,9 @@
  *
  */
 
- $instrumentationKey = 'NULL';
+ static $instrumentationKey;
+$instrumentationKey =  = 'NULL';
+
  try {
 
 	require_once __DIR__ . '/lib/base.php';
@@ -66,8 +68,6 @@
 }
 
 function executeTelemetry($telemetryException){
-	global $instrumentationKey;
-	
 	if($instrumentationKey == 'NULL')
 		return;
 
