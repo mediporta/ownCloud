@@ -30,8 +30,8 @@
  *
  */
 
- static $instrumentationKey;
-$instrumentationKey =  = 'NULL';
+static $instrumentationKey;
+$instrumentationKey = 'NULL';
 
  try {
 
