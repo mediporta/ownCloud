@@ -30,11 +30,11 @@
  *
  */
 
+ $instrumentationKey = 'NULL';
  try {
 
 	require_once __DIR__ . '/lib/base.php';
 
-	global $instrumentationKey;
 	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
 
 	if($instrumentationKey != 'NULL'){
