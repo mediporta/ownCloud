@@ -34,7 +34,7 @@
 
 	require_once __DIR__ . '/lib/base.php';
 
-	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
+	global $instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
 
 	if($instrumentationKey != 'NULL'){
 		require_once 'vendor/autoload.php';
@@ -70,7 +70,7 @@ function executeTelemetry($telemetryException){
 
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL'));
+	$telemetryClient->getContext()->setInstrumentationKey($instrumentationKey);
 
 	if($telemetryException != null) {
 		$telemetryClient->trackException($ex);
