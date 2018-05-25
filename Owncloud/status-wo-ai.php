@@ -30,14 +30,6 @@
  *
  */
 
- $instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
-
-if($instrumentationKey != 'NULL'){
-	require_once 'vendor/autoload.php';
-	$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-	$telemetryUrlSelf = $_SERVER['PHP_SELF'];
-}
-
 try {
 
 	require_once __DIR__ . '/lib/base.php';
@@ -56,27 +48,7 @@ try {
 		echo json_encode($values);
 	}
 
-	executeTelemetry(null);
-
 } catch (Exception $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	\OCP\Util::writeLog('remote', $ex->getMessage(), \OCP\Util::FATAL);
-	executeTelemetry($ex);
-}
-
-function executeTelemetry($telemetryException){
-	if($instrumentationKey == 'NULL')
-		return;
-
-	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
-	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL'));
-
-	if($telemetryException != null) {
-		$telemetryClient->trackException($ex);
-		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 500, false);
-	} else {
-		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 200, true);
-	}
-	$telemetryClient->flush();
 }
