@@ -47,7 +47,6 @@ class RemoteException extends Exception {
  * @param Exception | Error $e
  */
 function handleException($e) {
-	$telemetryException = $e;
 	$request = \OC::$server->getRequest();
 	// in case the request content type is text/xml - we assume it's a WebDAV request
 	$isXmlContentType = strpos($request->getHeader('Content-Type'), 'text/xml');
@@ -112,14 +111,14 @@ function resolveService($service) {
 
 try {
 	require_once __DIR__ . '/lib/base.php';
-	require_once 'azureinsights.php';
+
+	require_once 'telemetry.php';
+	initializeTelemetry();
 
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
 	// this policy with a softer one if debug mode is enabled.
 	header("Content-Security-Policy: default-src 'none';");
-
-	initializeTelemetry();
 
 	if (\OCP\Util::needUpgrade()) {
 		// since the behavior of apps or remotes are unpredictable during
@@ -170,14 +169,11 @@ try {
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
 	require_once $file;
-
+	executeTelemetry(null);
 } catch (Exception $ex) {
 	handleException($ex);
-	executeTelemetry($e);
+	executeTelemetry($ex);
 } catch (Error $e) {
 	handleException($e);
 	executeTelemetry($e);
-}
-finally {
-	executeTelemetry(null);
 }

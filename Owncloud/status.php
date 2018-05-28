@@ -33,8 +33,8 @@
 try {
 
 	require_once __DIR__ . '/lib/base.php';
-	require_once 'azureinsights.php';
 
+	require_once 'telemetry.php';
 	initializeTelemetry();
 
 	# show the version details based on config.php parameter, 
