@@ -30,8 +30,7 @@
  *
  */
 
-static $instrumentationKey;
-$instrumentationKey = 'NULL';
+$instrumentationKey = '';
 
  try {
 
@@ -39,7 +38,7 @@ $instrumentationKey = 'NULL';
 
 	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
 
-	if($instrumentationKey != 'NULL'){
+	if(!empty($instrumentationKey)){
 		require_once 'vendor/autoload.php';
 		$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$telemetryUrlSelf = $_SERVER['PHP_SELF'];
@@ -68,7 +67,7 @@ $instrumentationKey = 'NULL';
 }
 
 function executeTelemetry($telemetryException){
-	if($instrumentationKey == 'NULL')
+	if(empty($instrumentationKey)){
 		return;
 
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
