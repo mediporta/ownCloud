@@ -36,7 +36,7 @@ $instrumentationKey = '';
 
 	require_once __DIR__ . '/lib/base.php';
 
-	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', 'NULL');
+	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', '');
 
 	if(!empty($instrumentationKey)){
 		require_once 'vendor/autoload.php';

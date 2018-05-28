@@ -54,9 +54,18 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 
 $url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 $telemetryUrlSelf = $_SERVER['PHP_SELF'];
+$instrumentationKey = '';
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+
+	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', '');
+
+	if(!empty($instrumentationKey)){
+		require_once 'vendor/autoload.php';
+		$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$telemetryUrlSelf = $_SERVER['PHP_SELF'];
+	}
 	
 	OC::handleRequest();
 
@@ -111,9 +120,12 @@ try {
 }
 
 function executeTelemetry($telemetryException){
+	if(empty($instrumentationKey))
+		return;
+
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
 	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-	$telemetryClient->getContext()->setInstrumentationKey(\OC::$server->getConfig()->getSystemValue('azure.instrumentationkey'));
+	$telemetryClient->getContext()->setInstrumentationKey($instrumentationKey);
 
 	if($telemetryException != null) {
 		$telemetryClient->trackException($ex);
