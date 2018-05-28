@@ -29,7 +29,7 @@
  */
 
 require_once 'vendor/autoload.php';
-$instrumentationKey = '';
+
 
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
@@ -112,19 +112,14 @@ function resolveService($service) {
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+	require_once 'azureinsights.php';
 
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
 	// this policy with a softer one if debug mode is enabled.
 	header("Content-Security-Policy: default-src 'none';");
 
-	$instrumentationKey = \OC::$server->getConfig()->getSystemValue('azure.instrumentationkey', '');
-
-	if(!empty($instrumentationKey)){
-		require_once 'vendor/autoload.php';
-		$url = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		$telemetryUrlSelf = $_SERVER['PHP_SELF'];
-	}
+	initializeTelemetry();
 
 	if (\OCP\Util::needUpgrade()) {
 		// since the behavior of apps or remotes are unpredictable during
@@ -185,21 +180,4 @@ try {
 }
 finally {
 	executeTelemetry(null);
-}
-
-function executeTelemetry($telemetryException){
-	if(empty($instrumentationKey))
-		return;
-
-	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
-	$telemetryClient = new \ApplicationInsights\Telemetry_Client();
-	$telemetryClient->getContext()->setInstrumentationKey($instrumentationKey);
-
-	if($telemetryException != null) {
-		$telemetryClient->trackException($ex);
-		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 500, false);
-	} else {
-		$telemetryClient->trackRequest(isset($telemetryUrlSelf) ? $telemetryUrlSelf : '', isset($url) ? $url : '', time(), $timePassed, 200, true);
-	}
-	$telemetryClient->flush();
 }
