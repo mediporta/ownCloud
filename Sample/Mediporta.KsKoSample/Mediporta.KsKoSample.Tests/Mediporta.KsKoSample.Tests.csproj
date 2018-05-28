@@ -96,7 +96,6 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
-    <EmbeddedResource Include="sampleInput.zip" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mediporta.KsKoSample\Mediporta.KsKoSample.Console.csproj">

@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<OrderedTest name="alltests" storage="d:\git\ks-ko\webtests\webtests\alltests.orderedtest" id="af40c0ec-708b-46f2-a2de-fb4d1530281a" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <TestLinks>
+    <TestLink id="e6143b1a-4b2c-4ca8-90c2-a75f80624d65" name="PurePhp" storage="purephp.webtest" type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest,   PublicKeyToken=b03f5f7f11d50a3a" />
+    <TestLink id="336d3d0e-0981-4930-8fb7-d727db706346" name="StatusPage" storage="statuspage.webtest" type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest,   PublicKeyToken=b03f5f7f11d50a3a" />
+    <TestLink id="f9e54119-c0cf-4131-8897-38137e9ae5f6" name="LoadLogin" storage="loadlogin.webtest" type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest,   PublicKeyToken=b03f5f7f11d50a3a" />
+    <TestLink id="96a57fc0-e49c-4eeb-9f7d-a28977267288" name="LoginAndLogout" storage="loginandlogout.webtest" type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest,   PublicKeyToken=b03f5f7f11d50a3a" />
+    <TestLink id="6a455dbd-828a-438e-968c-b6814111b9c9" name="UploadAndDeleteFile" storage="uploadanddeletefile.webtest" type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest,   PublicKeyToken=b03f5f7f11d50a3a" />
+  </TestLinks>
+</OrderedTest>
