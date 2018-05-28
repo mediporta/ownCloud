@@ -184,7 +184,7 @@ try {
 	executeTelemetry($e);
 }
 finally {
-	executeTelemetry();
+	executeTelemetry(null);
 }
 
 function executeTelemetry($telemetryException){
