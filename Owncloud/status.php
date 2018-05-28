@@ -67,7 +67,7 @@ $instrumentationKey = '';
 }
 
 function executeTelemetry($telemetryException){
-	if(empty($instrumentationKey)){
+	if(empty($instrumentationKey))
 		return;
 
 	$timePassed = round((microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"])*1000);
