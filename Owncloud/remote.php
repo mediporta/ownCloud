@@ -28,6 +28,9 @@
  *
  */
 
+require_once 'vendor/autoload.php';
+
+
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\Server;
@@ -109,6 +112,9 @@ function resolveService($service) {
 try {
 	require_once __DIR__ . '/lib/base.php';
 
+	require_once 'telemetry.php';
+	initializeTelemetry();
+
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
 	// this policy with a softer one if debug mode is enabled.
@@ -163,9 +169,11 @@ try {
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
 	require_once $file;
-
+	executeTelemetry(null);
 } catch (Exception $ex) {
 	handleException($ex);
+	executeTelemetry($ex);
 } catch (Error $e) {
 	handleException($e);
+	executeTelemetry($e);
 }
