@@ -11,7 +11,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Thomas Tanghus <thomas@tanghus.net>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -41,7 +41,9 @@ use OC\AppFramework\Middleware\Security\CORSMiddleware;
 use OC\AppFramework\Middleware\Security\SecurityMiddleware;
 use OC\AppFramework\Middleware\SessionMiddleware;
 use OC\AppFramework\Utility\SimpleContainer;
+use OC\Core\Middleware\AccountModuleMiddleware;
 use OC\Core\Middleware\TwoFactorMiddleware;
+use OCP\App\IServiceLoader;
 use OCP\AppFramework\IApi;
 use OCP\AppFramework\IAppContainer;
 use OCP\Files\Mount\IMountManager;
@@ -284,6 +286,7 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 			return $this->getServer();
 		});
 		$this->registerAlias('OCP\\IServerContainer', 'ServerContainer');
+		$this->registerAlias(IServiceLoader::class, 'ServerContainer');
 
 		$this->registerService('Symfony\Component\EventDispatcher\EventDispatcherInterface', function ($c) {
 			return $this->getServer()->getEventDispatcher();
@@ -353,8 +356,8 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 				$app->getServer()->getNavigationManager(),
 				$app->getServer()->getURLGenerator(),
 				$app->getServer()->getLogger(),
+				$app->getServer()->getUserSession(),
 				$c['AppName'],
-				$app->isLoggedIn(),
 				$app->isAdminUser(),
 				$app->getServer()->getContentSecurityPolicyManager()
 			);
@@ -380,11 +383,10 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 		$this->registerService('TwoFactorMiddleware', function (SimpleContainer $c) use ($app) {
 			$twoFactorManager = $c->getServer()->getTwoFactorAuthManager();
 			$userSession = $app->getServer()->getUserSession();
-			$session = $app->getServer()->getSession();
 			$urlGenerator = $app->getServer()->getURLGenerator();
 			$reflector = $c['ControllerMethodReflector'];
 			$request = $app->getServer()->getRequest();
-			return new TwoFactorMiddleware($twoFactorManager, $userSession, $session, $urlGenerator, $reflector, $request);
+			return new TwoFactorMiddleware($twoFactorManager, $userSession, $urlGenerator, $reflector, $request);
 		});
 
 		$middleWares = &$this->middleWares;
@@ -392,7 +394,8 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 			$dispatcher = new MiddlewareDispatcher();
 			$dispatcher->registerMiddleware($c['CORSMiddleware']);
 			$dispatcher->registerMiddleware($c['SecurityMiddleware']);
-			$dispatcher->registerMiddleWare($c['TwoFactorMiddleware']);
+			$dispatcher->registerMiddleware($c['TwoFactorMiddleware']);
+			$dispatcher->registerMiddleware($c->query(AccountModuleMiddleware::class));
 
 			foreach($middleWares as $middleWare) {
 				$dispatcher->registerMiddleware($c[$middleWare]);

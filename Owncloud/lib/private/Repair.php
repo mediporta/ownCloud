@@ -10,7 +10,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -38,6 +38,8 @@ use OC\Repair\OldGroupMembershipShares;
 use OC\Repair\RemoveGetETagEntries;
 use OC\Repair\RemoveRootShares;
 use OC\Repair\RepairMismatchFileCachePath;
+use OC\Repair\RepairOrphanedSubshare;
+use OC\Repair\RepairSubShares;
 use OC\Repair\SharePropagation;
 use OC\Repair\SqliteAutoincrement;
 use OC\Repair\DropOldTables;
@@ -127,7 +129,10 @@ class Repair implements IOutput{
 	public static function getRepairSteps() {
 		return [
 			new RepairMimeTypes(\OC::$server->getConfig()),
-			new RepairMismatchFileCachePath(\OC::$server->getDatabaseConnection(), \OC::$server->getMimeTypeLoader()),
+			new RepairMismatchFileCachePath(
+				\OC::$server->getDatabaseConnection(),
+				\OC::$server->getMimeTypeLoader(),
+				\OC::$server->getLogger()),
 			new FillETags(\OC::$server->getDatabaseConnection()),
 			new CleanTags(\OC::$server->getDatabaseConnection(), \OC::$server->getUserManager()),
 			new DropOldTables(\OC::$server->getDatabaseConnection()),
@@ -157,6 +162,9 @@ class Repair implements IOutput{
 				\OC::$server->getConfig(),
 				\OC::$server->getAppConfig()
 			),
+			new RepairSubShares(
+				\OC::$server->getDatabaseConnection()
+			),
 		];
 	}
 
@@ -184,6 +192,7 @@ class Repair implements IOutput{
 			new InnoDB(),
 			new Collation(\OC::$server->getConfig(), $connection),
 			new SqliteAutoincrement($connection),
+			new RepairOrphanedSubshare($connection),
 			new SearchLuceneTables(),
 			new Apps(\OC::$server->getAppManager(), \OC::$server->getEventDispatcher(), \OC::$server->getConfig(), new \OC_Defaults()),
 		];
@@ -242,7 +251,7 @@ class Repair implements IOutput{
 	}
 
 	/**
-	 * @param int $max
+	 * emit signal
 	 */
 	public function finishProgress() {
 		// for now just emit as we did in the past

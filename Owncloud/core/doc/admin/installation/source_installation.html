@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Manual Installation on Linux &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Manual Installation on Linux &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="The Installation Wizard" href="installation_wizard.html" />
-    <link rel="prev" title="Preferred Installation Method" href="linux_installation.html" />
+    <link rel="next" title="Linux Package Manager Installation" href="linux_installation.html" />
+    <link rel="prev" title="Deployment Considerations" href="deployment_considerations.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,12 +65,11 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Manual Installation on Linux</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#install-the-required-packages">Install the Required Packages</a></li>
@@ -79,8 +78,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#enable-ssl">Enable SSL</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#run-the-installation-wizard">Run the Installation Wizard</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#set-strong-directory-permissions">Set Strong Directory Permissions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#managing-trusted-domains">Managing Trusted Domains</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -91,6 +92,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -113,18 +115,18 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="linux_installation.html" title="Previous Chapter: Preferred Installation Method"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Preferred Ins...</span>
+    <a href="deployment_considerations.html" title="Previous Chapter: Deployment Considerations"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Deployment Co...</span>
     </a>
   </li>
   <li class="next">
-    <a href="installation_wizard.html" title="Next Chapter: The Installation Wizard"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">The Installat... &raquo;</span>
+    <a href="linux_installation.html" title="Next Chapter: Linux Package Manager Installation"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Linux Package... &raquo;</span>
     </a>
   </li>
 </ul>
 						
   <div class="section" id="manual-installation-on-linux">
 <h1>Manual Installation on Linux<a class="headerlink" href="#manual-installation-on-linux" title="Permalink to this headline">¶</a></h1>
-<p>Installing ownCloud on Linux from our Open Build Service packages is the preferred method (see <a class="reference internal" href="linux_installation.html"><span class="doc">Preferred Installation Method</span></a>).
+<p>Installing ownCloud on Linux from our Open Build Service packages is the preferred method (see <a class="reference internal" href="linux_installation.html"><span class="doc">Linux Package Manager Installation</span></a>).
 These are maintained by ownCloud engineers, and you can use your package manager to keep your ownCloud server up-to-date.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -163,14 +165,19 @@ If you get a result, the module is present.</p>
 <h3>Required<a class="headerlink" href="#required" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="php-version">
 <h4>PHP Version<a class="headerlink" href="#php-version" title="Permalink to this headline">¶</a></h4>
-<p>PHP &gt;= 5.6 (ideally 7.0 or above)</p>
+<p>PHP (5.6+, 7.0, &amp; 7.1)</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">ownCloud recommends the use of PHP 7.1 in new installations.
+Sites using a version earlier than PHP 7.1 are <em>strongly encouraged</em> to migrate to PHP 7.1</p>
+</div>
 </div>
 <div class="section" id="php-extensions">
 <h4>PHP Extensions<a class="headerlink" href="#php-extensions" title="Permalink to this headline">¶</a></h4>
 <table border="1" class="docutils">
 <colgroup>
-<col width="23%" />
-<col width="77%" />
+<col width="27%" />
+<col width="73%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Name</th>
@@ -192,62 +199,60 @@ If you get a result, the module is present.</p>
 different image formats, including GIF, PNG, JPEG, WBMP,
 and XPM.</td>
 </tr>
-<tr class="row-even"><td>HASH Message</td>
+<tr class="row-even"><td><a class="reference external" href="http://php.net/manual/en/function.hash.php">HASH Message</a>
+<a class="reference external" href="http://php.net/manual/en/function.hash.php">Digest Framework</a></td>
 <td>For working with message digests (hash).</td>
 </tr>
-<tr class="row-odd"><td>Digest Framework</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.iconv.php">iconv</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.iconv.php">iconv</a></td>
 <td>For working with the iconv character set conversion
 facility.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.intl.php">intl</a></td>
-<td>Increases language translation performance and fixes sorting of
-non-ASCII characters</td>
+<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.intl.php">intl</a></td>
+<td>Increases language translation performance and fixes
+sorting of non-ASCII characters</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.json.php">JSON</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.json.php">JSON</a></td>
 <td>For working with the JSON data-interchange format.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.libxml.php">libxml</a></td>
+<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.libxml.php">libxml</a></td>
 <td>This is required for the _DOM_, _libxml_, _SimpleXML_, and
 _XMLWriter_ extensions to work. It requires that libxml2,
 version 2.7.0 or higher, is installed.</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.mbstring.php">Multibyte String</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.mbstring.php">Multibyte String</a></td>
 <td>For working with multibyte character encoding schemes.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.openssl.php">OpenSSL</a></td>
+<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.openssl.php">OpenSSL</a></td>
 <td>For symmetric and asymmetric encryption and decryption,
 PBKDF2, PKCS7, PKCS12, X509 and other crypto operations.</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://secure.php.net/manual/en/book.pdo.php">PDO</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://secure.php.net/manual/en/book.pdo.php">PDO</a></td>
 <td>This is required for the pdo_msql function to work.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://secure.php.net/manual/en/book.phar.php">Phar</a></td>
+<tr class="row-even"><td><a class="reference external" href="https://secure.php.net/manual/en/book.phar.php">Phar</a></td>
 <td>For working with PHP Archives (.phar files).</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.posix.php">POSIX</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.posix.php">POSIX</a></td>
 <td>For working with UNIX POSIX functionality.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.simplexml.php">SimpleXML</a></td>
+<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.simplexml.php">SimpleXML</a></td>
 <td>For working with XML files as objects.</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.xmlwriter.php">XMLWriter</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.xmlwriter.php">XMLWriter</a></td>
 <td>For generating streams or files of XML data.</td>
 </tr>
-<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.zip.php">Zip</a></td>
+<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.zip.php">Zip</a></td>
 <td>For reading and writing ZIP compressed archives and the
 files inside them.</td>
 </tr>
-<tr class="row-even"><td><a class="reference external" href="https://php.net/manual/en/book.zlib.php">Zlib</a></td>
+<tr class="row-odd"><td><a class="reference external" href="https://php.net/manual/en/book.zlib.php">Zlib</a></td>
 <td>For reading and writing gzip (.gz) compressed files.</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition tip">
 <p class="first admonition-title">Tip</p>
-<p class="last">The <em>Phar</em>, <em>OpenSSL</em>, and <em>cUrl</em> extensions are mandatory if you want to use Make
+<p class="last">The <em>Phar</em>, <em>OpenSSL</em>, and <em>cUrl</em> extensions are mandatory if you want to use <a class="reference external" href="https://www.gnu.org/software/make/">Make</a>
 <a class="reference external" href="https://doc.owncloud.com/server/latest/developer_manual/general/devenv.html">to setup your ownCloud environment</a>, prior to running either the web
 installation wizard, or the command line installer.</p>
 </div>
@@ -423,25 +428,85 @@ If <code class="docutils literal"><span class="pre">mod_webdav</span></code> is 
 <div class="section" id="on-ubuntu-16-04-lts-server">
 <h3>On Ubuntu 16.04 LTS Server<a class="headerlink" href="#on-ubuntu-16-04-lts-server" title="Permalink to this headline">¶</a></h3>
 <p>On a machine running a pristine Ubuntu 16.04 LTS server, install the required and recommended modules for a typical ownCloud installation, using Apache and MariaDB, by issuing the following commands in a terminal:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">apache2</span> <span class="n">mariadb</span><span class="o">-</span><span class="n">server</span> <span class="n">libapache2</span><span class="o">-</span><span class="n">mod</span><span class="o">-</span><span class="n">php7</span><span class="o">.</span><span class="mi">0</span> \
-    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">gd</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">json</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mysql</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">curl</span> \
-    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">intl</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mcrypt</span> <span class="n">php</span><span class="o">-</span><span class="n">imagick</span> \
-    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="nb">zip</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">xml</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mbstring</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">apache2</span> <span class="n">mariadb</span><span class="o">-</span><span class="n">server</span> <span class="n">libapache2</span><span class="o">-</span><span class="n">mod</span><span class="o">-</span><span class="n">php7</span><span class="o">.</span><span class="mi">0</span> \
+    <span class="n">openssl</span> <span class="n">php</span><span class="o">-</span><span class="n">imagick</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">common</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">curl</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">gd</span> \
+    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">imap</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">intl</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">json</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">ldap</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mbstring</span> \
+    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mcrypt</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">mysql</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">pgsql</span> <span class="n">php</span><span class="o">-</span><span class="n">smbclient</span> <span class="n">php</span><span class="o">-</span><span class="n">ssh2</span> \
+    <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">sqlite3</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">xml</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="nb">zip</span>
 </pre></div>
 </div>
+<p><strong>Please note:</strong></p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">php7.0-common</span></code> provides: ftp, Phar, posix, iconv, ctype</li>
+<li>The Hash extension is available from PHP 5.1.2 by default</li>
+<li><code class="docutils literal"><span class="pre">php7.0-xml</span></code> provides DOM, SimpleXML, XML, &amp; XMLWriter</li>
+<li><code class="docutils literal"><span class="pre">php7.0-zip</span></code> provides zlib</li>
+</ul>
 <p>The remaining steps are analogous to the installation on Ubuntu 14.04 as shown below.</p>
 </div>
 <div class="section" id="on-ubuntu-14-04-lts-server">
 <h3>On Ubuntu 14.04 LTS Server<a class="headerlink" href="#on-ubuntu-14-04-lts-server" title="Permalink to this headline">¶</a></h3>
 <p>On a machine running a pristine Ubuntu 14.04 LTS server, install the required and recommended modules for a typical ownCloud installation, using Apache and MariaDB, by issuing the following commands in a terminal:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">apache2</span> <span class="n">mariadb</span><span class="o">-</span><span class="n">server</span> <span class="n">libapache2</span><span class="o">-</span><span class="n">mod</span><span class="o">-</span><span class="n">php5</span> \
-  <span class="n">php5</span><span class="o">-</span><span class="n">gd</span> <span class="n">php5</span><span class="o">-</span><span class="n">json</span> <span class="n">php5</span><span class="o">-</span><span class="n">mysql</span> <span class="n">php5</span><span class="o">-</span><span class="n">curl</span> \
-  <span class="n">php5</span><span class="o">-</span><span class="n">intl</span> <span class="n">php5</span><span class="o">-</span><span class="n">mcrypt</span> <span class="n">php5</span><span class="o">-</span><span class="n">imagick</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">wget</span> <span class="n">expect</span> <span class="n">apache2</span> <span class="n">mariadb</span><span class="o">-</span><span class="n">server</span> <span class="n">libapache2</span><span class="o">-</span><span class="n">mod</span><span class="o">-</span><span class="n">php5</span> \
+    <span class="n">libsmbclient</span><span class="o">-</span><span class="n">dev</span> <span class="n">libssh2</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="n">dev</span> <span class="n">openssl</span> <span class="n">php5</span><span class="o">-</span><span class="n">imagick</span> \
+    <span class="n">php5</span><span class="o">-</span><span class="n">common</span> <span class="n">php5</span><span class="o">-</span><span class="n">curl</span> <span class="n">php5</span><span class="o">-</span><span class="n">dev</span> <span class="n">php5</span><span class="o">-</span><span class="n">gd</span> \
+    <span class="n">php5</span><span class="o">-</span><span class="n">imap</span> <span class="n">php5</span><span class="o">-</span><span class="n">intl</span> <span class="n">php5</span><span class="o">-</span><span class="n">json</span> <span class="n">php5</span><span class="o">-</span><span class="n">ldap</span> \
+    <span class="n">php5</span><span class="o">-</span><span class="n">mcrypt</span> <span class="n">php5</span><span class="o">-</span><span class="n">mysql</span> <span class="n">php5</span><span class="o">-</span><span class="n">pgsql</span> <span class="n">php5</span><span class="o">-</span><span class="n">sqlite</span>
 </pre></div>
 </div>
-<p>libapache2-mod-php5 provides the following PHP extensions:</p>
-<blockquote>
-<div><code class="docutils literal"><span class="pre">bcmath</span> <span class="pre">bz2</span> <span class="pre">calendar</span> <span class="pre">Core</span> <span class="pre">ctype</span> <span class="pre">date</span> <span class="pre">dba</span> <span class="pre">dom</span> <span class="pre">ereg</span> <span class="pre">exif</span> <span class="pre">fileinfo</span> <span class="pre">filter</span> <span class="pre">ftp</span> <span class="pre">gettext</span> <span class="pre">hash</span> <span class="pre">iconv</span> <span class="pre">libxml</span> <span class="pre">mbstring</span> <span class="pre">mhash</span> <span class="pre">openssl</span> <span class="pre">pcre</span> <span class="pre">Phar</span> <span class="pre">posix</span> <span class="pre">Reflection</span> <span class="pre">session</span> <span class="pre">shmop</span> <span class="pre">SimpleXML</span> <span class="pre">soap</span> <span class="pre">sockets</span> <span class="pre">SPL</span> <span class="pre">standard</span> <span class="pre">sysvmsg</span> <span class="pre">sysvsem</span> <span class="pre">sysvshm</span> <span class="pre">tokenizer</span> <span class="pre">wddx</span> <span class="pre">xml</span> <span class="pre">xmlreader</span> <span class="pre">xmlwriter</span> <span class="pre">zip</span> <span class="pre">zlib</span></code></div></blockquote>
+<p><strong>Please note:</strong></p>
+<p><code class="docutils literal"><span class="pre">libapache2-mod-php5</span></code> provides the following PHP extensions.</p>
+<ul class="simple">
+<li>ctype</li>
+<li>dom</li>
+<li>ftp</li>
+<li>hash</li>
+<li>iconv</li>
+<li>libxml</li>
+<li>mbstring</li>
+<li>openssl</li>
+<li>Phar</li>
+<li>posix</li>
+<li>SimpleXML</li>
+<li>xml</li>
+<li>xmlreader</li>
+<li>xmlwriter</li>
+<li>zip</li>
+<li>zlib</li>
+</ul>
+<p>So if you don’t see an applicable package in the list above, that’s why.</p>
+<div class="section" id="installing-smbclient">
+<h4>Installing smbclient<a class="headerlink" href="#installing-smbclient" title="Permalink to this headline">¶</a></h4>
+<p>To install smbclient, you can use the following script.
+It first installs PEAR, which at the time of writing only installs version 1.9.4.
+However, smbclient requires version 1.9.5.
+So the final two commands upgrade PEAR to version 1.9.5 and then install smbclient using Pecl.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/expect</span>
+<span class="n">spawn</span> <span class="n">wget</span> <span class="o">-</span><span class="n">O</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">go</span><span class="o">-</span><span class="n">pear</span><span class="o">.</span><span class="n">phar</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">pear</span><span class="o">.</span><span class="n">php</span><span class="o">.</span><span class="n">net</span><span class="o">/</span><span class="n">go</span><span class="o">-</span><span class="n">pear</span><span class="o">.</span><span class="n">phar</span>
+<span class="n">expect</span> <span class="n">eof</span>
+
+<span class="n">spawn</span> <span class="n">php</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">go</span><span class="o">-</span><span class="n">pear</span><span class="o">.</span><span class="n">phar</span>
+
+<span class="n">expect</span> <span class="s2">&quot;1-11, &#39;all&#39; or Enter to continue:&quot;</span>
+<span class="n">send</span> <span class="s2">&quot;</span><span class="se">\r</span><span class="s2">&quot;</span>
+<span class="n">expect</span> <span class="n">eof</span>
+
+<span class="n">spawn</span> <span class="n">rm</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">go</span><span class="o">-</span><span class="n">pear</span><span class="o">.</span><span class="n">phar</span>
+
+<span class="n">pear</span> <span class="n">install</span> <span class="n">PEAR</span><span class="o">-</span><span class="mf">1.9</span><span class="o">.</span><span class="mi">5</span>
+<span class="n">pecl</span> <span class="n">install</span> <span class="n">smbclient</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-ssh2">
+<h4>Installing ssh2<a class="headerlink" href="#installing-ssh2" title="Permalink to this headline">¶</a></h4>
+<p>To install ssh2, which provides sftp, you can use the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">spawn</span> <span class="n">pecl</span> <span class="n">install</span> <span class="n">ssh2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="running-additional-apps">
+<h4>Running Additional Apps?<a class="headerlink" href="#running-additional-apps" title="Permalink to this headline">¶</a></h4>
 <p>If you are planning on running additional apps, keep in mind that you might require additional packages.
 See <a class="reference internal" href="#prerequisites-label"><span class="std std-ref">Prerequisites</span></a> for details.</p>
 <div class="admonition note">
@@ -449,10 +514,10 @@ See <a class="reference internal" href="#prerequisites-label"><span class="std s
 <p class="last">During the installation of the MySQL/MariaDB server, you will be prompted to create a root password.
 Be sure to remember your password as you will need it during ownCloud database setup.</p>
 </div>
+</div>
 <div class="section" id="additional-extensions">
 <h4>Additional Extensions<a class="headerlink" href="#additional-extensions" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">php</span><span class="o">-</span><span class="n">apcu</span> <span class="n">php</span><span class="o">-</span><span class="n">redis</span> <span class="n">redis</span><span class="o">-</span><span class="n">server</span> \
-  <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">ldap</span> <span class="n">php</span><span class="o">-</span><span class="n">smbclient</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">php</span><span class="o">-</span><span class="n">apcu</span> <span class="n">php</span><span class="o">-</span><span class="n">redis</span> <span class="n">redis</span><span class="o">-</span><span class="n">server</span> <span class="n">php7</span><span class="o">.</span><span class="mi">0</span><span class="o">-</span><span class="n">ldap</span>
 </pre></div>
 </div>
 </div>
@@ -593,12 +658,17 @@ by running:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">a2enmod</span> <span class="n">rewrite</span>
 </pre></div>
 </div>
-<p>Additional recommended modules are <code class="docutils literal"><span class="pre">mod_headers</span></code>, <code class="docutils literal"><span class="pre">mod_env</span></code>, <code class="docutils literal"><span class="pre">mod_dir</span></code> and <code class="docutils literal"><span class="pre">mod_mime</span></code>:</p>
+<p>Additional recommended modules are <code class="docutils literal"><span class="pre">mod_headers</span></code>, <code class="docutils literal"><span class="pre">mod_env</span></code>, <code class="docutils literal"><span class="pre">mod_dir</span></code> and <code class="docutils literal"><span class="pre">mod_mime</span></code></p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">a2enmod</span> <span class="n">headers</span>
 <span class="n">a2enmod</span> <span class="n">env</span>
 <span class="n">a2enmod</span> <span class="nb">dir</span>
 <span class="n">a2enmod</span> <span class="n">mime</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want to use <a class="reference external" href="https://marketplace.owncloud.com/apps/oauth2">the OAuth2 app</a>, then <a class="reference external" href="http://httpd.apache.org/docs/current/mod/mod_headers.html">mod_headers</a> must be installed and
+enabled.</p>
 </div>
 </li>
 <li><p class="first">You must disable any server-configured authentication for ownCloud, as it uses Basic authentication internally for DAV services. If you have turned on authentication on a parent folder (via, e.g., an <code class="docutils literal"><span class="pre">AuthType</span> <span class="pre">Basic</span></code> directive), you can disable the authentication specifically for the ownCloud entry. Following the above example configuration file, add the following line in the <code class="docutils literal"><span class="pre">&lt;Directory</span></code> section</p>
@@ -665,6 +735,26 @@ To use the graphical Installation Wizard see <a class="reference internal" href=
 <span id="strong-perms-label"></span><h2>Set Strong Directory Permissions<a class="headerlink" href="#set-strong-directory-permissions" title="Permalink to this headline">¶</a></h2>
 <p>After completing the installation, you must immediately <a class="reference internal" href="installation_wizard.html#post-installation-steps-label"><span class="std std-ref">set the directory permissions</span></a> in your ownCloud installation as strictly as possible for stronger security.
 After you do so, your ownCloud server will be ready to use.</p>
+</div>
+<div class="section" id="managing-trusted-domains">
+<span id="trusted-domains-label"></span><h2>Managing Trusted Domains<a class="headerlink" href="#managing-trusted-domains" title="Permalink to this headline">¶</a></h2>
+<p>All URLs used to access your ownCloud server must be whitelisted in your <code class="docutils literal"><span class="pre">config.php</span></code> file, under the <code class="docutils literal"><span class="pre">trusted_domains</span></code> setting.
+Users are allowed to log into ownCloud only when they point their browsers to a URL that is listed in the <code class="docutils literal"><span class="pre">trusted_domains</span></code> setting.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This setting is important when changing or moving to a new domain name.
+You may use IP addresses and domain names.</p>
+</div>
+<p>A typical configuration looks like this:</p>
+<div class="highlight-php"><div class="highlight"><pre><span></span><span class="x">&#39;trusted_domains&#39; =&gt; [</span>
+<span class="x">   0 =&gt; &#39;localhost&#39;,</span>
+<span class="x">   1 =&gt; &#39;server1.example.com&#39;,</span>
+<span class="x">   2 =&gt; &#39;192.168.1.50&#39;,</span>
+<span class="x">],</span>
+</pre></div>
+</div>
+<p>The loopback address, <code class="docutils literal"><span class="pre">127.0.0.1</span></code>, is automatically whitelisted, so as long as you have access to the physical server you can always log in.
+In the event that a load-balancer is in place, there will be no issues as long as it sends the correct <code class="docutils literal"><span class="pre">X-Forwarded-Host</span></code> header.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">For further information on improving the quality of your ownCloud installation, please see the <a class="reference internal" href="configuration_notes_and_tips.html"><span class="doc">Configuration Notes &amp; Tips</span></a> guide.</p>
@@ -676,11 +766,11 @@ After you do so, your ownCloud server will be ready to use.</p>
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="linux_installation.html" title="Previous Chapter: Preferred Installation Method"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Preferred Ins...</span>
+    <a href="deployment_considerations.html" title="Previous Chapter: Deployment Considerations"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Deployment Co...</span>
     </a>
   </li>
   <li class="next">
-    <a href="installation_wizard.html" title="Next Chapter: The Installation Wizard"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">The Installat... &raquo;</span>
+    <a href="linux_installation.html" title="Next Chapter: Linux Package Manager Installation"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Linux Package... &raquo;</span>
     </a>
   </li>
 </ul>

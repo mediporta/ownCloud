@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Restoring ownCloud &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Restoring ownCloud &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -118,7 +118,7 @@
 <li>Your <code class="docutils literal"><span class="pre">config/</span></code> directory.</li>
 <li>Your <code class="docutils literal"><span class="pre">data/</span></code> directory.</li>
 <li>Your ownCloud database.</li>
-<li>Your custom theme files, if you have any. (See <a class="reference external" href="https://doc.owncloud.org/server/10.0/developer_manual/core/theming.html">Theming ownCloud</a>)</li>
+<li>Your custom theme files, if you have any. (See <a class="reference external" href="https://doc.owncloud.org/server/latest/developer_manual/core/theming.html">Theming ownCloud</a>)</li>
 </ol>
 <p>When you install ownCloud from the source tarballs you may safely restore your entire ownCloud installation from backup, with the exception of your ownCloud database. Databases cannot be copied, but you must use the database tools to make a correct restoration.</p>
 <p>When you have completed your restoration, see <a class="reference internal" href="../installation/source_installation.html#strong-perms-label"><span class="std std-ref">Setting Strong Permissions</span></a>.</p>
@@ -140,7 +140,10 @@
 <div class="section" id="mysql">
 <h3>MySQL<a class="headerlink" href="#mysql" title="Permalink to this headline">¶</a></h3>
 <p>MySQL is the recommended database engine. To restore MySQL:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">mysql</span> <span class="o">-</span><span class="n">h</span> <span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">-</span><span class="n">u</span> <span class="p">[</span><span class="n">username</span><span class="p">]</span> <span class="o">-</span><span class="n">p</span><span class="p">[</span><span class="n">password</span><span class="p">]</span> <span class="p">[</span><span class="n">db_name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">owncloud</span><span class="o">-</span><span class="n">dbbackup</span><span class="o">.</span><span class="n">bak</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">occ</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span> <span class="o">--</span><span class="n">on</span>
+<span class="n">mysql</span> <span class="o">-</span><span class="n">h</span> <span class="p">[</span><span class="n">server</span><span class="p">]</span> <span class="o">-</span><span class="n">u</span> <span class="p">[</span><span class="n">username</span><span class="p">]</span> <span class="o">-</span><span class="n">p</span><span class="p">[</span><span class="n">password</span><span class="p">]</span> <span class="p">[</span><span class="n">db_name</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">owncloud</span><span class="o">-</span><span class="n">dbbackup</span><span class="o">.</span><span class="n">bak</span>
+<span class="n">occ</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">data</span><span class="o">-</span><span class="n">fingerprint</span>
+<span class="n">occ</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span> <span class="o">--</span><span class="n">off</span>
 </pre></div>
 </div>
 </div>

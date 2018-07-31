@@ -336,6 +336,10 @@ OC.L10N.register(
     "change full name" : "αλλαγή πλήρους ονόματος",
     "set new password" : "επιλογή νέου κωδικού",
     "change email address" : "αλλαγή διεύθυνσης ηλ. αλληλογραφίας",
-    "Default" : "Προκαθορισμένο"
+    "Default" : "Προκαθορισμένο",
+    "Share" : "Μοιράσου",
+    "Domain" : "Τομέας",
+    "Add Domain" : "Προσθήκη τομέα",
+    "Add" : "Προσθήκη"
 },
 "nplurals=2; plural=(n != 1);");

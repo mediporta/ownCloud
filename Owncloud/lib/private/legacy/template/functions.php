@@ -11,7 +11,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -182,7 +182,7 @@ function mimetype_icon( $mimetype ) {
  * make preview_icon available as a simple function
  * Returns the path to the preview of the image.
  * @param string $path path of file
- * @return link to the preview
+ * @return string link to the preview
  */
 function preview_icon( $path ) {
 	return \OC::$server->getURLGenerator()->linkToRoute('core_ajax_preview', ['x' => 32, 'y' => 32, 'file' => $path]);

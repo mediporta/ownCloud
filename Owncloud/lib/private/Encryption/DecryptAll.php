@@ -6,7 +6,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -30,6 +30,7 @@ use OC\Encryption\Exceptions\DecryptionFailedException;
 use OC\Files\View;
 use \OCP\Encryption\IEncryptionModule;
 use OCP\ILogger;
+use OCP\IUser;
 use OCP\IUserManager;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -59,6 +60,8 @@ class DecryptAll {
 	protected $logger;
 
 	/**
+	 * DecryptAll constructor.
+	 *
 	 * @param Manager $encryptionManager
 	 * @param IUserManager $userManager
 	 * @param View $rootView
@@ -145,7 +148,7 @@ class DecryptAll {
 	}
 
 	/**
-	 * iterate over all user and encrypt their files
+	 * iterate over all seen users and decrypt their files
 	 *
 	 * @param string $user which users files should be decrypted, default = all users
 	 * @return bool
@@ -154,53 +157,36 @@ class DecryptAll {
 
 		$this->output->writeln("\n");
 
-		$userList = [];
-		if ($user === '') {
-
-			$fetchUsersProgress = new ProgressBar($this->output);
-			$fetchUsersProgress->setFormat(" %message% \n [%bar%]");
-			$fetchUsersProgress->start();
-			$fetchUsersProgress->setMessage("Fetch list of users...");
-			$fetchUsersProgress->advance();
-
-			foreach ($this->userManager->getBackends() as $backend) {
-				$limit = 500;
-				$offset = 0;
-				do {
-					$users = $backend->getUsers('', $limit, $offset);
-					foreach ($users as $user) {
-						$userList[] = $user;
-					}
-					$offset += $limit;
-					$fetchUsersProgress->advance();
-				} while (count($users) >= $limit);
-				$fetchUsersProgress->setMessage("Fetch list of users... finished");
-				$fetchUsersProgress->finish();
-			}
-		} else {
-			$userList[] = $user;
-		}
-
-		$this->output->writeln("\n\n");
-
 		$progress = new ProgressBar($this->output);
 		$progress->setFormat(" %message% \n [%bar%]");
 		$progress->start();
 		$progress->setMessage("starting to decrypt files...");
 		$progress->advance();
 
-		$numberOfUsers = count($userList);
-		$userNo = 1;
-		foreach ($userList as $uid) {
-			$userCount = "$uid ($userNo of $numberOfUsers)";
-			if (\OC::$server->getAppConfig()->getValue('encryption', 'userSpecificKey', '0') !== '0') {
-				if ($this->prepareEncryptionModules($uid) === false) {
-					return false;
-				}
+		if ($user === '') {
+			$userNo = 1;
+			$numberOfUsers = $this->userManager->countSeenUsers();
+			if ($numberOfUsers === 0) {
+				return false;
 			}
-			$this->decryptUsersFiles($uid, $progress, $userCount);
-			$userNo++;
+			$this->userManager->callForSeenUsers(function(IUser $user) use ($progress, &$userNo, $numberOfUsers) {
+				if (\OC::$server->getAppConfig()->getValue('encryption', 'userSpecificKey', '0') !== '0') {
+					if ($this->prepareEncryptionModules($user->getUID()) === false) {
+						return false;
+					}
+				}
+				$this->decryptUsersFiles(
+					$user->getUID(),
+					$progress,
+					"{$user->getUID()} ($userNo of $numberOfUsers)"
+				);
+				$userNo++;
+			});
+		} else {
+			$this->decryptUsersFiles($user, $progress, "$user (1 of 1)");
 		}
+
+		$this->output->writeln("\n\n");
 
 		$progress->setMessage("starting to decrypt files... finished");
 		$progress->finish();
@@ -225,8 +211,8 @@ class DecryptAll {
 		while ($root = array_pop($directories)) {
 			$content = $this->rootView->getDirectoryContent($root);
 			foreach ($content as $file) {
-				// only decrypt files owned by the user
-				if($file->getStorage()->instanceOfStorage('OCA\Files_Sharing\SharedStorage')) {
+				// only decrypt files owned by the user, exclude incoming local shares, and incoming federated shares
+				if ($file->getStorage()->instanceOfStorage('\OCA\Files_Sharing\ISharedStorage')) {
 						continue;
 				}
 				$path = $root . '/' . $file['name'];
@@ -271,7 +257,7 @@ class DecryptAll {
 	protected function decryptFile($path) {
 
 		$source = $path;
-		$target = $path . '.decrypted.' . $this->getTimestamp();
+		$target = $path . '.decrypted.' . $this->getTimestamp() . '.part';
 
 		try {
 			\OC\Files\Storage\Wrapper\Encryption::setDisableWriteEncryption(true);

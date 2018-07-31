@@ -8,7 +8,7 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  * @author Lorenzo Perone <lorenzo.perone@yellowspace.net>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -26,11 +26,17 @@
  */
 namespace OC;
 
+use OC\AppFramework\Middleware\Security\Exceptions\NotLoggedInException;
+use OCP\Files\IRootFolder;
+use OCP\IConfig;
+use OCP\IImage;
 use OCP\IPreview;
+use OCP\IUserSession;
 use OCP\Preview\IProvider;
+use OCP\Preview\IProvider2;
 
 class PreviewManager implements IPreview {
-	/** @var \OCP\IConfig */
+	/** @var IConfig */
 	protected $config;
 
 	/** @var bool */
@@ -48,13 +54,23 @@ class PreviewManager implements IPreview {
 	/** @var array */
 	protected $defaultProviders;
 
+	/** @var IRootFolder */
+	private $rootFolder;
+
+	/** @var IUserSession */
+	private $userSession;
+
 	/**
 	 * Constructor
 	 *
-	 * @param \OCP\IConfig $config
+	 * @param IConfig $config
+	 * @param IRootFolder $rootFolder
+	 * @param IUserSession $userSession
 	 */
-	public function __construct(\OCP\IConfig $config) {
+	public function __construct(IConfig $config, IRootFolder $rootFolder, IUserSession $userSession) {
 		$this->config = $config;
+		$this->rootFolder = $rootFolder;
+		$this->userSession = $userSession;
 	}
 
 	/**
@@ -114,10 +130,18 @@ class PreviewManager implements IPreview {
 	 * @param int $maxX The maximum X size of the thumbnail. It can be smaller depending on the shape of the image
 	 * @param int $maxY The maximum Y size of the thumbnail. It can be smaller depending on the shape of the image
 	 * @param boolean $scaleUp Scale smaller images up to the thumbnail size or not. Might look ugly
-	 * @return \OCP\IImage
+	 * @return IImage
+	 * @throws NotLoggedInException
+	 * @throws \OCP\Files\NotFoundException
+	 * @throws \Exception
 	 */
 	public function createPreview($file, $maxX = 100, $maxY = 75, $scaleUp = false) {
-		$preview = new \OC\Preview('', '/', $file, $maxX, $maxY, $scaleUp);
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			throw new NotLoggedInException();
+		}
+		$file = $this->rootFolder->getUserFolder($user->getUID())->getParent()->get($file);
+		$preview = new Preview('', '/', $file, $maxX, $maxY, $scaleUp);
 		return $preview->getPreview();
 	}
 
@@ -189,7 +213,7 @@ class PreviewManager implements IPreview {
 			if (preg_match($supportedMimeType, $file->getMimetype())) {
 				foreach ($providers as $closure) {
 					$provider = $closure();
-					if (!($provider instanceof IProvider)) {
+					if (!($provider instanceof IProvider) && !($provider instanceof IProvider2)) {
 						continue;
 					}
 
@@ -243,6 +267,7 @@ class PreviewManager implements IPreview {
 			'OC\Preview\JPEG',
 			'OC\Preview\GIF',
 			'OC\Preview\BMP',
+			'OC\Preview\Heic',
 			'OC\Preview\XBitmap'
 		];
 
@@ -303,6 +328,7 @@ class PreviewManager implements IPreview {
 				'PSD'	=> ['mimetype' => '/application\/x-photoshop/', 'class' => '\OC\Preview\Photoshop'],
 				'EPS'	=> ['mimetype' => '/application\/postscript/', 'class' => '\OC\Preview\Postscript'],
 				'TTF'	=> ['mimetype' => '/application\/(?:font-sfnt|x-font$)/', 'class' => '\OC\Preview\Font'],
+				'HEIC'	=> ['mimetype' => '/image\/hei(f|c)/', 'class' => '\OC\Preview\Heic'],
 			];
 
 			foreach ($imagickProviders as $queryFormat => $provider) {

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>The Installation Wizard &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>The Installation Wizard &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -28,7 +28,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Installing with Docker" href="docker/index.html" />
-    <link rel="prev" title="Manual Installation on Linux" href="source_installation.html" />
+    <link rel="prev" title="Linux Package Manager Installation" href="linux_installation.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,13 +65,13 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">The Installation Wizard</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#quick-start">Quick Start</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#in-depth-guide">In-Depth Guide</a></li>
@@ -87,6 +87,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -109,7 +110,7 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="source_installation.html" title="Previous Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Manual Instal...</span>
+    <a href="linux_installation.html" title="Previous Chapter: Linux Package Manager Installation"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Linux Package...</span>
     </a>
   </li>
   <li class="next">
@@ -120,6 +121,10 @@
 						
   <div class="section" id="the-installation-wizard">
 <h1>The Installation Wizard<a class="headerlink" href="#the-installation-wizard" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you are planning to use the installation wizard, we <strong>strongly</strong> encourage you to protect it, through some form of <a class="reference external" href="https://wiki.apache.org/httpd/PasswordBasicAuth">password authentication</a>, or <a class="reference external" href="https://httpd.apache.org/docs/2.4/howto/access.html">access control</a>. If the installer is left unprotected when exposed to the public internet, there is the possibility that a malicious actor could finish the installation and block you out — or worse. So please ensure that only you — or someone from your organization — can access the web installer.</p>
+</div>
 <div class="section" id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
 <p>When the ownCloud prerequisites are fulfilled and all ownCloud files are installed, the last step to completing the installation is running the Installation Wizard.
@@ -249,7 +254,7 @@ The ownCloud database user and password are written into <code class="docutils l
 <p>Now we will look at some important post-installation steps.
 For hardened security we recommend setting the permissions on your ownCloud directories as strictly as possible, and for proper server operations.
 This should be done immediately after the initial installation and before running the setup.</p>
-<p>Your HTTP user must own the <code class="docutils literal"><span class="pre">config/</span></code>, <code class="docutils literal"><span class="pre">data/</span></code> and <code class="docutils literal"><span class="pre">apps/</span></code> directories so that you can configure ownCloud, create, modify and delete your data files, and install apps via the ownCloud Web interface.</p>
+<p>Your HTTP user must own the <code class="docutils literal"><span class="pre">config/</span></code>, <code class="docutils literal"><span class="pre">data/</span></code>, <code class="docutils literal"><span class="pre">apps/</span></code> respectively the <code class="docutils literal"><span class="pre">apps-external/</span></code> directories so that you can configure ownCloud, create, modify and delete your data files, and install apps via the ownCloud Web interface.</p>
 <p>You can find your HTTP user in your HTTP server configuration files, or you can use <a class="reference internal" href="../issues/general_troubleshooting.html#label-phpinfo"><span class="std std-ref">PHP Version and Information</span></a> (Look for the <strong>User/Group</strong> line).</p>
 <ul class="simple">
 <li>The HTTP user and group in Debian/Ubuntu is <code class="docutils literal"><span class="pre">www-data</span></code>.</li>
@@ -265,60 +270,211 @@ proper permissions for ownCloud to write to the directory. Changing
 ownership as above could result in some issues if the NFS mount is
 lost.</p>
 </div>
-<p>The easy way to set the correct permissions is to copy and run this script.
-Replace the <code class="docutils literal"><span class="pre">ocpath</span></code> variable with the path to your ownCloud directory.
-Replace the <code class="docutils literal"><span class="pre">ocdata</span></code> variable with the path to your ownCloud data directory.
-Replace the <code class="docutils literal"><span class="pre">htuser</span></code> and <code class="docutils literal"><span class="pre">htgroup</span></code> variables with your HTTP user and group:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>#!/bin/bash
-ocpath=&#39;/var/www/owncloud&#39;
-ocdata=&#39;/var/www/owncloud/data&#39;
-htuser=&#39;www-data&#39;
-htgroup=&#39;www-data&#39;
-rootuser=&#39;root&#39;
+<p>The easy way to set the correct permissions is to copy and run the script, below.
+The script sets proper permissions and ownership including the handling of necessary directories.
+The script also prepares for an <code class="docutils literal"><span class="pre">apps-external</span></code> directory, for details see <code class="docutils literal"><span class="pre">config.sample.php</span></code>:</p>
+<ul class="simple">
+<li>Replace the <code class="docutils literal"><span class="pre">ocpath</span></code> variable with the path to your ownCloud directory.</li>
+<li>Replace the <code class="docutils literal"><span class="pre">ocdata</span></code> variable with the path to your ownCloud data directory.</li>
+<li>Replace the <code class="docutils literal"><span class="pre">apps_external</span></code> variable with the path to your ownCloud apps-external directory.</li>
+</ul>
+<p>In case use want to use links for the data and apps-external directory:</p>
+<ul class="simple">
+<li>Replace the <code class="docutils literal"><span class="pre">linkdata</span></code> variable with the path to your ownCloud linked data directory.</li>
+<li>Replace the <code class="docutils literal"><span class="pre">linkapps-external</span></code> variable with the path to your ownCloud linked apps-external directory.</li>
+</ul>
+<p>Set the correct HTTP user and group according your needs:</p>
+<ul class="simple">
+<li>Replace the <code class="docutils literal"><span class="pre">htuser</span></code> and <code class="docutils literal"><span class="pre">htgroup</span></code> variables with your HTTP user and group.</li>
+</ul>
+<p>In case of upgrading using tar:</p>
+<ul class="simple">
+<li>Replace the <code class="docutils literal"><span class="pre">oldocpath</span></code> variable with the path to your old ownCloud directory.</li>
+</ul>
+<div class="highlight-php"><div class="highlight"><pre><span></span><span class="x">#!/bin/bash</span>
 
-printf &quot;Creating possible missing Directories\n&quot;
-mkdir -p $ocdata
-mkdir -p $ocpath/updater
+<span class="x">ocpath=&#39;/var/www/owncloud&#39;</span>
+<span class="x">ocdata=&#39;/var/www/owncloud/data&#39;</span>
+<span class="x">ocapps_external=&#39;/var/www/owncloud/apps-external&#39;</span>
+<span class="x">oldocpath=&#39;/var/www/owncloud.old&#39;</span>
+<span class="x">linkdata=&quot;/var/mylinks/data&quot;</span>
+<span class="x">linkapps-external=&quot;/var/mylinks/apps-external&quot;</span>
+<span class="x">htuser=&#39;www-data&#39;</span>
+<span class="x">htgroup=&#39;www-data&#39;</span>
+<span class="x">rootuser=&#39;root&#39;</span>
 
-printf &quot;chmod Files and Directories\n&quot;
-find ${ocpath}/ -type f -print0 | xargs -0 chmod 0640
-find ${ocpath}/ -type d -print0 | xargs -0 chmod 0750
-find ${ocdata}/ -type f -print0 | xargs -0 chmod 0640
-find ${ocdata}/ -type d -print0 | xargs -0 chmod 0750
+<span class="x"># Because the data directory can be huge or on external storage, an automatic chmod/chown can take a while.</span>
+<span class="x"># Therefore this directory can be treated differently.</span>
+<span class="x"># If you have already created an external data and apps-external directory which you want to link,</span>
+<span class="x"># set the paths above accordingly. This script can link and set the proper rights and permissions</span>
+<span class="x"># depending what you enter when running the script.</span>
+<span class="x"># You have to run this script twice, one time to prepare installation and one time post installation</span>
 
-printf &quot;chown Directories\n&quot;
-chown -R ${rootuser}:${htgroup} ${ocpath}/
-chown -R ${htuser}:${htgroup} ${ocpath}/apps/
-chown -R ${htuser}:${htgroup} ${ocpath}/config/
-chown -R ${htuser}:${htgroup} ${ocdata}/
-chown -R ${htuser}:${htgroup} ${ocpath}/updater/
+<span class="x"># Example input</span>
+<span class="x"># New install using mkdir:     n/n/n (create missing directories, setup permissions and ownership)</span>
+<span class="x"># Upgrade using mkdir:         n/n/n (you move/replace data, apps-external and config.php manually, set setup permissions and ownership)</span>
+<span class="x"># New install using links:     y/y/n (link existing directories, setup permissions and ownership)</span>
+<span class="x"># Upgrade using links:         y/n/y (link existing directories, copy config.php, permissions and ownership are already ok)</span>
+<span class="x"># Post installation/upgrade:   either n/n/n or y/y/n</span>
+<span class="x"># Reset all perm &amp; own:        either n/n/n or y/y/n</span>
 
-chmod +x ${ocpath}/occ
+<span class="x">echo</span>
+<span class="x">read -p &quot;Do you want to use ln instead of mkdir for creating directories (y/N)? &quot; -r -e answer</span>
+<span class="x">if echo &quot;$answer&quot; | grep -iq &quot;^y&quot;; then</span>
+<span class="x">  uselinks=&quot;y&quot;</span>
+<span class="x">else</span>
+<span class="x">  uselinks=&quot;n&quot;</span>
+<span class="x">fi</span>
 
-printf &quot;chmod/chown .htaccess\n&quot;
-if [ -f ${ocpath}/.htaccess ]
- then
-  chmod 0644 ${ocpath}/.htaccess
-  chown ${rootuser}:${htgroup} ${ocpath}/.htaccess
-fi
-if [ -f ${ocdata}/.htaccess ]
- then
-  chmod 0644 ${ocdata}/.htaccess
-  chown ${rootuser}:${htgroup} ${ocdata}/.htaccess
-fi
+<span class="x">read -p &quot;Do you also want to chmod/chown these links (y/N)? &quot; -r -e answer</span>
+<span class="x">if echo &quot;$answer&quot; | grep -iq &quot;^y&quot;; then</span>
+<span class="x">  chmdir=&quot;y&quot;</span>
+<span class="x">else</span>
+<span class="x">  chmdir=&quot;n&quot;</span>
+<span class="x">fi</span>
+
+<span class="x">read -p &quot;If you upgrade, do you want to copy an existing config.php file (y/N)? &quot; -r -e answer</span>
+<span class="x">if echo &quot;$answer&quot; | grep -iq &quot;^y&quot;; then</span>
+<span class="x">  upgrdcfg=&quot;y&quot;</span>
+<span class="x">else</span>
+<span class="x">  upgrdcfg=&quot;n&quot;</span>
+<span class="x">fi</span>
+
+<span class="x">printf &quot;\nCreating or linking possible missing directories \n&quot;</span>
+<span class="x">mkdir -p $ocpath/updater</span>
+<span class="x"># check if directory creation is possible and create if ok</span>
+<span class="x">if [ &quot;$uselinks&quot; = &quot;n&quot; ]; then</span>
+<span class="x">  if [ -L ${ocdata} ]; then</span>
+<span class="x">    echo &quot;Symlink for $ocdata found but mkdir requested. Exiting.&quot;</span>
+<span class="x">    echo</span>
+<span class="x">    exit</span>
+<span class="x">  else</span>
+<span class="x">    echo &quot;mkdir $ocdata&quot;</span>
+<span class="x">    echo</span>
+<span class="x">    mkdir -p $ocdata</span>
+<span class="x">  fi</span>
+<span class="x">  if [ -L ${ocapps_external} ]; then</span>
+<span class="x">    echo &quot;Symlink for $ocapps_external found but mkdir requested. Exiting.&quot;</span>
+<span class="x">    echo</span>
+<span class="x">    exit</span>
+<span class="x">  else</span>
+<span class="x">    printf &quot;mkdir $ocapps_external \n&quot;</span>
+<span class="x">    mkdir -p $ocapps_external</span>
+<span class="x">  fi</span>
+<span class="x">else</span>
+<span class="x">  if [ -d ${ocdata} ]; then</span>
+<span class="x">    echo &quot;Directory for $ocdata found but link requested. Exiting.&quot;</span>
+<span class="x">    echo</span>
+<span class="x">    exit</span>
+<span class="x">  else</span>
+<span class="x">    printf &quot;ln $ocdata \n&quot;</span>
+<span class="x">    ln -sfn $linkdata $ocdata</span>
+<span class="x">  fi</span>
+<span class="x">  if [ -d ${ocapps_external} ]; then</span>
+<span class="x">    echo &quot;Directory for $ocapps_external found but link requested. Exiting.&quot;</span>
+<span class="x">    echo</span>
+<span class="x">    exit</span>
+<span class="x">  else</span>
+<span class="x">    printf &quot;ln $ocapps_external \n&quot;</span>
+<span class="x">    ln -sfn $linkapps-external $ocapps_external</span>
+<span class="x">  fi</span>
+<span class="x">fi</span>
+
+<span class="x"># Copy if requested an existing config.php</span>
+<span class="x">if [ &quot;$upgrdcfg&quot; = &quot;y&quot; ]; then</span>
+<span class="x">  if [ -f ${oldocpath}/config/config.php ]; then</span>
+<span class="x">    printf &quot;\nCopy existing config.php file \n&quot;</span>
+<span class="x">    cp ${oldocpath}/config/config.php ${ocpath}/config/config.php</span>
+<span class="x">  else</span>
+<span class="x">    printf &quot;Skipping copy config.php, not found: ${oldocpath}/config/config.php \n&quot;</span>
+<span class="x">  fi</span>
+<span class="x">fi</span>
+
+<span class="x">printf &quot;\nchmod files and directories excluding data and apps-external directory \n&quot;</span>
+<span class="x">find -L ${ocpath} -path ${ocdata} -prune -o -path ${ocapps_external} -prune -o -type f -print0 | xargs -0 chmod 0640</span>
+<span class="x">find -L ${ocpath} -path ${ocdata} -prune -o -path ${ocapps_external} -prune -o -type d -print0 | xargs -0 chmod 0750</span>
+
+<span class="x"># no error messages on empty directories</span>
+<span class="x">if [ &quot;$chmdir&quot; = &quot;n&quot; ] &amp;&amp; [ &quot;$uselinks&quot; = &quot;n&quot; ]; then</span>
+<span class="x">  printf &quot;chmod data and apps-external directory (mkdir) \n&quot;</span>
+<span class="x">  if [ -n &quot;$(ls -A $ocdata)&quot; ]; then</span>
+<span class="x">    find ${ocdata}/ -type f -print0 | xargs -0 chmod 0640</span>
+<span class="x">  fi</span>
+<span class="x">  find ${ocdata}/ -type d -print0 | xargs -0 chmod 0750</span>
+<span class="x">  if [ -n &quot;$(ls -A $ocapps_external)&quot; ]; then</span>
+<span class="x">    find ${ocapps_external}/ -type f -print0 | xargs -0 chmod 0640</span>
+<span class="x">  fi</span>
+<span class="x">  find ${ocapps_external}/ -type d -print0 | xargs -0 chmod 0750</span>
+<span class="x">fi</span>
+
+<span class="x">if [ &quot;$chmdir&quot; = &quot;y&quot; ] &amp;&amp; [ &quot;$uselinks&quot; = &quot;y&quot; ]; then</span>
+<span class="x">  printf &quot;chmod data and apps-external directory (linked) \n&quot;</span>
+<span class="x">  if [ -n &quot;$(ls -A $ocdata)&quot; ]; then</span>
+<span class="x">    find -L ${ocdata}/ -type f -print0 | xargs -0 chmod 0640</span>
+<span class="x">  fi</span>
+<span class="x">  find -L ${ocdata}/ -type d -print0 | xargs -0 chmod 0750</span>
+<span class="x">  if [ -n &quot;$(ls -A $ocapps_external)&quot; ]; then</span>
+<span class="x">    find -L ${ocapps_external}/ -type f -print0 | xargs -0 chmod 0640</span>
+<span class="x">  fi</span>
+<span class="x">  find -L ${ocapps_external}/ -type d -print0 | xargs -0 chmod 0750</span>
+<span class="x">fi</span>
+
+<span class="x">printf &quot;\nchown files and directories excluding data and apps-external directory \n&quot;</span>
+<span class="x">find  -L $ocpath  -path ${ocdata} -prune -o -path ${ocapps_external} -prune -o -type d -print0 | xargs -0 chown ${rootuser}:${htgroup}</span>
+<span class="x">find  -L $ocpath  -path ${ocdata} -prune -o -path ${ocapps_external} -prune -o -type f -print0 | xargs -0 chown ${rootuser}:${htgroup}</span>
+
+<span class="x"># do only if the directories are present</span>
+<span class="x">if [ -d ${ocpath}/apps/ ]; then</span>
+<span class="x">  printf &quot;chown apps directory \n&quot;</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocpath}/apps/</span>
+<span class="x">fi</span>
+<span class="x">if [ -d ${ocpath}/config/ ]; then</span>
+<span class="x">  printf &quot;chown config directory \n&quot;</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocpath}/config/</span>
+<span class="x">fi</span>
+<span class="x">if [ -d ${ocpath}/updater/ ]; then</span>
+<span class="x">  printf &quot;chown updater directory \n&quot;</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocpath}/updater</span>
+<span class="x">fi</span>
+
+<span class="x">if [ &quot;$chmdir&quot; = &quot;n&quot; ] &amp;&amp; [ &quot;$uselinks&quot; = &quot;n&quot; ]; then</span>
+<span class="x">  printf &quot;chown data and apps-external directories (mkdir) \n&quot;</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocapps_external}/</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocdata}/</span>
+<span class="x">fi</span>
+<span class="x">if [ &quot;$chmdir&quot; = &quot;y&quot; ] &amp;&amp; [ &quot;$uselinks&quot; = &quot;y&quot; ]; then</span>
+<span class="x">  printf &quot;chown data and apps-external directories (linked) \n&quot;</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocapps_external}/</span>
+<span class="x">  chown -R ${htuser}:${htgroup} ${ocdata}/</span>
+<span class="x">fi</span>
+
+<span class="x">printf &quot;\nchmod occ command to make it executable \n&quot;</span>
+<span class="x">if [ -f ${ocpath}/occ ]; then</span>
+<span class="x">  chmod +x ${ocpath}/occ</span>
+<span class="x">fi</span>
+
+<span class="x">printf &quot;chmod/chown .htaccess \n&quot;</span>
+<span class="x">if [ -f ${ocpath}/.htaccess ]; then</span>
+<span class="x">  chmod 0644 ${ocpath}/.htaccess</span>
+<span class="x">  chown ${rootuser}:${htgroup} ${ocpath}/.htaccess</span>
+<span class="x">fi</span>
+<span class="x">if [ -f ${ocdata}/.htaccess ];then</span>
+<span class="x">  chmod 0644 ${ocdata}/.htaccess</span>
+<span class="x">  chown ${rootuser}:${htgroup} ${ocdata}/.htaccess</span>
+<span class="x">fi</span>
+<span class="x">echo</span>
 </pre></div>
 </div>
-<p>If you have customized your ownCloud installation and your filepaths are
-different than the standard installation, then modify this script accordingly.</p>
-<p>This lists the recommended modes and ownership for your ownCloud directories
-and files:</p>
+<p>If you have customized your ownCloud installation and your file paths are different than the standard installation, modify this script accordingly.</p>
+<p>This summary lists the recommended modes and ownership for your ownCloud directories and files:</p>
 <ul class="simple">
 <li>All files should be read-write for the file owner, read-only for the group owner, and zero for the world</li>
 <li>All directories should be executable (because directories always need the executable bit set), read-write for the directory owner, and read-only for the group owner</li>
 <li>The <code class="file docutils literal"><span class="pre">apps/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
+<li>The <code class="file docutils literal"><span class="pre">apps-external/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
 <li>The <code class="file docutils literal"><span class="pre">config/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
-<li>The <code class="file docutils literal"><span class="pre">themes/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
 <li>The <code class="file docutils literal"><span class="pre">data/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
+<li>The <code class="file docutils literal"><span class="pre">updater/</span></code> directory should be owned by <code class="docutils literal"><span class="pre">[HTTP</span> <span class="pre">user]:[HTTP</span> <span class="pre">group]</span></code></li>
 <li>The <code class="file docutils literal"><span class="pre">[ocpath]/.htaccess</span></code> file should be owned by <code class="docutils literal"><span class="pre">root:[HTTP</span> <span class="pre">group]</span></code></li>
 <li>The <code class="file docutils literal"><span class="pre">data/.htaccess</span></code> file should be owned by <code class="docutils literal"><span class="pre">root:[HTTP</span> <span class="pre">group]</span></code></li>
 <li>Both <code class="file docutils literal"><span class="pre">.htaccess</span></code> files are read-write file owner, read-only group and
@@ -332,7 +488,7 @@ world</li>
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="source_installation.html" title="Previous Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Manual Instal...</span>
+    <a href="linux_installation.html" title="Previous Chapter: Linux Package Manager Installation"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Linux Package...</span>
     </a>
   </li>
   <li class="next">

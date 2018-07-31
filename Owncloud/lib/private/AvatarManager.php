@@ -8,7 +8,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -85,8 +85,6 @@ class AvatarManager implements IAvatarManager {
 		if (is_null($user)) {
 			throw new \Exception('user does not exist');
 		}
-
-		$userId = $user->getUID();
 
 		$avatarsFolder = $this->getAvatarFolder($user);
 		return new Avatar($avatarsFolder, $this->l, $user, $this->logger);

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Sharing Files &#8212; ownCloud 10.0.7 User Manual 10.0.7 documentation</title>
+    <title>Sharing Files &#8212; ownCloud 10.0.9 User Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -64,7 +64,7 @@
 									</ul>
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../pim/index.html">Contacts &amp; Calendar</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../external_storage/index.html">External Storage</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Files &amp; Synchronization</a><ul class="current">
@@ -142,6 +142,18 @@ ownCloud server or remote) or groups who you would like to share the file or
 folder with.</p>
 <p>If username auto-completion is enabled, when you start typing the user or group
 name ownCloud will automatically complete it for you, if possible.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">From 10.0.8, user and group name search results are dependent on a new
+<a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/server/config_sample_php_parameters.html">configuration setting</a>, called <code class="docutils literal"><span class="pre">user.search_min_length</span></code> (it is set to 4 by
+default).
+This setting helps to aid search performance but requires that search
+terms contain at least the defined number of characters.
+Consequently, search terms shorter than the defined number of characters
+will not return a list of matches.
+However, they will return an existing user or group with a name of the same
+length as the search term.</p>
+</div>
 <p>After a file or folder has been shared, <a class="reference internal" href="#share-permissions">Share Permissions</a> can be set on
 it. In the image below, you can see that the directory “event-Photos” is shared
 with the user “pierpont”, who can <em>share</em>, <em>edit</em>, <em>create</em>, <em>change</em>, and
@@ -167,15 +179,11 @@ originally moved them, into the original folder.</p>
 <div class="section" id="sharing-files-with-guest-users">
 <h3>Sharing Files with Guest Users<a class="headerlink" href="#sharing-files-with-guest-users" title="Permalink to this headline">¶</a></h3>
 <p>Users can also share files and folders with guest users.
-To do so, your ownCloud administrator will need to have installed the Guest application.</p>
-<p>If it’s already installed, in the “<strong>User and Groups</strong>” field of the Sharing panel, type the username of a user who is not already a user in your ownCloud installation.
+To do so, your ownCloud administrator will need to have installed <a class="reference external" href="https://marketplace.owncloud.com/apps/guests">the Guest application</a>.</p>
+<p>If it’s already installed, in the “<strong>User and Groups</strong>” field of the “<strong>Sharing</strong>” panel, type the email address of a user who is not already a user in your ownCloud installation.
 You will then see a popup appear with the suffix <code class="docutils literal"><span class="pre">(guest)</span></code>, as in the screenshot below.</p>
 <img alt="Sharing with guest users." src="../../_images/share-with-guest-users.png" />
-<p>After you click the username in the list, you’ll see a modal dialog appear, where you can add the new user to the list of guest users.</p>
-<img alt="Add a guest user modal dialog." src="../../_images/add-user-to-guests.png" />
-<p>The Name field will be pre-filled with the username you supplied.
-All you need to do is add the user’s email address, and click “<strong>Save and Share</strong>”.
-After you do that, the content will be shared with the user with all permissions applied, except for the ability to share with other users.</p>
+<p>After you do that, the content will be shared with the user with all permissions applied, except for the ability to share with other users.</p>
 <img alt="Content shared with a guest user." src="../../_images/content-shared-with-guest-user.png" />
 </div>
 </div>

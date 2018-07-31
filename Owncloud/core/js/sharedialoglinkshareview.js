@@ -14,33 +14,33 @@
 	}
 
 	var PASSWORD_PLACEHOLDER_STARS = '**********';
-	var PASSWORD_PLACEHOLDER_MESSAGE = t('core', 'Choose a password for the public link');
+	var PASSWORD_PLACEHOLDER_MESSAGE = t('core', 'Choose a password');
 	var TEMPLATE =
 		'<div class="error-message-global hidden"></div>' +
 		'<div class="public-link-modal">'+
 			'<div class="public-link-modal--item">' +
-				'<label class="public-link-modal--label">Link Name</label>' +
+				'<label class="public-link-modal--label">{{linkNameLabel}}</label>' +
 				'<input class="public-link-modal--input" type="text" name="linkName" placeholder="{{namePlaceholder}}" value="{{name}}" maxlength="64" />' +
 			'</div>' +
 			'<div id="allowPublicRead-{{cid}}" class="public-link-modal--item">' +
 				'<input type="radio" value="{{publicReadValue}}" name="publicPermissions" id="sharingDialogAllowPublicRead-{{cid}}" class="checkbox publicPermissions" {{#if publicReadSelected}}checked{{/if}} />' +
 				'<label class="bold" for="sharingDialogAllowPublicRead-{{cid}}">{{publicReadLabel}}</label>' +
-				'<p>{{publicReadDescription}}</p>' +
+				'<p><em>{{publicReadDescription}}</em></p>' +
 			'</div>' +
 			'{{#if publicUploadPossible}}' +
 			'<div id="allowPublicReadWrite-{{cid}}" class="public-link-modal--item">' +
 				'<input type="radio" value="{{publicReadWriteValue}}" name="publicPermissions" id="sharingDialogAllowPublicReadWrite-{{cid}}" class="checkbox publicPermissions" {{#if publicReadWriteSelected}}checked{{/if}} />' +
 				'<label class="bold" for="sharingDialogAllowPublicReadWrite-{{cid}}">{{publicReadWriteLabel}}</label>' +
-				'<p>{{publicReadWriteDescription}}</p>' +
+				'<p><em>{{publicReadWriteDescription}}</em></p>' +
 			'</div>' +
 			'<div id="allowPublicUploadWrapper-{{cid}}" class="public-link-modal--item">' +
 				'<input type="radio" value="{{publicUploadValue}}" name="publicPermissions" id="sharingDialogAllowPublicUpload-{{cid}}" class="checkbox publicPermissions" {{#if publicUploadSelected}}checked{{/if}} />' +
 				'<label class="bold" for="sharingDialogAllowPublicUpload-{{cid}}">{{publicUploadLabel}}</label>' +
-				'<p>{{publicUploadDescription}}</p>' +
+				'<p><em>{{publicUploadDescription}}</em></p>' +
 			'</div>' +
 			'{{/if}}' +
 			'<div id="linkPass-{{cid}}" class="public-link-modal--item linkPass">' +
-				'<label class="public-link-modal--label" for="linkPassText-{{cid}}">{{passwordLabel}}{{#if isPasswordRequired}}<span class="required-indicator">*</span>{{/if}}</label>' +
+				'<label class="public-link-modal--label" for="linkPassText-{{cid}}">{{passwordLabel}}</label>' +
 				'<input class="public-link-modal--input linkPassText" id="linkPassText-{{cid}}" type="password" placeholder="{{passwordPlaceholder}}" />' +
 				'<span class="error-message hidden"></span>' +
 			'</div>' +
@@ -101,7 +101,20 @@
 		_getPermissions: function() {
 			var permissions = this.$('input[name="publicPermissions"]:checked').val();
 
-			return (permissions) ? permissions : OC.PERMISSION_READ;
+			return (permissions) ? parseInt(permissions, 10) : OC.PERMISSION_READ;
+		},
+
+		_shouldRequirePassword: function() {
+			// matching passwordMustBeEnforced from server side
+			var permissions = this._getPermissions();
+			var roEnforcement = permissions === OC.PERMISSION_READ && this.configModel.get('enforceLinkPasswordReadOnly');
+			var woEnforcement = permissions === OC.PERMISSION_CREATE && this.configModel.get('enforceLinkPasswordWriteOnly');
+			var rwEnforcement = (permissions !== OC.PERMISSION_READ && permissions !== OC.PERMISSION_CREATE) && this.configModel.get('enforceLinkPasswordReadWrite');
+			if (roEnforcement || woEnforcement || rwEnforcement) {
+				return true;
+			} else {
+				return false;
+			}
 		},
 
 		_save: function () {
@@ -144,12 +157,12 @@
 			var validates = true;
 			validates &= this.expirationView.validate();
 
-			if (this.configModel.get('enforcePasswordForPublicLink')
-				&& !password
+			if (!password
+				&& this._shouldRequirePassword()
 				&& (this.model.isNew() || !this.model.get('encryptedPassword'))
 			) {
 				$password.addClass('error');
-				$password.next('.error-message').removeClass('hidden').text(t('files_sharing', 'Password required'));
+				$password.next('.error-message').removeClass('hidden').text(t('core', 'Password required'));
 				validates = false;
 			}
 
@@ -181,11 +194,8 @@
 				success: function() {
 					if (self.mailView) {
 						// also send out email first
-						self.mailView.sendEmails().then(done).fail(function() {
-							done();
-							// re-show the popup
-							self.show();
-						});
+						// do not resolve on errors
+						self.mailView.sendEmails().then(done);
 					} else {
 						done();
 					}
@@ -221,7 +231,7 @@
 			this.$el.html(this.template({
 				cid: this.cid,
 				passwordPlaceholder: isPasswordSet ? PASSWORD_PLACEHOLDER_STARS : PASSWORD_PLACEHOLDER_MESSAGE,
-				isPasswordRequired: this.configModel.get('enforcePasswordForPublicLink'),
+				linkNameLabel: t('core', 'Link name'),
 				namePlaceholder: t('core', 'Name'),
 				name: this.model.get('name'),
 				isPasswordSet: isPasswordSet,
@@ -231,18 +241,18 @@
 
 				publicUploadPossible       : this._isPublicUploadPossible(),
 
-				publicUploadLabel          : t('core', 'Upload only (File Drop)'),
-				publicUploadDescription    : t('core', 'Receive files from others without revealing the contents of the folder.'),
+				publicUploadLabel          : t('core', 'Upload only') + ' (File Drop)',
+				publicUploadDescription    : t('core', 'Receive files from multiple recipients without revealing the contents of the folder.'),
 				publicUploadValue          : OC.PERMISSION_CREATE,
 				publicUploadSelected       : this.model.get('permissions') === OC.PERMISSION_CREATE,
 
-				publicReadLabel            : t('core', 'Read only'),
-				publicReadDescription      : t('core', 'Users can view and download contents.'),
+				publicReadLabel            : t('core', 'Download / View'),
+				publicReadDescription      : t('core', 'Recipients can view or download contents.'),
 				publicReadValue            : OC.PERMISSION_READ,
 				publicReadSelected         : this.model.get('permissions') === OC.PERMISSION_READ,
 
-				publicReadWriteLabel       : t('core', 'Read & Write'),
-				publicReadWriteDescription : t('core', 'Users can view, download, edit and upload contents.'),
+				publicReadWriteLabel       : t('core', 'Download / View / Upload'),
+				publicReadWriteDescription : t('core', 'Recipients can view, download, edit, delete and upload contents.'),
 				publicReadWriteValue       : OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE,
 				publicReadWriteSelected    : this.model.get('permissions') >= (OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE),
 
@@ -312,22 +322,31 @@
 		 */
 		show: function() {
 			var self = this;
-			var title = t('files_sharing', 'Edit link share: {name}', {name: this.itemModel.getFileInfo().getFullPath()});
+			var title = t('core', 'Edit link share: {name}', {name: this.itemModel.getFileInfo().getFullPath()});
 			var buttons = [{
-				text: t('core', 'Save'),
-				click: _.bind(this._onClickSave, this),
-				defaultButton: true
-			}, {
 				text: t('core', 'Cancel'),
 				click: _.bind(this._onClickCancel, this)
 			}];
 
 			if (this.model.isNew()) {
-				title = t('files_sharing', 'Create link share: {name}', {name: this.itemModel.getFileInfo().getFullPath()});
-			}
-			else if (this.model.get('encryptedPassword')) {
+				title = t('core', 'Create link share: {name}', {name: this.itemModel.getFileInfo().getFullPath()});
 				buttons.push({
-					classes: 'removePassword -float-left',
+					text: t('core', 'Share'),
+					click: _.bind(this._onClickSave, this),
+					defaultButton: true
+				})
+			}
+			else {
+				buttons.push({
+					text: t('core', 'Save'),
+					click: _.bind(this._onClickSave, this),
+					defaultButton: true
+				})
+			}
+
+			if (this.model.get('encryptedPassword')) {
+				buttons.push({
+					classes: 'removePassword',
 					text: t('core', 'Remove password'),
 					click: _.bind(this._onClickReset, this),
 					defaultButton: false

@@ -18,7 +18,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Thomas Tanghus <thomas@tanghus.net>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -35,6 +35,7 @@
  *
  */
 
+use OC\Share\Filters\MailNotificationFilter;
 use OCP\IUser;
 
 OC_JSON::checkLoggedIn();
@@ -127,8 +128,10 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 				\OC::$server->getMailer(),
 				\OC::$server->getLogger(),
 				$defaults,
-				\OC::$server->getURLGenerator()
+				\OC::$server->getURLGenerator(),
+				\OC::$server->getEventDispatcher()
 			);
+
 			$result = $mailNotification->sendInternalShareMail($recipientList, $itemSource, $itemType);
 
 			// if we were able to send to at least one recipient, mark as sent
@@ -142,7 +145,7 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 			} else {
 				OCP\JSON::error([
 					'data' => [
-						'message' => $l->t("Couldn't send mail to following users: %s ",
+						'message' => $l->t("Couldn't send mail to following recipient(s): %s ",
 								implode(', ', $result)
 								)
 					]
@@ -159,34 +162,65 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 			break;
 
 		case 'email':
-			// read post variables
-			$link = (string)$_POST['link'];
-			$file = (string)$_POST['file'];
-			$to_address = (string)$_POST['toaddress'];
+			$emailBody = null;
 
+			if (isset($_POST['emailBody'])) {
+				$emailBody = trim((string)$_POST['emailBody']);
+			}
+
+			// read and filter post variables
+			$filter = new MailNotificationFilter([
+				'link' => $_POST['link'],
+				'file' => $_POST['file'],
+				'toAddress' => $_POST['toAddress'],
+				'expirationDate' => $_POST['expiration'],
+				'personalNote' => $emailBody
+			]);
+
+			$options = array();
+			$options['bcc'] = $filter->getToAddress();
+			if (isset($_POST['bccSelf']) && $_POST['bccSelf'] === 'true') {
+				$options['bcc'] .= ',' . \OC::$server->getUserSession()->getUser()->getEMailAddress();
+			}
+
+			$l10n = \OC::$server->getL10N('lib');
+
+			$sendingUser = \OC::$server->getUserSession()->getUser();
 			$mailNotification = new \OC\Share\MailNotifications(
-				\OC::$server->getUserSession()->getUser(),
-				\OC::$server->getL10N('lib'),
+				$sendingUser,
+				$l10n,
 				\OC::$server->getMailer(),
 				\OC::$server->getLogger(),
 				$defaults,
-				\OC::$server->getURLGenerator()
+				\OC::$server->getURLGenerator(),
+				\OC::$server->getEventDispatcher()
 			);
 
 			$expiration = null;
-			if (isset($_POST['expiration']) && $_POST['expiration'] !== '') {
+			if ($filter->getExpirationDate() !== '') {
 				try {
-					$date = new DateTime((string)$_POST['expiration']);
+					$date = new DateTime($filter->getExpirationDate());
 					$expiration = $date->getTimestamp();
 				} catch (Exception $e) {
 					\OCP\Util::writeLog('sharing', "Couldn't read date: " . $e->getMessage(), \OCP\Util::ERROR);
 				}
 			}
 
-			$result = $mailNotification->sendLinkShareMail($to_address, $file, $link, $expiration);
+			if ($emailBody !== null || $emailBody !== '') {
+				$emailBody = strip_tags($emailBody);
+			}
+			$result = $mailNotification->sendLinkShareMail(
+				null,
+				$filter->getFile(),
+				$filter->getLink(),
+				$expiration,
+				$filter->getPersonalNote(),
+				$options
+			);
+
 			if(empty($result)) {
 				// Get the token from the link
-				$linkParts = explode('/', $link);
+				$linkParts = explode('/', $filter->getLink());
 				$token = array_pop($linkParts);
 
 				// Get the share for the token
@@ -210,7 +244,7 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 								->setAuthor($currentUser)
 								->setAffectedUser($currentUser)
 								->setObject('files', $fileId, $path)
-								->setSubject(\OCA\Files_Sharing\Activity::SUBJECT_SHARED_EMAIL, [$path, $to_address]);
+								->setSubject(\OCA\Files_Sharing\Activity::SUBJECT_SHARED_EMAIL, [$path, $toAddress]);
 							\OC::$server->getActivityManager()->publish($event);
 						}
 					}
@@ -221,7 +255,7 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 				$l = \OC::$server->getL10N('core');
 				OCP\JSON::error([
 					'data' => [
-						'message' => $l->t("Couldn't send mail to following users: %s ",
+						'message' => $l->t("Couldn't send mail to following recipient(s): %s ",
 								implode(', ', $result)
 							)
 					]
@@ -273,12 +307,23 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 			if (isset($_GET['search'])) {
 				$cm = OC::$server->getContactsManager();
 
-				$userEnumerationAllowed = OC::$server->getConfig()
-					->getAppValue('core', 'shareapi_allow_share_dialog_user_enumeration', 'yes') == 'yes';
+				$config = OC::$server->getConfig();
+				$userEnumerationAllowed = $config
+					->getAppValue('core', 'shareapi_allow_share_dialog_user_enumeration', 'yes') === 'yes';
+				$pattern = (string)$_GET['search'];
+				$searchConfig =  new \OCP\Util\UserSearch($config);
+				if (!$searchConfig->isSearchable($pattern)) {
+					OC_JSON::error();
+					return;
+				}
 
-				if (!is_null($cm) && $cm->isEnabled() && $userEnumerationAllowed) {
-					$contacts = $cm->search((string)$_GET['search'], ['FN', 'EMAIL']);
+				if ($cm !== null && $cm->isEnabled() && $userEnumerationAllowed) {
+					$contacts = $cm->search($pattern, ['FN', 'EMAIL']);
 					foreach ($contacts as $contact) {
+						// We don't want contacts from system address books
+						if (isset($contact['isSystemBook'])) {
+							continue;
+						}
 						if (!isset($contact['EMAIL'])) {
 							continue;
 						}
@@ -316,12 +361,12 @@ if (isset($_POST['action']) && isset($_POST['itemType']) && isset($_POST['itemSo
 				$sharedGroups = [];
 				if (isset($_GET['itemShares'])) {
 					if (isset($_GET['itemShares'][OCP\Share::SHARE_TYPE_USER]) &&
-					    is_array($_GET['itemShares'][OCP\Share::SHARE_TYPE_USER])) {
+						is_array($_GET['itemShares'][OCP\Share::SHARE_TYPE_USER])) {
 						$sharedUsers = $_GET['itemShares'][OCP\Share::SHARE_TYPE_USER];
 					}
 
 					if (isset($_GET['itemShares'][OCP\Share::SHARE_TYPE_GROUP]) &&
-					    is_array($_GET['itemShares'][OCP\Share::SHARE_TYPE_GROUP])) {
+						is_array($_GET['itemShares'][OCP\Share::SHARE_TYPE_GROUP])) {
 						$sharedGroups = $_GET['itemShares'][OCP\Share::SHARE_TYPE_GROUP];
 					}
 				}

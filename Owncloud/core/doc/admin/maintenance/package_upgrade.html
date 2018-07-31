@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Upgrade ownCloud From Packages &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Upgrade ownCloud From Packages &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -141,7 +141,7 @@ tests was removed from oC 9.2. See <a class="reference internal" href="upgrade.h
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">When upgrading from oC 9.0 to 9.1 with existing Calendars or Addressbooks
-please have a look at the <a class="reference internal" href="../release_notes.html#id10"><span class="std std-ref">9.0 release notes</span></a> for
+please have a look at the <a class="reference internal" href="../release_notes.html#id38"><span class="std std-ref">9.0 release notes</span></a> for
 important information about the needed migration steps during that upgrade.</p>
 </div>
 </div>
@@ -154,7 +154,7 @@ standard system upgrade command:</p>
 </pre></div>
 </div>
 <p>Or you can upgrade just ownCloud with this command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">update</span> <span class="o">&amp;&amp;</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">owncloud</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">update</span> <span class="o">&amp;&amp;</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">owncloud</span><span class="o">-</span><span class="n">files</span>
 </pre></div>
 </div>
 <p>On Fedora, CentOS, and Red Hat Linux use <code class="docutils literal"><span class="pre">yum</span></code> to see all available updates:</p>
@@ -166,7 +166,7 @@ standard system upgrade command:</p>
 </pre></div>
 </div>
 <p>Or update only ownCloud:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">yum</span> <span class="n">update</span> <span class="n">owncloud</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">yum</span> <span class="n">update</span> <span class="n">owncloud</span><span class="o">-</span><span class="n">files</span>
 </pre></div>
 </div>
 <p>Your Linux package manager only downloads the current ownCloud packages. Then

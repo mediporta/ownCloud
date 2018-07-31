@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Memory Caching &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Memory Caching &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -88,6 +88,7 @@
 <li class="toctree-l3"><a class="reference internal" href="custom_client_repos.html">Custom Client Download Repositories</a></li>
 <li class="toctree-l3"><a class="reference internal" href="knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
@@ -216,6 +217,10 @@ If you are running a Linux distribution that does not package the supported vers
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">apt-get install redis-server php5-redis</span>
 </pre></div>
 </div>
+<p>If you have Ubuntu 16.04 or higher:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">apt install redis-server php-redis</span>
+</pre></div>
+</div>
 <p>The installer will automatically launch Redis and configure it to launch at startup.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -290,12 +295,14 @@ If you are low on memory, use Redis for both.</p>
 It is zero by default at ownCloud.
 To check what yours is currently set to, check the <code class="docutils literal"><span class="pre">dbindex</span></code> value in <code class="docutils literal"><span class="pre">config/config.php</span></code>.
 Here’s an example of what to look for:</p>
-<div class="highlight-php"><div class="highlight"><pre><span></span><span class="x"> &quot;redis&quot;: {</span>
-<span class="x">     &quot;host&quot;: &quot;localhost&quot;,</span>
-<span class="x">     &quot;port&quot;: 6379,</span>
-<span class="x">     &quot;timeout&quot;: 0,</span>
-<span class="hll"><span class="x">     &quot;dbindex&quot;: 0</span>
-</span><span class="x"> },</span>
+<div class="highlight-php"><div class="highlight"><pre><span></span><span class="x">&#39;redis&#39; =&gt; [</span>
+<span class="x">    &#39;host&#39; =&gt; &#39;localhost&#39;,  // Can also be a unix domain socket =&gt; &#39;/tmp/redis.sock&#39;</span>
+<span class="x">    &#39;port&#39; =&gt; 6379,</span>
+<span class="x">    &#39;timeout&#39; =&gt; 0,</span>
+<span class="x">    &#39;password&#39; =&gt; &#39;&#39;,       // Optional, if not defined no password will be used.</span>
+<span class="x">    &#39;dbindex&#39; =&gt; 0          // Optional, if undefined SELECT will not run and will</span>
+<span class="x">                            // use Redis Server&#39;s default DB Index.</span>
+<span class="x">],</span>
 </pre></div>
 </div>
 <div class="section" id="further-reading">

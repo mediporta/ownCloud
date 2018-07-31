@@ -31,8 +31,8 @@
 			</div>
 		</div>
 		<footer role="contentinfo">
-			<!--<p class="info">
+			<p class="info">
 				<a href="https://owncloud.org" target="_blank" rel="noreferrer">ownCloud</a> – web services under your control
-			</p>-->
+			</p>
 		</footer>
 <?php $this->stop() ?>

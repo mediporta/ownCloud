@@ -32,17 +32,21 @@
     ],
     "autoload": {
         "psr-4": {
-            "Punic\\": "code/"
+            "Punic\\": "src/"
         }
     },
     "require": {
         "php": ">=5.3"
     },
     "require-dev": {
-        "apigen/apigen": "4.0.*"
+        "phpunit/phpunit": "^4",
+        "friendsofphp/php-cs-fixer": "2.2.*"
     },
     "replace": {
         "punic/common": "*",
         "punic/calendar": "*"
-    }
+    },
+    "bin": [
+        "bin/punic-data"
+    ]
 }

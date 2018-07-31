@@ -5,7 +5,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -32,6 +32,13 @@ class Constants {
 	const SHARE_TYPE_GUEST = 4;
 	const SHARE_TYPE_CONTACT = 5; // ToDo Check if it is still in use otherwise remove it
 	const SHARE_TYPE_REMOTE = 6;  // ToDo Check if it is still in use otherwise remove it
+
+	/**
+	 * Values for the "accepted" field of a share.
+	 */
+	const STATE_ACCEPTED = 0;
+	const STATE_PENDING = 1;
+	const STATE_REJECTED = 2;
 
 	const FORMAT_NONE = -1;
 	const FORMAT_STATUSES = -2;

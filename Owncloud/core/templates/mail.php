@@ -17,6 +17,12 @@ if ( isset($_['expiration']) ) {
 	p($l->t("The share will expire on %s.", [$_['expiration']]));
 	print_unescaped('<br><br>');
 }
+
+if (isset($_['personal_note'])) {
+	// TRANSLATORS personal note in share notification email
+	p($l->t("Personal note from the sender: %s.", [$_['personal_note']]));
+	print_unescaped('<br><br>');
+}
 // TRANSLATORS term at the end of a mail
 p($l->t('Cheers!'));
 ?>
@@ -25,10 +31,8 @@ p($l->t('Cheers!'));
 <tr><td colspan="2">&nbsp;</td></tr>
 <tr>
 <td width="20px">&nbsp;</td>
-<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">--<br>
-<?php p($theme->getName()); ?> -
-<?php p($theme->getSlogan()); ?>
-<br><a href="<?php p($theme->getBaseUrl()); ?>"><?php p($theme->getBaseUrl());?></a>
+<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">
+	<?php print_unescaped($this->inc('html.mail.footer')); ?>
 </td>
 </tr>
 <tr>

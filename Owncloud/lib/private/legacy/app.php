@@ -28,7 +28,7 @@
  * @author Tom Needham <tom@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -121,21 +121,21 @@ class OC_App {
 		}
 
 		// prevent app.php from printing output
-		ob_start();
+		\ob_start();
 		foreach ($apps as $app) {
 			if ((is_null($types) or self::isType($app, $types)) && !in_array($app, self::$loadedApps)) {
 				self::loadApp($app);
 			}
 		}
-		ob_end_clean();
+		\ob_end_clean();
 
 		// once all authentication apps are loaded we can validate the session
-		if (is_null($types) || in_array('authentication', $types)) {
+		if (\is_null($types) || \in_array('authentication', $types)) {
 			if (\OC::$server->getUserSession()) {
 				$request = \OC::$server->getRequest();
 				$session = \OC::$server->getUserSession();
 				$davUser = \OC::$server->getUserSession()->getSession()->get(\OCA\DAV\Connector\Sabre\Auth::DAV_AUTHENTICATED);
-				if (is_null($davUser)) {
+				if (\is_null($davUser)) {
 					$session->validateSession();
 				} else {
 					/** @var \OC\Authentication\Token\DefaultTokenProvider $tokenProvider */
@@ -158,8 +158,8 @@ class OC_App {
 				}
 			}
 		}
-		if (is_array($types)) {
-			self::$loadedTypes = array_merge(self::$loadedTypes, $types);
+		if (\is_array($types)) {
+			self::$loadedTypes = \array_merge(self::$loadedTypes, $types);
 		}
 
 		\OC_Hook::emit('OC_App', 'loadedApps');
@@ -517,8 +517,7 @@ class OC_App {
 
 		}
 
-		$navigation = self::proceedNavigation($settings);
-		return $navigation;
+		return self::proceedNavigation($settings);
 	}
 
 	// This is private as well. It simply works, so don't ask for more details
@@ -533,7 +532,17 @@ class OC_App {
 		}
 		unset($navEntry);
 
-		usort($list, create_function('$a, $b', 'if( $a["order"] == $b["order"] ) {return 0;}elseif( $a["order"] < $b["order"] ) {return -1;}else{return 1;}'));
+		usort($list, function($a, $b) {
+			if ($a["order"] == $b["order"]) {
+				return 0;
+			}
+
+			if($a["order"] < $b["order"]) {
+				return -1;
+			}
+
+			return 1;
+		});
 
 		return $list;
 	}
@@ -541,7 +550,7 @@ class OC_App {
 	/**
 	 * Get the path where to install apps
 	 *
-	 * @return string|false
+	 * @return string|null
 	 */
 	public static function getInstallPath() {
 		foreach (OC::$APPSROOTS as $dir) {
@@ -667,8 +676,7 @@ class OC_App {
 	 */
 	public static function getNavigation() {
 		$entries = OC::$server->getNavigationManager()->getAll();
-		$navigation = self::proceedNavigation($entries);
-		return $navigation;
+		return self::proceedNavigation($entries);
 	}
 
 	/**

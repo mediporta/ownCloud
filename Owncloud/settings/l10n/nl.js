@@ -335,6 +335,18 @@ OC.L10N.register(
     "change full name" : "wijzigen volledige naam",
     "set new password" : "Instellen nieuw wachtwoord",
     "change email address" : "wijzig e-mailadres",
-    "Default" : "Standaard"
+    "Default" : "Standaard",
+    "Change" : "Wijzigen",
+    "Share" : "Deel",
+    "installing and updating apps via the market or Federated Cloud Sharing" : "installeren en bijwerken applicaties via de app store of Federated Cloud Sharing",
+    "Domain" : "Domein",
+    "Add Domain" : "Toevoegen domein",
+    "CORS" : "CORS",
+    "User ID" : "User ID",
+    "Email address" : "E-mailadres",
+    "Restrict enumeration to group members" : "Beperk enumeratie tot groepsleden",
+    "No Domains." : "Geen domainen.",
+    "Add" : "Toevoegen",
+    "The config file is read only. Please adjust your setup by editing the config file manually." : "Het configuratiebestand is alleen-lezen. Wijzig uw setup door door het configuratiebestand handmatig te wijzigen."
 },
 "nplurals=2; plural=(n != 1);");

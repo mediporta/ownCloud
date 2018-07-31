@@ -6,7 +6,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Stefan Weil <sw@weilnetz.de>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -103,7 +103,10 @@ class CORSMiddleware extends Middleware {
 
 			$requesterDomain = $this->request->getHeader("Origin");
 
-			\OC_Response::setCorsHeaders($userId, $requesterDomain, $response, $this->config);
+			$headers = \OC_Response::setCorsHeaders($userId, $requesterDomain, $this->config);
+			foreach ($headers as $key => $value) {
+				$response->addHeader($key, implode(',', $value));
+			}
 
 			// allow credentials headers must not be true or CSRF is possible
 			// otherwise

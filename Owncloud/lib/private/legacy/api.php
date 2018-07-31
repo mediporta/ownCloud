@@ -15,7 +15,7 @@
  * @author Tom Needham <tom@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -33,6 +33,7 @@
  */
 use OCP\API;
 use OCP\AppFramework\Http;
+use OCP\Authentication\Exceptions\AccountCheckException;
 
 /**
  * @author Bart Visscher <bartv@thisnet.nl>
@@ -48,7 +49,7 @@ use OCP\AppFramework\Http;
  * @author Tom Needham <tom@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2015, ownCloud, Inc.
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -187,7 +188,10 @@ class OC_API {
 			!is_null(\OC::$server->getRequest()->getHeader('Origin'))) {
 			$requesterDomain = \OC::$server->getRequest()->getHeader('Origin');
 			$userId = \OC::$server->getUserSession()->getUser()->getUID();
-			$response = \OC_Response::setCorsHeaders($userId, $requesterDomain, $response);
+			$headers = \OC_Response::setCorsHeaders($userId, $requesterDomain);
+			foreach ($headers as $key => $value) {
+				$response->addHeader($key, implode(',', $value));
+			}
 		}
 
 		$format = self::requestedFormat();
@@ -358,6 +362,12 @@ class OC_API {
 				// Do not allow access to OCS until the 2FA challenge was solved successfully
 				return false;
 			}
+			try {
+				\OC::$server->getAccountModuleManager()->check($userSession->getUser());
+			} catch (AccountCheckException $ex) {
+				// Deny login if any IAuthModule check fails
+				return false;
+			}
 			if ($userSession->verifyAuthHeaders($request)) {
 				$ocsApiRequest = isset($_SERVER['HTTP_OCS_APIREQUEST']) ? $_SERVER['HTTP_OCS_APIREQUEST'] === 'true' : false;
 				if ($ocsApiRequest) {
@@ -383,6 +393,12 @@ class OC_API {
 				|| $userSession->tryBasicAuthLogin($request)) {
 				self::$logoutRequired = true;
 			} else {
+				return false;
+			}
+			try {
+				\OC::$server->getAccountModuleManager()->check($userSession->getUser());
+			} catch (AccountCheckException $ex) {
+				// Deny login if any IAuthModule check fails
 				return false;
 			}
 			// initialize the user's filesystem
@@ -516,6 +532,8 @@ class OC_API {
 				return null;
 			case 100:
 				return Http::STATUS_OK;
+			case 104:
+				return Http::STATUS_FORBIDDEN;
 		}
 		// any 2xx, 4xx and 5xx will be used as is
 		if ($sc >= 200 && $sc < 600) {

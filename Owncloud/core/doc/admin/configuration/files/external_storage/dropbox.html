@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Dropbox &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Dropbox &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Configuration</a><ul class="current">
@@ -129,27 +129,41 @@
 </ol>
 <div class="section" id="step-one-install-the-external-storage-dropbox-app-from-the-owncloud-marketplace">
 <span id="dropbox-install-step-one-label"></span><h2>Step One - Install the “External Storage: Dropbox” app from the ownCloud Marketplace<a class="headerlink" href="#step-one-install-the-external-storage-dropbox-app-from-the-owncloud-marketplace" title="Permalink to this headline">¶</a></h2>
-<p>To install the <cite>External Storage: Dropbox &lt;https://marketplace.owncloud.com/apps/files_external_dropbox&gt;_</cite> app, from the ownCloud UI click “Market” from the main drop-down menu.
-Then, locate the app in the “Storage” category.
-Like any other application in the Marketplace, click “INSTALL” to begin the installation process.
-Assuming that the process completes successfully, the “INSTALL” button changes to read “UNINSTALL”.</p>
+<div class="figure">
+<img alt="../../../_images/external-storage-dropbox-highlighted.png" src="../../../_images/external-storage-dropbox-highlighted.png" />
+</div>
+<ol class="arabic simple">
+<li>Click <strong>Market</strong> in the ownCloud web UI dropdown menu on the left side</li>
+<li>Go to the <strong>Storage</strong> category</li>
+<li>select <strong>External Storage: Dropbox</strong> App</li>
+<li>Click <strong>INSTALL</strong></li>
+</ol>
 </div>
 <div class="section" id="step-two-create-a-dropbox-app">
 <span id="dropbox-install-step-two-label"></span><h2>Step Two - Create a Dropbox app<a class="headerlink" href="#step-two-create-a-dropbox-app" title="Permalink to this headline">¶</a></h2>
 <p>Next, you need to create a Dropbox app.
 To do that, <a class="reference external" href="https://www.dropbox.com/developers/apps/create">open the new app creation form</a>, where you see three questions:</p>
 <ol class="arabic simple">
-<li>Choose an API</li>
-<li>Choose the type of access you need</li>
+<li>Choose an API –&gt; “Dropbox API”</li>
+<li>Choose the type of access –&gt; “App folder”</li>
 <li>Name your app</li>
 </ol>
-<p>Under “Choose an API”, choose the first option, titled “Dropbox API”.
-Then, under “Choose the type of access you need”, choose the first preference: “App folder - Access to a single folder created specifically for your app.”
-For “Name your app”, in the field marked “App name”, give your app a meaningful, but short, name.</p>
 <p>With all of the required details filled out, click the blue “Create app” button, in the bottom, right-hand corner.
 After you do that, the settings page for the application loads.</p>
 <img alt="Dropbox app configuration settings" src="../../../_images/app-configuration.png" />
-<p>From that page, you need to add the hostname of your ownCloud installation as an OAuth2 redirect URI.</p>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p><strong>Redirect URI</strong>: Here you must enter the exact URL of the page where you configure the storage.</p>
+<p>Examples:</p>
+<p>When configuring as an <strong>admin</strong>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>``http(s)://&lt;&lt;Server_Address&gt;&gt;/index.php/settings/admin?sectionid=storage``
+</pre></div>
+</div>
+<p>When configuring as a <strong>user</strong>:</p>
+<div class="last highlight-default"><div class="highlight"><pre><span></span>``http(s)://&lt;&lt;Server_Address&gt;&gt;/index.php/settings/personal?sectionid=storage``
+</pre></div>
+</div>
+</div>
 </div>
 <div class="section" id="step-three-create-a-dropbox-share">
 <span id="dropbox-install-step-three-label"></span><h2>Step Three - Create a Dropbox Share<a class="headerlink" href="#step-three-create-a-dropbox-share" title="Permalink to this headline">¶</a></h2>

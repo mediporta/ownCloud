@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Deployment Recommendations &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Deployment Recommendations &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,11 +65,12 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Deployment Recommendations</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#general-recommendations">General Recommendations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#owncloud-administrators-must-have-command-line-or-cron-access">ownCloud Administrators Must Have Command Line or Cron Access</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scenario-1-small-workgroups-and-departments">Scenario 1: Small Workgroups and Departments</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scenario-2-mid-sized-enterprises">Scenario 2: Mid-Sized Enterprises</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#scenario-3-large-enterprises-and-service-providers">Scenario 3: Large Enterprises and Service Providers</a></li>
@@ -78,8 +79,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -90,6 +91,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -148,6 +150,15 @@ Given that, these recommendations are only a rule of thumb based on our experien
 <p class="last">Whatever the size of your organization, always keep one thing in mind:
 <em>The amount of data stored in ownCloud will only grow. So plan ahead.</em></p>
 </div>
+</div>
+<div class="section" id="owncloud-administrators-must-have-command-line-or-cron-access">
+<h2>ownCloud Administrators Must Have Command Line or Cron Access<a class="headerlink" href="#owncloud-administrators-must-have-command-line-or-cron-access" title="Permalink to this headline">¶</a></h2>
+<p>We only recommend using hosts that provide command-line or Cron access (ideally both) <em>to ownCloud administrators</em>, for three key reasons:</p>
+<ol class="arabic simple">
+<li>Without command-line access, <a class="reference internal" href="../configuration/server/occ_command.html"><span class="doc">OCC commands</span></a>, required for administrative tasks such as repairs and upgrades, are not available.</li>
+<li>Without crontab access, you cannot run background jobs reliably. <a class="reference internal" href="../configuration/server/background_jobs_configuration.html#ajax-cron-label"><span class="std std-ref">ajax/cron.php</span></a> is available, but it is not reliable enough, because it only runs when people are using the web UI. Additionally, ownCloud relies heavily on <a class="reference internal" href="../configuration/server/background_jobs_configuration.html#available-background-jobs-label"><span class="std std-ref">background jobs</span></a> especially for long-running operations, which will likely cause PHP timeouts.</li>
+<li>PHP timeout values are often low. Having low timeout settings can break long-running operations, such as moving a huge folder.</li>
+</ol>
 </div>
 <div class="section" id="scenario-1-small-workgroups-and-departments">
 <h2>Scenario 1: Small Workgroups and Departments<a class="headerlink" href="#scenario-1-small-workgroups-and-departments" title="Permalink to this headline">¶</a></h2>
@@ -231,12 +242,12 @@ Mount DB partitions with the “nodatacow” option to prevent fragmentation.</p
 <li>Start Apache.</li>
 </ol>
 <p>After these steps have been completed, then, optionally, rsync the backup to either an external backup storage or tape backup.
-See the <a class="reference external" href="https://doc.owncloud.org/server/9.0/admin_manual/maintenance/index.html">Maintenance</a> section of the Administration manual for tips on backups and restores.</p>
+See the <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/maintenance/index.html">Maintenance</a> section of the Administration manual for tips on backups and restores.</p>
 </div>
 <div class="section" id="authentication">
 <h4>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h4>
 <p>User authentication via one or several LDAP or Active Directory (AD) servers.
-See <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a> for information on configuring ownCloud to use LDAP and AD.</p>
+See <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a> for information on configuring ownCloud to use LDAP and AD.</p>
 </div>
 <div class="section" id="session-management">
 <h4>Session Management<a class="headerlink" href="#session-management" title="Permalink to this headline">¶</a></h4>
@@ -250,7 +261,7 @@ You can find out where that is by running <code class="docutils literal"><span c
 <div class="section" id="memory-caching">
 <h4>Memory Caching<a class="headerlink" href="#memory-caching" title="Permalink to this headline">¶</a></h4>
 <p>A memory cache speeds up server performance, and ownCloud supports four of them.
-Refer to <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a> for information on selecting and configuring a memory cache.</p>
+Refer to <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a> for information on selecting and configuring a memory cache.</p>
 </div>
 <div class="section" id="storage">
 <h4>Storage<a class="headerlink" href="#storage" title="Permalink to this headline">¶</a></h4>
@@ -347,7 +358,7 @@ All MySQL/MariaDB statements should be replicated to a backup MySQL/MariaDB slav
 <div class="section" id="id8">
 <h4>Authentication<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h4>
 <p>User authentication via one or several LDAP or Active Directory servers.
-See <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a>  for information on configuring ownCloud to use LDAP and AD.</p>
+See <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a>  for information on configuring ownCloud to use LDAP and AD.</p>
 </div>
 <div class="section" id="id9">
 <h4>Session Management<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h4>
@@ -361,7 +372,7 @@ You can find out where that is by running <code class="docutils literal"><span c
 <div class="section" id="id10">
 <h4>Memory Caching<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h4>
 <p>A memory cache speeds up server performance, and ownCloud supports four memory cache types.
-Refer to <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a> for information on selecting and configuring a memory cache.</p>
+Refer to <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a> for information on selecting and configuring a memory cache.</p>
 </div>
 <div class="section" id="id11">
 <h4>Storage<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h4>
@@ -458,7 +469,7 @@ To do this, follow these steps:</p>
 <div class="section" id="id20">
 <h4>Authentication<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h4>
 <p>User authentication via one or several LDAP or Active Directory servers, or SAML/Shibboleth.
-See <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a> and <a class="reference external" href="https://doc.owncloud.org/server/9.0/admin_manual/enterprise_user_management/user_auth_shibboleth.html">Shibboleth Integration</a>.</p>
+See <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/user/user_auth_ldap.html">User Authentication with LDAP</a> and <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/enterprise_user_management/user_auth_shibboleth.html">Shibboleth Integration</a>.</p>
 </div>
 <div class="section" id="ldap">
 <h4>LDAP<a class="headerlink" href="#ldap" title="Permalink to this headline">¶</a></h4>
@@ -470,7 +481,7 @@ See <a class="reference external" href="https://doc.owncloud.org/server/10.0/adm
 </div>
 <div class="section" id="caching">
 <h4>Caching<a class="headerlink" href="#caching" title="Permalink to this headline">¶</a></h4>
-<p><a class="reference internal" href="#redis-configuration-label"><span class="std std-ref">Redis</span></a> for distributed in-memory caching, see <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a>.</p>
+<p><a class="reference internal" href="#redis-configuration-label"><span class="std std-ref">Redis</span></a> for distributed in-memory caching, see <a class="reference external" href="https://doc.owncloud.org/server/latest/admin_manual/configuration/server/caching_configuration.html">Configuring Memory Caching</a>.</p>
 </div>
 <div class="section" id="id22">
 <h4>Storage<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h4>
@@ -504,6 +515,29 @@ You may also encounter database errors, such as this one:</p>
 </div>
 <p>The issue, <a class="reference external" href="https://github.com/owncloud/core/issues/14757#issuecomment-223492913">identified by Michael Roth</a>, is caused when MariaDB Galera cluster sends write requests to all servers in the cluster; <a class="reference external" href="http://severalnines.com/blog/avoiding-deadlocks-galera-set-haproxy-single-node-writes-and-multi-node-reads">here is a detailed explanation</a>.
 The solution is to send all write requests to a single server, instead of all of them.</p>
+</div>
+<hr class="docutils" />
+<div class="section" id="set-wsrep-sync-wait-to-1-on-all-galera-cluster-nodes">
+<h3>Set wsrep_sync_wait to 1 on all Galera Cluster nodes<a class="headerlink" href="#set-wsrep-sync-wait-to-1-on-all-galera-cluster-nodes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="what-the-parameter-does">
+<h4>What the parameter does<a class="headerlink" href="#what-the-parameter-does" title="Permalink to this headline">¶</a></h4>
+<p>When enabled, the node triggers causality checks in response to certain types of queries.
+During the check, the node blocks new queries while the database server catches up with all updates made in the cluster to the point where the check begun.
+Once it reaches this point, the node executes the original query.</p>
+</div>
+<div class="section" id="why-enable-it">
+<h4>Why enable it<a class="headerlink" href="#why-enable-it" title="Permalink to this headline">¶</a></h4>
+<p>A Galera Cluster write operation is sent to the master while reads are retrieved from the slaves.
+Since Galera Cluster replication is, by default, not strictly synchronous it could happen that items are requested before the replication has actually taken place.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This setting is disabled by default.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">See <cite>the Galera Cluster WSREP documentation</cite> for more details.</p>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="references">

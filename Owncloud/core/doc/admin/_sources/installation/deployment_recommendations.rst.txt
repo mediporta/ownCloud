@@ -26,6 +26,15 @@ General Recommendations
 .. note:: Whatever the size of your organization, always keep one thing in mind: 
    *The amount of data stored in ownCloud will only grow. So plan ahead.*
 
+ownCloud Administrators Must Have Command Line or Cron Access
+-------------------------------------------------------------
+
+We only recommend using hosts that provide command-line or Cron access (ideally both) *to ownCloud administrators*, for three key reasons:
+
+#. Without command-line access, :doc:`OCC commands <../configuration/server/occ_command>`, required for administrative tasks such as repairs and upgrades, are not available.
+#. Without crontab access, you cannot run background jobs reliably. :ref:`ajax/cron.php <ajax_cron_label>` is available, but it is not reliable enough, because it only runs when people are using the web UI. Additionally, ownCloud relies heavily on :ref:`background jobs <available_background_jobs_label>` especially for long-running operations, which will likely cause PHP timeouts.
+#. PHP timeout values are often low. Having low timeout settings can break long-running operations, such as moving a huge folder.
+
 Scenario 1: Small Workgroups and Departments
 --------------------------------------------
 
@@ -377,6 +386,28 @@ You may also encounter database errors, such as this one:
 The issue, `identified by Michael Roth`_, is caused when MariaDB Galera cluster sends write requests to all servers in the cluster; `here is a detailed explanation`_.
 The solution is to send all write requests to a single server, instead of all of them.
 
+---------
+
+Set wsrep_sync_wait to 1 on all Galera Cluster nodes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+What the parameter does
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When enabled, the node triggers causality checks in response to certain types of queries. 
+During the check, the node blocks new queries while the database server catches up with all updates made in the cluster to the point where the check begun. 
+Once it reaches this point, the node executes the original query. 
+
+Why enable it
+~~~~~~~~~~~~~
+
+A Galera Cluster write operation is sent to the master while reads are retrieved from the slaves. 
+Since Galera Cluster replication is, by default, not strictly synchronous it could happen that items are requested before the replication has actually taken place.
+
+.. note:: This setting is disabled by default.
+   
+.. note:: See `the Galera Cluster WSREP documentation` for more details.
+
 References
 ----------
 
@@ -387,18 +418,18 @@ References
 .. Links
 
 .. _Maintenance: 
-   https://doc.owncloud.org/server/9.0/admin_manual/maintenance/index.html
+   https://doc.owncloud.org/server/latest/admin_manual/maintenance/index.html
 .. _User Authentication with LDAP:
-   https://doc.owncloud.org/server/10.0/admin_manual/configuration/user/    
+   https://doc.owncloud.org/server/latest/admin_manual/configuration/user/    
    user_auth_ldap.html
 .. _Configuring Memory Caching:   
-   https://doc.owncloud.org/server/10.0/admin_manual/configuration/server/ 
+   https://doc.owncloud.org/server/latest/admin_manual/configuration/server/ 
    caching_configuration.html
 .. _ownCloud Server or Enterprise Edition:  
    https://owncloud.com/owncloud-server-or-enterprise-edition/
 .. _F5 Big-IP: https://f5.com/products/big-ip/
 .. _Shibboleth Integration: 
-   https://doc.owncloud.org/server/9.0/admin_manual/enterprise_user_management/
+   https://doc.owncloud.org/server/latest/admin_manual/enterprise_user_management/
    user_auth_shibboleth.html
 .. _Database High Availability: 
    http://www.severalnines.com/blog/become-mysql-dba-blog-series-database-high-
@@ -422,3 +453,4 @@ References
 .. _the official Apache documentation: https://httpd.apache.org/docs/2.4/ssl/ssl_howto.html
 .. _master-master replication: https://mariadb.com/kb/en/mariadb/replication-cluster-multi-master/
 .. _a hot failover setup: http://searchwindowsserver.techtarget.com/definition/cold-warm-hot-server
+.. the Galera Cluster WSREP documentation: http://galeracluster.com/documentation-webpages/mysqlwsrepoptions.html

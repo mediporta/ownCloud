@@ -4,7 +4,7 @@
  * @author Lukas Reschke <lukas@statuscode.ch>
  * @author Roeland Jago Douma <rullzer@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -102,7 +102,8 @@ class ProviderFactory implements IProviderFactory {
 				$addressHandler,
 				$this->serverContainer->getHTTPClientService(),
 				$discoveryManager,
-				$this->serverContainer->getJobList()
+				$this->serverContainer->getJobList(),
+				$this->serverContainer->getConfig()
 			);
 			$tokenHandler = new TokenHandler(
 				$this->serverContainer->getSecureRandom()

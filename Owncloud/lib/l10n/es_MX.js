@@ -67,6 +67,8 @@ OC.L10N.register(
     "Application is not enabled" : "La aplicación no está habilitada",
     "Authentication error" : "Error de autenticación",
     "Token expired. Please reload page." : "Token expirado. Por favor, recarga la página.",
-    "Storage is temporarily not available" : "El almacenamiento no está disponible temporalmente"
+    "Storage is temporarily not available" : "El almacenamiento no está disponible temporalmente",
+    "A safe home for all your data" : "Un lugar seguro para todos tus datos",
+    "Imprint" : "pie de imprenta"
 },
 "nplurals=2; plural=(n != 1);");

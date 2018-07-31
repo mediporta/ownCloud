@@ -88,6 +88,8 @@ OC.L10N.register(
     "Search" : "Axtarış",
     "Log in" : "Giriş",
     "New password" : "Yeni şifrə",
-    "You are accessing the server from an untrusted domain." : "Siz serverə inamsız domain-dən girməyə çalışırsız."
+    "You are accessing the server from an untrusted domain." : "Siz serverə inamsız domain-dən girməyə çalışırsız.",
+    "Copy to clipboard" : "Buferə nüsxələ",
+    "Imprint" : "İşarələmək"
 },
 "nplurals=2; plural=(n != 1);");

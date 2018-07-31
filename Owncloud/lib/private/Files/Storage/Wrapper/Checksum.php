@@ -2,7 +2,7 @@
 /**
  * @author Ilja Neumann <ineumann@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH.
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -37,6 +37,8 @@ use OCP\Files\IHomeStorage;
  */
 class Checksum extends Wrapper {
 
+	/** Format of checksum field in filecache */
+	const CHECKSUMS_DB_FORMAT = 'SHA1:%s MD5:%s ADLER32:%s';
 
 	const NOT_REQUIRED = 0;
 	/** Calculate checksum on write (to be stored in oc_filecache) */
@@ -54,8 +56,8 @@ class Checksum extends Wrapper {
 	 */
 	public function fopen($path, $mode) {
 		$stream = $this->getWrapperStorage()->fopen($path, $mode);
-		if (!is_resource($stream)) {
-			// don't wrap on error
+		if (!\is_resource($stream) || $this->isReadWriteStream($mode)) {
+			// don't wrap on error or mixed mode streams (could cause checksum corruption)
 			return $stream;
 		}
 
@@ -117,6 +119,14 @@ class Checksum extends Wrapper {
 	}
 
 	/**
+	 * @param $mode
+	 * @return bool
+	 */
+	private function isReadWriteStream($mode) {
+		return \strpos($mode, '+') !== false;
+	}
+
+	/**
 	 * Callback registered in fopen
 	 */
 	public function onClose() {
@@ -133,16 +143,21 @@ class Checksum extends Wrapper {
 
 	/**
 	 * @param $path
-	 * Format like "SHA1:abc MD5:def ADLER32:ghi"
-	 * @return string
+	 * @return string Format like "SHA1:abc MD5:def ADLER32:ghi"
 	 */
 	private static function getChecksumsInDbFormat($path) {
-		$checksumString = '';
-		foreach (ChecksumStream::getChecksums($path) as $algo => $checksum) {
-			$checksumString .= sprintf('%s:%s ', strtoupper($algo), $checksum);
+		$checksums = ChecksumStream::getChecksums($path);
+
+		if (empty($checksums)) {
+			return '';
 		}
 
-		return rtrim($checksumString);
+		return \sprintf(
+			self::CHECKSUMS_DB_FORMAT,
+			$checksums['sha1'],
+			$checksums['md5'],
+			$checksums['adler32']
+		);
 	}
 
 	/**
@@ -154,7 +169,7 @@ class Checksum extends Wrapper {
 	 * @return boolean
 	 */
 	public static function isPartialFile($file) {
-		if (pathinfo($file, PATHINFO_EXTENSION) === 'part') {
+		if (\pathinfo($file, PATHINFO_EXTENSION) === 'part') {
 			return true;
 		}
 
@@ -167,11 +182,11 @@ class Checksum extends Wrapper {
 	 * @return bool
 	 */
 	public function file_put_contents($path, $data) {
-		$memoryStream = fopen('php://memory', 'r+');
+		$memoryStream = \fopen('php://memory', 'r+');
 		$checksumStream = \OC\Files\Stream\Checksum::wrap($memoryStream, $path);
 
-		fwrite($checksumStream, $data);
-		fclose($checksumStream);
+		\fwrite($checksumStream, $data);
+		\fclose($checksumStream);
 
 		return $this->getWrapperStorage()->file_put_contents($path, $data);
 	}
@@ -183,8 +198,12 @@ class Checksum extends Wrapper {
 	public function getMetaData($path) {
 		// Check if it is partial file. Partial file metadata are only checksums
 		$parentMetaData = [];
-		if(!self::isPartialFile($path)) {
+		if (!self::isPartialFile($path)) {
 			$parentMetaData = $this->getWrapperStorage()->getMetaData($path);
+			// can be null if entry does not exist
+			if ($parentMetaData === null) {
+				return null;
+			}
 		}
 		$parentMetaData['checksum'] = self::getChecksumsInDbFormat($path);
 

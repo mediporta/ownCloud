@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Ransomware Protection &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Ransomware Protection &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuration/index.html">Configuration</a></li>
@@ -130,7 +130,7 @@ To help mitigate such threats and ensure ongoing access to user data, ownCloud p
 <h2>About Ransomware Protection<a class="headerlink" href="#about-ransomware-protection" title="Permalink to this headline">¶</a></h2>
 <p>The app is tasked with <em>detecting</em>, <em>preventing</em>, and <em>reverting</em> anomalies.
 Anomalies are file operations (including <em>create</em>, <em>update</em>, <em>delete</em>, and <em>move</em>) not intentionally conducted by the user.
-It aims to do so in two ways: <a class="reference external" href="ransomware_prevention_label">prevention</a>, and <a class="reference external" href="ransomware_protection_label">protection</a>.</p>
+It aims to do so in two ways: <a class="reference internal" href="#ransomware-prevention-label"><span class="std std-ref">prevention</span></a>, and <a class="reference internal" href="#ransomware-protection-label"><span class="std std-ref">protection</span></a>.</p>
 </div>
 <div class="section" id="prevention-blocking-common-ransomware-file-extensions">
 <span id="ransomware-prevention-label"></span><h2>Prevention: Blocking Common Ransomware File Extensions<a class="headerlink" href="#prevention-blocking-common-ransomware-file-extensions" title="Permalink to this headline">¶</a></h2>
@@ -142,7 +142,7 @@ Recent ransomware attacks either encrypt a user’s files and add a specific fil
 <p>The first line of defense against such threats is a blacklist that blocks write access to file extensions known to originate from ransomware.</p>
 <p>Ransomware Protection ships with <a class="reference external" href="https://fsrm.experiant.ca">a static extension list</a> of around 1,500 file extensions.
 As new extensions are regularly created, this list also needs to be regularly reviewed and updated.
-Future releases of Ransomware Protection will include an updated list and the ability to update the list via syncing with <a class="reference external" href="https://fsrm.experiant.ca/api/v1/combined">FSRM’s API</a> by using <span class="xref std std-doc">occ</span>.</p>
+Future releases of Ransomware Protection will include an updated list and the ability to update the list via syncing with <a class="reference external" href="https://fsrm.experiant.ca/api/v1/combined">FSRM’s API</a> by using <a class="reference internal" href="../../configuration/server/occ_command.html"><span class="doc">occ</span></a>.</p>
 <div class="admonition important">
 <p class="first admonition-title">Important</p>
 <p class="last">Please check the provided ransomware blacklist!
@@ -271,9 +271,9 @@ the account.</td>
 <ul class="simple">
 <li>Ransomware Protection works with master-key based storage encryption. With credential-based storage encryption, only Ransomware Prevention (Blocking) works.</li>
 <li>Rollback is not based on snapshots:<ul>
-<li>The <a class="reference external" href="https://doc.owncloud.com/server/10.0/admin_manual/configuration/server/config_sample_php_parameters.html?highlight=trash%20bin#deleted-items-trash-bin">trash bin retention policy</a> may delete files, making them unrecoverable. To avoid this, set <code class="docutils literal"><span class="pre">trashbin\_retention\_obligation</span></code> to <code class="docutils literal"><span class="pre">disabled</span></code>, or choose a conservative policy for trash bin retention. However, please be aware that this may increase storage requirements.</li>
+<li>The <a class="reference external" href="https://doc.owncloud.com/server/latest/admin_manual/configuration/server/config_sample_php_parameters.html?highlight=trash%20bin#deleted-items-trash-bin">trash bin retention policy</a> may delete files, making them unrecoverable. To avoid this, set <code class="docutils literal"><span class="pre">trashbin\_retention\_obligation</span></code> to <code class="docutils literal"><span class="pre">disabled</span></code>, or choose a conservative policy for trash bin retention. However, please be aware that this may increase storage requirements.</li>
 <li>Trash bin items may be deleted by the user making them unrecoverable by Ransomware Protection =&gt; Users need to know this.</li>
-<li>Versions have <a class="reference external" href="https://doc.owncloud.com/server/10.0/admin_manual/configuration/server/config_sample_php_parameters.html?highlight=trash%20bin#file-versions">a built-in “thin-out” policy</a> which makes it possible that required file versions are unrecoverable by Ransomware Protection. To help avoid this, set <code class="docutils literal"><span class="pre">versions\_retention\_obligation</span></code> to <code class="docutils literal"><span class="pre">disabled</span></code> or choose a conservative policy for version retention. Please be aware that this might increase your storage needs.</li>
+<li>Versions have <a class="reference external" href="https://doc.owncloud.com/server/latest/admin_manual/configuration/server/config_sample_php_parameters.html?highlight=trash%20bin#file-versions">a built-in “thin-out” policy</a> which makes it possible that required file versions are unrecoverable by Ransomware Protection. To help avoid this, set <code class="docutils literal"><span class="pre">versions\_retention\_obligation</span></code> to <code class="docutils literal"><span class="pre">disabled</span></code> or choose a conservative policy for version retention. Please be aware that this might increase your storage needs.</li>
 <li>A specific version of a file that is needed for rollback might have been manually restored, making this version potentially unrecoverable by Ransomware Protection. Currently, after restoration the restored version <cite>is not a version anymore</cite>, e.g., the version is not present in versioning.</li>
 </ul>
 </li>

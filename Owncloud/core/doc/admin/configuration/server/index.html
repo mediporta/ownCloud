@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Server Configuration &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Server Configuration &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -88,6 +88,7 @@
 <li class="toctree-l3"><a class="reference internal" href="custom_client_repos.html">Custom Client Download Repositories</a></li>
 <li class="toctree-l3"><a class="reference internal" href="knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
@@ -171,6 +172,7 @@
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#logging-commands">Logging Commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#maintenance-commands">Maintenance Commands</a></li>
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#market">Market</a></li>
+<li class="toctree-l2"><a class="reference internal" href="occ_command.html#notifications">Notifications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#reports">Reports</a></li>
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#security">Security</a></li>
 <li class="toctree-l2"><a class="reference internal" href="occ_command.html#ransomware-protection">Ransomware Protection</a></li>
@@ -214,7 +216,6 @@
 <li class="toctree-l1"><a class="reference internal" href="config_sample_php_parameters.html">Config.php Parameters</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#default-parameters">Default Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#default-config-php-examples">Default config.php Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#mode-of-operation">Mode of Operation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#user-experience">User Experience</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#mail-parameters">Mail Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#proxy-configurations">Proxy Configurations</a></li>
@@ -223,14 +224,11 @@
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#owncloud-verifications">ownCloud Verifications</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#logging">Logging</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#alternate-code-locations">Alternate Code Locations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#apps">Apps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#previews">Previews</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#ldap">LDAP</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#comments">Comments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#maintenance">Maintenance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#ssl">SSL</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#memory-caching-backend-configuration">Memory caching backend configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#using-object-store-with-owncloud">Using Object Store with ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#sharing">Sharing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#all-other-configuration-options">All other configuration options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config_sample_php_parameters.html#app-config-options">App config options</a></li>
@@ -239,13 +237,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="email_configuration.html">Email Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="email_configuration.html#configuring-an-smtp-server">Configuring an SMTP Server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#configuring-php-and-sendmail">Configuring PHP and Sendmail</a></li>
 <li class="toctree-l2"><a class="reference internal" href="email_configuration.html#using-email-templates">Using Email Templates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#setting-mail-server-parameters-in-config-php">Setting Mail Server Parameters in config.php</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#send-a-test-email">Send a Test Email</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#using-self-signed-certificates">Using Self-Signed Certificates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#troubleshooting">Troubleshooting</a></li>
-<li class="toctree-l2"><a class="reference internal" href="email_configuration.html#enabling-debug-mode">Enabling Debug Mode</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="excluded_blacklisted_files.html">Excluding Directories and Blacklisting Files</a><ul>
@@ -263,6 +255,11 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="language_configuration.html">Language Configuration</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="language_configuration.html#parameters">Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="legal_settings_configuration.html#using-the-web-ui">Using the Web UI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="legal_settings_configuration.html#using-the-command-line">Using the Command Line</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a><ul>
@@ -301,7 +298,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="oc_server_tuning.html">ownCloud Server Tuning</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="oc_server_tuning.html#using-cron-to-perform-background-jobs">Using Cron to Perform Background Jobs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="oc_server_tuning.html#enable-javascript-and-css-asset-management">Enable JavaScript and CSS Asset Management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="oc_server_tuning.html#enable-memory-caching">Enable Memory Caching</a></li>
 <li class="toctree-l2"><a class="reference internal" href="oc_server_tuning.html#use-redis-based-transactional-file-locking">Use Redis-based Transactional File Locking</a></li>
 <li class="toctree-l2"><a class="reference internal" href="oc_server_tuning.html#redis-tuning">Redis Tuning</a></li>

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Logging Configuration &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Logging Configuration &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -28,7 +28,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Hardening and Security Guidance" href="harden_server.html" />
-    <link rel="prev" title="Language Configuration" href="language_configuration.html" />
+    <link rel="prev" title="Legal Settings Configuration" href="legal_settings_configuration.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -88,6 +88,7 @@
 <li class="toctree-l3"><a class="reference internal" href="custom_client_repos.html">Custom Client Download Repositories</a></li>
 <li class="toctree-l3"><a class="reference internal" href="knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
@@ -119,7 +120,7 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="language_configuration.html" title="Previous Chapter: Language Configuration"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Language Conf...</span>
+    <a href="legal_settings_configuration.html" title="Previous Chapter: Legal Settings Configuration"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Legal Setting...</span>
     </a>
   </li>
   <li class="next">
@@ -169,21 +170,76 @@ date format in the example below, the date/time format will be written in the fo
 <span class="s2">&quot;loglevel&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span>
 </pre></div>
 </div>
+<p>The syslog format can be changed to remove or add information.
+In addition to the <code class="docutils literal"><span class="pre">%replacements%</span></code> below <code class="docutils literal"><span class="pre">%level%</span></code> can be used, but it is used
+as a dedicated parameter to the syslog logging facility anyway.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log.syslog.format&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;[</span><span class="si">%r</span><span class="s1">eqId%][</span><span class="si">%r</span><span class="s1">emoteAddr%][</span><span class="si">%u</span><span class="s1">ser%][%app%][%method%][</span><span class="si">%u</span><span class="s1">rl%] %message%&#39;</span><span class="p">,</span>
+
+   <span class="n">For</span> <span class="n">the</span> <span class="n">old</span> <span class="n">syslog</span> <span class="n">message</span> <span class="nb">format</span> <span class="n">use</span><span class="p">:</span>
+
+<span class="s1">&#39;log.syslog.format&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;{%app%} %message%&#39;</span><span class="p">,</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="conditional-logging-level-increase">
 <h3>Conditional Logging Level Increase<a class="headerlink" href="#conditional-logging-level-increase" title="Permalink to this headline">¶</a></h3>
-<p>You can configure the logging level to automatically increase to <code class="docutils literal"><span class="pre">debug</span></code> when one of three conditions are met:</p>
-<p># <code class="docutils literal"><span class="pre">shared_secret</span></code>: If a request parameter with the name <code class="docutils literal"><span class="pre">log_secret</span></code> is set to this value the condition is met.</p>
-<p># <code class="docutils literal"><span class="pre">users</span></code>: If the current request is done by one of the specified users, this condition is met.</p>
-<p># <code class="docutils literal"><span class="pre">apps</span></code>: If the log message is invoked by one of the specified apps, this condition is met.</p>
-<p>The following example demonstrates what all three conditions look like:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log.condition&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
-       <span class="s1">&#39;shared_secret&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;57b58edb6637fe3059b3595cf9c41b9&#39;</span><span class="p">,</span>
-       <span class="s1">&#39;users&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s1">&#39;sample-user&#39;</span><span class="p">],</span>
-       <span class="s1">&#39;apps&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s1">&#39;files&#39;</span><span class="p">],</span>
+<p>You can configure the logging level to automatically increase to <code class="docutils literal"><span class="pre">debug</span></code> when the first condition inside a condition block is met.
+All conditions are optional !</p>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">shared_secret</span></code>: A unique token. If a http(s) request parameter named <code class="docutils literal"><span class="pre">log_secret</span></code> is added</dt>
+<dd>to the request and set to this token, the condition is met.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">users</span></code>:  If the current request is done by one of the specified users,</dt>
+<dd>this condition is met.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">apps</span></code>:   If the log message is invoked by one of the specified apps,</dt>
+<dd>this condition is met.</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><code class="docutils literal"><span class="pre">logfile</span></code>: The log message invoked gets redirected to this logfile</dt>
+<dd>when a condition above is met.</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>Notes regarding the logfile key:</p>
+<ol class="arabic simple">
+<li>If no logfile is defined, the standard logfile is used.</li>
+<li>Not applicable when using syslog.</li>
+</ol>
+<div class="line-block">
+<div class="line">The following example demonstrates how all three conditions can look like.</div>
+<div class="line">The first one that matches triggers the condition block writing the log entry to the defined logfile.</div>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log.conditions&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
+       <span class="p">[</span>
+               <span class="s1">&#39;shared_secret&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;57b58edb6637fe3059b3595cf9c41b9&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;users&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s1">&#39;user1&#39;</span><span class="p">,</span> <span class="s1">&#39;user2&#39;</span><span class="p">],</span>
+               <span class="s1">&#39;apps&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="s1">&#39;gallery&#39;</span><span class="p">],</span>
+               <span class="s1">&#39;logfile&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/tmp/test2.log&#39;</span>
+       <span class="p">]</span>
 <span class="p">],</span>
 </pre></div>
 </div>
+<p>Based on the conditional log settings above, following logs are written to the same logfile defined:</p>
+<ul class="simple">
+<li>Requests matching <code class="docutils literal"><span class="pre">log_secret</span></code> are debug logged.</li>
+</ul>
+<div class="highlight-default"><div class="highlight"><pre><span></span>curl -X PROPFIND -u sample-user:password \
+  https://your_domain/remote.php/webdav/?log_secret=57b58edb6637fe3059b3595cf9c41b9
+</pre></div>
+</div>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">user1</span></code> and <code class="docutils literal"><span class="pre">user2</span></code> gets debug logged.</li>
+<li>Access to app <code class="docutils literal"><span class="pre">gallery</span></code> gets debug logged.</li>
+</ul>
 </div>
 </div>
 </div>
@@ -192,7 +248,7 @@ date format in the example below, the date/time format will be written in the fo
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="language_configuration.html" title="Previous Chapter: Language Configuration"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Language Conf...</span>
+    <a href="legal_settings_configuration.html" title="Previous Chapter: Legal Settings Configuration"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Legal Setting...</span>
     </a>
   </li>
   <li class="next">

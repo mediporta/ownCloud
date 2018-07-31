@@ -14,7 +14,7 @@
  * @author Thomas Tanghus <thomas@tanghus.net>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -651,6 +651,7 @@ class Request implements \ArrayAccess, \Countable, IRequest {
 		}
 
 		$scriptName = $this->server['SCRIPT_NAME'];
+		$scriptName = preg_replace('%/{2,}%', '/', $scriptName);
 		$pathInfo = $requestUri;
 
 		// strip off the script name's dir and file name

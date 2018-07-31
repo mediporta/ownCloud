@@ -113,7 +113,7 @@
 				cid: this.cid,
 				setExpirationLabel: t('core', 'Set expiration date'),
 				expirationLabel: t('core', 'Expiration'),
-				expirationDatePlaceholder: t('core', 'Expiration date'),
+				expirationDatePlaceholder: t('core', 'Choose an expiration date'),
 				defaultExpireMessage: defaultExpireMessage,
 				isExpirationSet: isExpirationSet,
 				isExpirationEnforced: isExpirationEnforced,
@@ -164,7 +164,7 @@
 			this.$field.next('.error-message').addClass('hidden');
 			if (this.configModel.get('isDefaultExpireDateEnforced') && !this.getValue()) {
 				this.$field.addClass('error');
-				this.$field.next('.error-message').removeClass('hidden').text(t('files_sharing', 'Expiration date is required'));
+				this.$field.next('.error-message').removeClass('hidden').text(t('core', 'Expiration date is required'));
 				return false;
 			}
 			return true;

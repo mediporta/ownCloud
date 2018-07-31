@@ -332,6 +332,18 @@ OC.L10N.register(
     "Please use the command line updater because you have a big instance." : "Utilizza lo strumento da riga di comando per la grandezza della tua istanza.",
     "For help, see the  <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentation</a>." : "Per la guida, vedi la <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">documentazione</a>.",
     "This %s instance is currently in maintenance mode, which may take a while." : "Questa istanza di %s è attualmente in manutenzione, potrebbe richiedere del tempo.",
-    "This page will refresh itself when the %s instance is available again." : "Questa pagina si aggiornerà quando l'istanza di %s sarà nuovamente disponibile."
+    "This page will refresh itself when the %s instance is available again." : "Questa pagina si aggiornerà quando l'istanza di %s sarà nuovamente disponibile.",
+    "Copy to clipboard" : "Copia negli appunti",
+    "Anyone with the link has access to the file/folder" : "Chiunque sia in possesso del collegamento ha accesso al file/cartella",
+    "Choose a password" : "Scegli una password",
+    "Upload only" : "Carica solo",
+    "Sending" : "Invio in corso",
+    "Menu" : "Menu",
+    "Link name" : "Nome collegamento",
+    "Download / View" : "Scarica / visiona",
+    "Recipients can view or download contents." : "I destinatari possono vedere o scaricare contenuti",
+    "Download / View / Upload" : "Scarica / Visiona / Carica",
+    "Recipients can view, download, edit, delete and upload contents." : "I destinatari possono vedere, scaricare, modificare, cancellare ed inviare contenuti",
+    "Imprint" : "Imprint"
 },
 "nplurals=2; plural=(n != 1);");

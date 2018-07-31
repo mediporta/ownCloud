@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>File Firewall &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>File Firewall &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuration/index.html">Configuration</a></li>
@@ -220,6 +220,27 @@ This example blocks access to any folder with the tag “Confidential” from ou
 </div>
 <div class="figure">
 <img alt="Protecting files tagged with &quot;Confidential&quot; from outside access" src="../../_images/firewall-3.png" />
+</div>
+</div>
+<div class="section" id="logging">
+<h3>Logging<a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
+<p>Firewall logging can be set to <strong>Off</strong>, <strong>Blocked Requests Only</strong> or <strong>All Requests</strong></p>
+<div class="section" id="off">
+<h4>Off<a class="headerlink" href="#off" title="Permalink to this headline">¶</a></h4>
+<p>The firewall blocks requests according to the defined rules but does not log any of its actions.</p>
+</div>
+<div class="section" id="blocked-requests-only">
+<h4>Blocked Requests Only<a class="headerlink" href="#blocked-requests-only" title="Permalink to this headline">¶</a></h4>
+<p>The firewall logs blocked requests to the system log at <strong>warning</strong> level. To see these logs, the system log level must be set to a minimum level of <strong>warning</strong>.</p>
+</div>
+<div class="section" id="all-requests">
+<h4>All Requests<a class="headerlink" href="#all-requests" title="Permalink to this headline">¶</a></h4>
+<p>The firewall logs blocked and successful requests to the system log at <strong>warning</strong> and <strong>info</strong> levels respectively.
+To see all these logs, the system log level must be set to a minimum level of <strong>info</strong>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Logging all requests can generate a large amount of log data. It is recommended to only select all requests for short-term checking of rule settings.</p>
+</div>
 </div>
 </div>
 <div class="section" id="custom-configuration-for-branded-clients">

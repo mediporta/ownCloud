@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Installing with Docker &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Installing with Docker &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,13 +65,13 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Installing with Docker</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#installation-on-a-local-machine">Installation on a Local Machine</a></li>
@@ -85,6 +85,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
@@ -132,8 +133,8 @@ Next, create a <cite>.env</cite> configuration file, which contains the required
 Only a few settings are required, these are:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="30%" />
-<col width="49%" />
+<col width="32%" />
+<col width="48%" />
 <col width="21%" />
 </colgroup>
 <thead valign="bottom">
@@ -143,11 +144,11 @@ Only a few settings are required, these are:</p>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">VERSION</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">OWNCLOUD_VERSION</span></code></td>
 <td>The ownCloud version</td>
 <td><code class="docutils literal"><span class="pre">latest</span></code></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">DOMAIN</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">OWNCLOUD_DOMAIN</span></code></td>
 <td>The ownCloud domain</td>
 <td><code class="docutils literal"><span class="pre">localhost</span></code></td>
 </tr>
@@ -185,8 +186,8 @@ The example below shows how to use <a class="reference external" href="https://d
 
 <span class="gp">#</span> Create the environment configuration file
 <span class="go">cat &lt;&lt; EOF &gt; .env</span>
-<span class="go">VERSION=10.0.4</span>
-<span class="go">DOMAIN=localhost</span>
+<span class="go">OWNCLOUD_VERSION=10.0</span>
+<span class="go">OWNCLOUD_DOMAIN=localhost</span>
 <span class="go">ADMIN_USERNAME=admin</span>
 <span class="go">ADMIN_PASSWORD=admin</span>
 <span class="go">HTTP_PORT=80</span>
@@ -232,6 +233,44 @@ However, the self-signed certificate can be overwritten with a valid cert, withi
 <h3>Stopping the Containers<a class="headerlink" href="#stopping-the-containers" title="Permalink to this headline">¶</a></h3>
 <p>Assuming you used docker-compose, as in the previous example, to stop the containers use <code class="docutils literal"><span class="pre">docker-compose</span> <span class="pre">stop</span></code>.
 Alternatively, use <code class="docutils literal"><span class="pre">docker-compose</span> <span class="pre">down</span></code> to stop and remove containers, along with the related networks, images, and volumes.</p>
+</div>
+<div class="section" id="upgrading-owncloud-on-docker">
+<h3>Upgrading ownCloud on Docker<a class="headerlink" href="#upgrading-owncloud-on-docker" title="Permalink to this headline">¶</a></h3>
+<p>When a new version of ownCloud gets released, you should update your instance.
+To do so, follow these simple steps.</p>
+<p>First, go to your docker directory where your <code class="docutils literal"><span class="pre">.yaml</span></code> or <code class="docutils literal"><span class="pre">.env</span></code> file exists.
+Second, put ownCloud into maintenance mode; you can do so using the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">exec</span> <span class="n">server</span> <span class="n">occ</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span> <span class="o">--</span><span class="n">on</span>
+</pre></div>
+</div>
+<p>Third, create a backup in case something goes wrong during the upgrade process, using the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">exec</span> <span class="n">db</span> <span class="n">backup</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This assumes that you are using <a class="reference external" href="https://hub.docker.com/r/webhippie/mariadb/">the default database container from Webhippie</a>.</p>
+</div>
+<p>Fifth, shutdown the containers.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">down</span>
+</pre></div>
+</div>
+<p>Sixth, update the version number of ownCloud in your <code class="docutils literal"><span class="pre">.env</span></code> file or the YAML file. You can use sed for it, as in the following example.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Make sure that you adjust the example to match your installation.</span>
+<span class="n">sed</span> <span class="o">-</span><span class="n">i</span> <span class="s1">&#39;s/^OWNCLOUD_VERSION=.*$/OWNCLOUD_VERSION=&lt;newVersion&gt;/&#39;</span> <span class="o">/</span><span class="n">compose</span><span class="o">/*/.</span><span class="n">env</span>
+</pre></div>
+</div>
+<p>Seventh, view the file to ensure the changes has been implemented.</p>
+<blockquote>
+<div><div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cat</span> <span class="o">.</span><span class="n">env</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Eighth, start your docker instance again.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span> <span class="n">up</span> <span class="o">-</span><span class="n">d</span>
+</pre></div>
+</div>
+<p>Now you should have the current ownCloud running with docker-compose.</p>
 </div>
 </div>
 </div>

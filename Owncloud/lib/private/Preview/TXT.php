@@ -7,7 +7,7 @@
  * @author Robin Appelman <icewind@owncloud.com>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -25,7 +25,11 @@
  */
 namespace OC\Preview;
 
-class TXT extends Provider {
+use OCP\Files\File;
+use OCP\Files\FileInfo;
+use OCP\Preview\IProvider2;
+
+class TXT implements IProvider2 {
 	/**
 	 * {@inheritDoc}
 	 */
@@ -36,16 +40,10 @@ class TXT extends Provider {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function isAvailable(\OCP\Files\FileInfo $file) {
-		return $file->getSize() > 0;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	public function getThumbnail($path, $maxX, $maxY, $scalingup, $fileview) {
-		$content = $fileview->fopen($path, 'r');
-		$content = stream_get_contents($content,3000);
+	public function getThumbnail(File $file, $maxX, $maxY, $scalingUp) {
+		$stream = $file->fopen('r');
+		$content = stream_get_contents($stream,3000);
+		fclose($stream);
 
 		//don't create previews of empty text files
 		if(trim($content) === '') {
@@ -88,5 +86,12 @@ class TXT extends Provider {
 		$image = new \OC_Image($image);
 
 		return $image->valid() ? $image : false;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function isAvailable(FileInfo $file) {
+		return $file->getSize() > 0;
 	}
 }

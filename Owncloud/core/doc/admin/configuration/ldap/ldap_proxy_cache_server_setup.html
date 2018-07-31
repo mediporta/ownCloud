@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>How To Install and Configure an LDAP Proxy-Cache Server &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>How To Install and Configure an LDAP Proxy-Cache Server &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -231,7 +231,12 @@ So, create <code class="docutils literal"><span class="pre">/etc/ldap/slapd.conf
 
 <span class="n">backend</span>         <span class="n">ldap</span>
 
-<span class="c1"># If you only have read acces, set this to &quot;yes&quot;</span>
+<span class="c1"># Type of database</span>
+
+<span class="n">database</span>		<span class="n">ldap</span>
+
+
+<span class="c1"># If you only have read access, set this to &quot;yes&quot;</span>
 
 <span class="n">readonly</span>        <span class="n">yes</span>
 
@@ -243,7 +248,7 @@ So, create <code class="docutils literal"><span class="pre">/etc/ldap/slapd.conf
 
 <span class="n">rebind</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">user</span>
 
-<span class="c1"># If you want to save time and don&#39;t want to list all the refferals, set &quot;yes&quot;</span>
+<span class="c1"># If you want to save time and don&#39;t want to list all the refferals, set to &quot;yes&quot;</span>
 
 <span class="n">norefs</span>  <span class="n">yes</span>
 
@@ -252,7 +257,7 @@ So, create <code class="docutils literal"><span class="pre">/etc/ldap/slapd.conf
 <span class="n">chase</span><span class="o">-</span><span class="n">referrals</span> <span class="n">no</span>
 
 <span class="c1"># Specify the URL of your ldap server and the port.</span>
-<span class="c1"># For unencrypted acces use the port 389, for encrypted 636</span>
+<span class="c1"># For unencrypted access use the port 389, for encrypted 636</span>
 <span class="c1"># If you have to use 636, you will also probably have to import</span>
 <span class="c1"># the certificate of your target server. restart your webserver after you do.</span>
 
@@ -262,7 +267,7 @@ So, create <code class="docutils literal"><span class="pre">/etc/ldap/slapd.conf
 <span class="n">suffix</span>          <span class="s2">&quot;dc=ldap01,dc=com&quot;</span>
 
 <span class="c1"># rootdn directive for specifying a superuser on the database.</span>
-<span class="c1"># If you don&#39;t have acces to the admin user, use the one you have.</span>
+<span class="c1"># If you don&#39;t have access to the admin user, use the one you have.</span>
 
 <span class="n">rootdn</span>          <span class="s2">&quot;cn=admin,dc=ldap01,dc=com&quot;</span>
 
@@ -337,6 +342,179 @@ So, create <code class="docutils literal"><span class="pre">/etc/ldap/slapd.conf
 <span class="n">pcacheTemplate</span> <span class="p">(</span><span class="n">objectClass</span><span class="o">=*</span><span class="p">)</span> <span class="mi">2</span> <span class="mi">3600</span>
 
 
+<span class="c1"># This an example of a config file:</span>
+
+<span class="c1"># See slapd.conf(5)</span>
+
+<span class="c1"># Global Directives:</span>
+
+<span class="c1"># Schema and objectClass definitions</span>
+
+<span class="n">include</span>         <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ldap</span><span class="o">/</span><span class="n">schema</span><span class="o">/</span><span class="n">core</span><span class="o">.</span><span class="n">schema</span>
+<span class="n">include</span>         <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ldap</span><span class="o">/</span><span class="n">schema</span><span class="o">/</span><span class="n">cosine</span><span class="o">.</span><span class="n">schema</span>
+<span class="n">include</span>         <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ldap</span><span class="o">/</span><span class="n">schema</span><span class="o">/</span><span class="n">nis</span><span class="o">.</span><span class="n">schema</span>
+<span class="n">include</span>         <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">ldap</span><span class="o">/</span><span class="n">schema</span><span class="o">/</span><span class="n">inetorgperson</span><span class="o">.</span><span class="n">schema</span>
+
+<span class="c1"># Where the pid file is put. The init.d script</span>
+<span class="c1"># will not stop the server if you change this.</span>
+
+<span class="n">pidfile</span>         <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">run</span><span class="o">/</span><span class="n">slapd</span><span class="o">/</span><span class="n">slapd</span><span class="o">.</span><span class="n">pid</span>
+
+<span class="c1"># List of arguments that were passed to the server</span>
+
+<span class="n">argsfile</span>        <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">run</span><span class="o">/</span><span class="n">slapd</span><span class="o">/</span><span class="n">slapd</span><span class="o">.</span><span class="n">args</span>
+
+<span class="c1"># Read slapd.conf(5) for possible values</span>
+<span class="c1"># Change loglevel to &quot;any&quot; if you want to see everything.</span>
+
+<span class="n">loglevel</span>        <span class="n">none</span>
+
+<span class="c1"># Where the dynamically loaded modules are stored</span>
+
+<span class="n">modulepath</span>      <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">ldap</span>
+
+<span class="c1"># Here are the recommended modules:</span>
+
+<span class="c1"># module for the target ldap-server</span>
+
+<span class="n">moduleload</span>	<span class="n">back_ldap</span><span class="o">.</span><span class="n">la</span>
+
+<span class="c1"># module for your local database</span>
+
+<span class="n">moduleload</span>	<span class="n">back_hdb</span><span class="o">.</span><span class="n">la</span>
+
+<span class="c1"># module for rewriting attributes</span>
+
+<span class="n">moduleload</span>	<span class="n">rwm</span>
+
+<span class="c1"># caching module</span>
+
+<span class="n">moduleload</span>	<span class="n">pcache</span><span class="o">.</span><span class="n">la</span>
+
+<span class="c1"># module to enable memberof in LDAP</span>
+
+<span class="n">moduleload</span> <span class="n">memberof</span><span class="o">.</span><span class="n">la</span>
+
+
+<span class="c1"># The maximum number of entries that is returned for a search operation</span>
+
+<span class="n">sizelimit</span> <span class="mi">500</span>
+
+<span class="c1"># The tool-threads parameter sets the actual amount of cpu&#39;s that is used</span>
+<span class="c1"># for indexing.</span>
+
+<span class="n">tool</span><span class="o">-</span><span class="n">threads</span> <span class="mi">1</span>
+
+
+<span class="c1"># Type of backend, for example &quot;ldap&quot;</span>
+
+<span class="n">backend</span>         <span class="n">ldap</span>
+
+<span class="c1"># If you only have read access, set this to &quot;yes&quot;</span>
+
+<span class="n">readonly</span>        <span class="n">yes</span>
+
+<span class="c1"># Set which protocol to use, we suggest &quot;3&quot;</span>
+
+<span class="n">protocol</span><span class="o">-</span><span class="n">version</span>  <span class="mi">3</span>
+
+<span class="c1"># remember bind credentials</span>
+
+<span class="n">rebind</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">user</span>
+
+<span class="c1"># If you want to save time and don&#39;t want to list all the refferals, set to &quot;yes&quot;</span>
+
+<span class="n">norefs</span>  <span class="n">yes</span>
+
+<span class="c1"># Same as above</span>
+
+<span class="n">chase</span><span class="o">-</span><span class="n">referrals</span> <span class="n">no</span>
+
+<span class="c1"># Specify the URL of your ldap server and the port.</span>
+<span class="c1"># For unencrypted access use the port 389, for encrypted 636</span>
+<span class="c1"># If you have to use 636, you will also probably have to import</span>
+<span class="c1"># the certificate of your target server. </span>
+<span class="c1"># Restart your webserver after you do.</span>
+
+<span class="n">uri</span> <span class="s2">&quot;ldap://192.168.178.2:389&quot;</span>
+
+<span class="c1"># The base of your directory in database, for example &quot;dc=ldap01,dc=com&quot;</span>
+<span class="n">suffix</span>          <span class="s2">&quot;dc=ldap01,dc=com&quot;</span>
+
+<span class="c1"># rootdn directive for specifying a superuser on the database.</span>
+<span class="c1"># If you don&#39;t have access to the admin user, use the one you have.</span>
+
+<span class="n">rootdn</span>          <span class="s2">&quot;cn=admin,dc=ldap01,dc=com&quot;</span>
+
+<span class="c1"># Now we start initialising the modules</span>
+<span class="c1"># First the rewrite module</span>
+
+<span class="n">overlay</span>         <span class="n">rwm</span>
+
+<span class="c1"># Now we rewrite the attributes</span>
+
+<span class="n">rwm</span><span class="o">-</span><span class="nb">map</span>         <span class="n">attribute</span> <span class="n">uid</span> <span class="n">sAMAccountName</span>
+<span class="n">rwm</span><span class="o">-</span><span class="nb">map</span>         <span class="n">attribute</span> <span class="n">dn</span> <span class="n">distinguishedName</span>
+
+<span class="c1"># Next one is optional, if you want memberof, for the groups,</span>
+<span class="c1"># you have to load it.</span>
+
+<span class="n">overlay</span>         <span class="n">memberof</span>
+
+<span class="c1"># Now we load the caching module</span>
+
+<span class="n">overlay</span> <span class="n">pcache</span>
+
+<span class="c1"># The directive enables proxy caching</span>
+<span class="c1"># See slapd-pcache</span>
+
+<span class="c1"># pcache &lt;database&gt; &lt;max_entries&gt; &lt;numattrsets&gt; &lt;entry_limit&gt; &lt;cc_period&gt; </span>
+<span class="c1"># Parameters:</span>
+<span class="c1"># </span>
+<span class="c1"># &lt;database&gt; for cached entries. </span>
+<span class="c1"># &lt;max_entries&gt; when reached - cache replacement is invoked</span>
+<span class="c1"># &lt;numattrsets&gt; = pcacheAttrset</span>
+<span class="c1"># &lt;entry_limit&gt; limit to the number of entries returned </span>
+<span class="c1"># &lt;cc_period&gt; Consistency check time to wait</span>
+
+<span class="n">pcache</span> <span class="n">hdb</span> <span class="mi">100000</span> <span class="mi">3</span> <span class="mi">1000</span> <span class="mi">100</span>
+
+<span class="c1"># pcachePersist { TRUE | FALSE }</span>
+<span class="c1"># Write cached results into the database</span>
+<span class="c1"># Results remain in database after restart</span>
+
+<span class="n">pcachePersist</span> <span class="n">TRUE</span>
+
+<span class="c1"># Where the database file are physically stored for database #1</span>
+
+<span class="n">directory</span>       <span class="s2">&quot;/var/lib/ldap&quot;</span>
+
+<span class="c1"># Caching templates for general search</span>
+
+<span class="c1"># pcacheAttrset &lt;index&gt; &lt;attrs...&gt;</span>
+<span class="c1"># First set the index number</span>
+<span class="c1"># Then set the attribute to cache</span>
+
+<span class="n">pcacheAttrset</span>   <span class="mi">0</span> <span class="mf">1.1</span>
+
+<span class="c1"># pcacheTemplate &lt;template_string&gt; &lt;attrset_index&gt; &lt;ttl&gt;</span>
+<span class="c1"># First define the query string to cache</span>
+<span class="c1"># Then reference the Attrset</span>
+<span class="c1"># Last set the time-to-live</span>
+
+<span class="n">pcacheTemplate</span>  <span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="o">|</span><span class="p">(</span><span class="n">objectClass</span><span class="o">=</span><span class="p">)))</span> <span class="mi">0</span> <span class="mi">3600</span>
+
+<span class="n">pcacheTemplate</span> <span class="p">(</span><span class="n">objectClass</span><span class="o">=*</span><span class="p">)</span> <span class="mi">0</span> <span class="mi">3600</span>
+
+<span class="c1"># User Name Field (Advanced Tab)</span>
+
+<span class="n">pcacheAttrset</span>   <span class="mi">1</span> <span class="n">displayname</span>
+<span class="n">pcacheTemplate</span> <span class="p">(</span><span class="n">objectClass</span><span class="o">=*</span><span class="p">)</span> <span class="mi">1</span> <span class="mi">3600</span>
+
+<span class="c1"># Group Field</span>
+
+<span class="n">pcacheAttrset</span>   <span class="mi">2</span> <span class="n">memberOf</span>
+<span class="n">pcacheTemplate</span> <span class="p">(</span><span class="n">objectClass</span><span class="o">=*</span><span class="p">)</span> <span class="mi">2</span> <span class="mi">3600</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -387,8 +565,8 @@ To do so, update the command below with values from your Active Directory server
 <p>or</p>
 <blockquote>
 <div>ldapsearch -H ldaps://localhost:636 -x -LLL -D “cn=admin,cn=users,dc=example,dc=com” -b “cn=users,dc=example,dc=com” -W “(cn=Administrator)” name</div></blockquote>
-<p>-h = host adress (Example: localhost or 192.168.1.1)
--H = host adress (Example: <a class="reference external" href="ldap://">ldap://</a> or ldaps:// hostname or ip and port :389 or :636 )
+<p>-h = host address (Example: localhost or 192.168.1.1)
+-H = host address (Example: <code class="docutils literal"><span class="pre">ldap://</span></code> or <code class="docutils literal"><span class="pre">ldaps://</span></code> hostname or ip and port :389 or :636 )
 -x = simple authentication
 -b = Search Base, (Example: “cn=Users,dc=example,dc=com”)
 -D = User with permissions (Example: “cn=Admin,dc=example,dc=com”)

@@ -11,7 +11,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -273,9 +273,8 @@ class OC_Response {
 	 *
 	 * @param string $userId
 	 * @param string $domain
-	 * @param Sabre\HTTP\ResponseInterface $response
 	 * @param \OCP\IConfig $config
-	 * @param Array $headers
+	 * @param array $headers
 	 *
 	 * Format of $headers:
 	 * Array [
@@ -284,14 +283,21 @@ class OC_Response {
 	 *     "Access-Control-Allow-Methods": ["a", "b", "c"]
 	 * ]
 	 *
-	 * @return Sabre\HTTP\ResponseInterface $response
+	 * @return array
 	 */
-	public static function setCorsHeaders($userId, $domain, $response, $config = null, $headers = []) {
-		if (is_null($config)) {
+	public static function setCorsHeaders($userId, $domain, \OCP\IConfig $config = null, array $headers = []) {
+		if ($config === null) {
 			$config = \OC::$server->getConfig();
 		}
-		$allowedDomains = json_decode($config->getUserValue($userId, 'core', 'domains'));
-		if (is_array($allowedDomains) && in_array($domain, $allowedDomains)) {
+		// first check if any of the global CORS domains matches
+		$globalAllowedDomains = $config->getSystemValue('cors.allowed-domains', []);
+		$isCorsRequest = (is_array($globalAllowedDomains) && in_array($domain, $globalAllowedDomains));
+		if (!$isCorsRequest) {
+			// check if any of the user specific CORS domains matches
+			$allowedDomains = json_decode($config->getUserValue($userId, 'core', 'domains'));
+			$isCorsRequest = (is_array($allowedDomains) && in_array($domain, $allowedDomains));
+		}
+		if ($isCorsRequest) {
 			// TODO: infer allowed verbs from existing known routes
 			$allHeaders['Access-Control-Allow-Headers'] = ["authorization", "OCS-APIREQUEST", "Origin", "X-Requested-With", "Content-Type", "Access-Control-Allow-Origin"];
 			$allHeaders['Access-Control-Allow-Origin'] = [$domain];
@@ -299,22 +305,20 @@ class OC_Response {
 
 			foreach ($headers as $key => $value) {
 				if (array_key_exists($key, $allHeaders)) {
-					$allHeaders[$key] = array_merge($allHeaders[$key], $value);
+					$allHeaders[$key] = array_unique(array_merge($allHeaders[$key], $value));
 				}
 			}
 
-			foreach ($allHeaders as $key => $value) {
-				$response->addHeader($key, implode(",", $value));
-			}
+			return $allHeaders;
 		}
-		return $response;
+		return [];
 	}
 
 	/**
 	 * This function adds the CORS headers for all domains
 	 *
 	 * @param Sabre\HTTP\ResponseInterface $response
-	 * @param Array $headers
+	 * @param array $headers
 	 *
 	 * Format of $headers:
 	 * Array [
@@ -333,7 +337,7 @@ class OC_Response {
 
 		foreach ($headers as $key => $value) {
 			if (array_key_exists($key, $allHeaders)) {
-				$allHeaders[$key] = array_merge($allHeaders[$key], $value);
+				$allHeaders[$key] = array_unique(array_merge($allHeaders[$key], $value));
 			}
 		}
 

@@ -175,6 +175,12 @@ OC.L10N.register(
     "Storage incomplete configuration. %s" : "תצורה לא מושלמת של האחסון. %s",
     "Storage connection error. %s" : "שגיאת חיבור אחסון. %s",
     "Storage is temporarily not available" : "אחסון באופן זמני אינו זמין",
-    "Storage connection timeout. %s" : "פסק זמן חיבור אחסון. %s"
+    "Storage connection timeout. %s" : "פסק זמן חיבור אחסון. %s",
+    "A safe home for all your data" : "בית בטוח לכל המידע שלך",
+    "The username must be at least 3 characters long" : "שם המשתמש חייב להיות באורך של 3 תווים לכל היותר",
+    "File cannot be read" : "קובץ לא ניתן לקריאה",
+    "%s is not supported and %s will not work properly on this platform. Use it at your own risk! " : "%s אינו נתמך וכן %s לא יעבוד באופן תקין בפלטפורמה זו. שימוש באחריותך בלבד! ",
+    "Sharing %s failed, could not find %s, check spelling and server availability." : "השיתוף של %s נכשל, לא ניתן למצוא %s, יש לבדוק את האיות ואת זמינות השרת.",
+    "Imprint" : "חותמת"
 },
 "nplurals=2; plural=(n != 1);");

@@ -14,7 +14,7 @@
  * @author Tom Needham <tom@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -64,7 +64,9 @@ $application->registerRoutes($this, [
 		['name' => 'Users#changeMail', 'url' => '/settings/mailaddress/change/{token}/{userId}', 'verb' => 'GET'],
 		['name' => 'Cors#getDomains', 'url' => '/settings/domains', 'verb' => 'GET'],
 		['name' => 'Cors#addDomain', 'url' => '/settings/domains', 'verb' => 'POST'],
-		['name' => 'Cors#removeDomain', 'url' => '/settings/domains/{id}', 'verb' => 'DELETE']
+		['name' => 'Cors#removeDomain', 'url' => '/settings/domains/{id}', 'verb' => 'DELETE'],
+		['name' => 'LegalSettings#setImprintUrl', 'url' => '/settings/admin/legal/imprint', 'verb' => 'POST'],
+		['name' => 'LegalSettings#setPrivacyPolicyUrl', 'url' => '/settings/admin/legal/privacypolicy', 'verb' => 'POST'],
 	]
 ]);
 

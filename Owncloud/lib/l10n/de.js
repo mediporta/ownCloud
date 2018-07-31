@@ -178,6 +178,14 @@ OC.L10N.register(
     "Storage incomplete configuration. %s" : "Unvollständige Konfiguration des Storage. %s",
     "Storage connection error. %s" : "Verbindungsfehler zum Storage. %s",
     "Storage is temporarily not available" : "Speicher ist vorübergehend nicht verfügbar",
-    "Storage connection timeout. %s" : "Zeitüberschreitung der Verbindung zum Storage. %s"
+    "Storage connection timeout. %s" : "Zeitüberschreitung der Verbindung zum Storage. %s",
+    "A safe home for all your data" : "Ein sicherer Speicherplatz für deine ganzen Daten.",
+    "The username must be at least 3 characters long" : "Der Nutzername muss mindestens 3 Zeichen lang sein",
+    "File cannot be read" : "Datei kann nicht gelesen werden",
+    "%s is not supported and %s will not work properly on this platform. Use it at your own risk! " : "%s wird nicht unterstützt und %s wird auf dieser Plattform nicht ordnungsgemäß funktionieren. Benutzung auf eigene Gefahr!",
+    "Sharing %s failed, could not find %s, check spelling and server availability." : "Das Teilen von %s schlug fehl, konnte %s nicht finden, prüfen Sie die Schreibweise und Serververfügbarkeit.",
+    "Imprint" : "Impressum",
+    "The username can not be longer than 64 characters" : "Der Benutzername darf nicht länger als 64 Zeichen sein",
+    "Privacy Policy" : "Datenschutzerklärung"
 },
 "nplurals=2; plural=(n != 1);");

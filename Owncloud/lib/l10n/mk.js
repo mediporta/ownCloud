@@ -41,6 +41,11 @@ OC.L10N.register(
     "Application is not enabled" : "Апликацијата не е овозможена",
     "Authentication error" : "Грешка во автентикација",
     "Token expired. Please reload page." : "Жетонот е истечен. Ве молам превчитајте ја страницата.",
-    "Unknown user" : "Непознат корисник"
+    "Unknown user" : "Непознат корисник",
+    "%s via %s" : "%s преку %s",
+    "Imprint" : "Печат",
+    "Help & Tips" : "Помош & совети",
+    "Additional" : "Дополнителни",
+    "Username and password" : "Корисничко име и лозинка"
 },
 "nplurals=2; plural=(n % 10 == 1 && n % 100 != 11) ? 0 : 1;");

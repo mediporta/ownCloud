@@ -22,7 +22,7 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  * @author Volkan Gezer <volkangezer@gmail.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -145,10 +145,12 @@ class Share extends Constants {
 		$userManager = \OC::$server->getUserManager();
 		$userObject = $userManager->get($ownerUser);
 
-		if (is_null($ownerUser)) {
-			\OCP\Util::writeLog('files', ' Backends provided no user object for ' . $ownerUser, \OCP\Util::ERROR);
-			throw new \OC\User\NoUserException('Backends provided no user object for ' . $ownerUser);
+		if ($userObject === null) {
+			$msg = "Backends provided no user object for $ownerUser";
+			\OC::$server->getLogger()->error($msg, ['app' => __CLASS__]);
+			throw new \OC\User\NoUserException($msg);
 		}
+
 
 		$ownerUser = $userObject->getUID();
 
@@ -915,7 +917,7 @@ class Share extends Constants {
 			if ($send === false) {
 				$currentUser = \OC::$server->getUserSession()->getUser()->getUID();
 				self::unshare($itemType, $itemSource, $shareType, $shareWith, $currentUser);
-				$message_t = $l->t('Sharing %s failed, could not find %s, maybe the server is currently unreachable.', [$itemSourceName, $shareWith]);
+				$message_t = $l->t('Sharing %s failed, could not find %s, check spelling and server availability.', [$itemSourceName, $shareWith]);
 				throw new \Exception($message_t);
 			}
 
@@ -2666,24 +2668,35 @@ class Share extends Constants {
 	 * @return array
 	 */
 	private static function tryHttpPostToShareEndpoint($remoteDomain, $urlSuffix, array $fields) {
+		$allowHttpFallback = \OC::$server->getConfig()->getSystemValue('sharing.federation.allowHttpFallback',  false) === true;
+		// Always try https first
 		$protocol = 'https://';
-		$result = [
-			'success' => false,
-			'result' => '',
-		];
-		$try = 0;
 		$discoveryManager = new DiscoveryManager(
 			\OC::$server->getMemCacheFactory(),
 			\OC::$server->getHTTPClientService()
 		);
-		while ($result['success'] === false && $try < 2) {
-			$endpoint = $discoveryManager->getShareEndpoint($protocol . $remoteDomain);
-			$result = \OC::$server->getHTTPHelper()->post($protocol . $remoteDomain . $endpoint . $urlSuffix . '?format=' . self::RESPONSE_FORMAT, $fields);
-			$try++;
+
+		$endpoint = $discoveryManager->getShareEndpoint($protocol . $remoteDomain);
+		// Try HTTPS
+		$result = \OC::$server->getHTTPHelper()->post(
+			$protocol . $remoteDomain . $endpoint . $urlSuffix . '?format=' . self::RESPONSE_FORMAT,
+			$fields);
+
+		if ($result['success'] === true) {
+			// Return if https worked
+			return $result;
+		} elseif ($result['success'] === false && $allowHttpFallback) {
+			// If https failed and we can try http - try that
 			$protocol = 'http://';
+			$result = \OC::$server->getHTTPHelper()->post(
+			$protocol . $remoteDomain . $endpoint . $urlSuffix . '?format=' . self::RESPONSE_FORMAT,
+			$fields);
+			return $result;
+		} else {
+			// Else we just return the failure
+			return $result;
 		}
 
-		return $result;
 	}
 
 	/**

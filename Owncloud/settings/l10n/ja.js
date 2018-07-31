@@ -308,6 +308,15 @@ OC.L10N.register(
     "change full name" : "名前を変更",
     "set new password" : "新しいパスワードを設定",
     "change email address" : "メールアドレスを変更",
-    "Default" : "デフォルト"
+    "Default" : "デフォルト",
+    "Change" : "更新",
+    "Share" : "共有",
+    "System Status" : "システムステータス",
+    "Domain" : "ドメイン",
+    "Add" : "追加",
+    "Change email" : "メールを変更",
+    "Show enabled apps" : "有効なアプリを表示する",
+    "Show disabled apps" : "無効なアプリを表示する",
+    "Email has been changed successfully." : "電子メールが正常に変更されました。"
 },
 "nplurals=1; plural=0;");

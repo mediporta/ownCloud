@@ -19,7 +19,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -109,19 +109,19 @@ class OC_Template extends \OC\Template\Base {
 				}
 			}
 
-			OC_Util::addStyle("tooltip",null,true);
-			OC_Util::addStyle('jquery-ui-fixes',null,true);
-			OC_Util::addVendorStyle('jquery-ui/themes/base/jquery-ui',null,true);
-			OC_Util::addStyle("mobile",null,true);
-			OC_Util::addStyle("multiselect",null,true);
-			OC_Util::addStyle("fixes",null,true);
-			OC_Util::addStyle("global",null,true);
-			OC_Util::addStyle("apps",null,true);
-			OC_Util::addStyle("fonts",null,true);
-			OC_Util::addStyle("icons",null,true);
-			OC_Util::addStyle("header",null,true);
-			OC_Util::addStyle("inputs",null,true);
-			OC_Util::addStyle("styles",null,true);
+			OC_Util::addStyle("tooltip", null, true);
+			OC_Util::addStyle('jquery-ui-fixes', null, true);
+			OC_Util::addVendorStyle('jquery-ui/themes/base/jquery-ui', null, true);
+			OC_Util::addStyle("mobile", null, true);
+			OC_Util::addStyle("multiselect", null, true);
+			OC_Util::addStyle("fixes", null, true);
+			OC_Util::addStyle("global", null, true);
+			OC_Util::addStyle("apps", null, true);
+			OC_Util::addStyle("fonts", null, true);
+			OC_Util::addStyle("icons", null, true);
+			OC_Util::addStyle("header", null, true);
+			OC_Util::addStyle("inputs", null, true);
+			OC_Util::addStyle("styles", null, true);
 
 			// avatars
 			if (\OC::$server->getSystemConfig()->getValue('enable_avatars', true) === true) {
@@ -131,6 +131,8 @@ class OC_Template extends \OC\Template\Base {
 
 			OC_Util::addScript('oc-backbone', null, true);
 			OC_Util::addVendorScript('core', 'backbone/backbone', true);
+			OC_Util::addVendorScript('core', 'select2/select2', true);
+			OC_Util::addVendorStyle('select2/select2', null, true);
 			OC_Util::addVendorScript('snapjs/dist/latest/snap', null, true);
 			OC_Util::addScript('mimetypelist', null, true);
 			OC_Util::addScript('mimetype', null, true);
@@ -194,7 +196,7 @@ class OC_Template extends \OC\Template\Base {
 		} elseif ($app === 'settings') {
 			$dirs = $this->getSettingsTemplateDirs($theme, OC::$SERVERROOT);
 		} else {
-			$dirs = $this->getAppTemplateDirs($theme, $app, OC::$SERVERROOT, OC_App::getAppPath($app));
+			$dirs = $this->getAppTemplateDirs($theme, $app, OC_App::getAppPath($app));
 		}
 
 		$locator = new \OC\Template\TemplateFileLocator( $dirs );
@@ -263,11 +265,14 @@ class OC_Template extends \OC\Template\Base {
 	 * @param array|null $additionalParams
 	 * @return string returns content of included template
 	 *
-	 * Includes another template. use <?php echo $this->inc('template'); ?> to
-	 * do this.
+	 * Includes another template.
+	 * use <?php print_unescaped($this->inc('template')); ?> to do this.
+	 * use <?php print_unescaped($this->inc('template', ['app'=>'appName'])); ?>
+	 * to include template from a different app.
 	 */
 	public function inc($file, $additionalParams = null) {
-		$template = $this->findTemplate($this->theme, $this->app, $file);
+		$app = (isset($additionalParams['app'])) ? $additionalParams['app'] : $this->app;
+		$template = $this->findTemplate($this->theme, $app, $file);
 		return $this->load($template, $additionalParams);
 	}
 

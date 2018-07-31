@@ -9,7 +9,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -92,6 +92,7 @@ class MountPoint implements IMountPoint {
 
 		$mountpoint = $this->formatPath($mountpoint);
 		$this->mountPoint = $mountpoint;
+		// FIXME: this should also check for IStorage, and the public Storage interface
 		if ($storage instanceof Storage) {
 			$this->class = get_class($storage);
 			$this->storage = $this->loader->wrap($this, $storage);

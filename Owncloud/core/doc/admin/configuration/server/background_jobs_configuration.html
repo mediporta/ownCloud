@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Background Jobs &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Background Jobs &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -88,6 +88,7 @@
 <li class="toctree-l3"><a class="reference internal" href="custom_client_repos.html">Custom Client Download Repositories</a></li>
 <li class="toctree-l3"><a class="reference internal" href="knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
@@ -137,6 +138,7 @@ Cron jobs are commands or shell-based scripts that are scheduled to periodically
 <code class="docutils literal"><span class="pre">cron.php</span></code> is an ownCloud internal process that runs such background jobs on demand.</p>
 <p>ownCloud plug-in applications can register actions with <code class="docutils literal"><span class="pre">cron.php</span></code> automatically to take care of typical housekeeping operations.
 These actions can include garbage collecting of temporary files or checking for newly updated files using <code class="docutils literal"><span class="pre">filescan()</span></code> on externally mounted file systems.</p>
+<p>You can decide how often jobs get processed, we recommend an interval of one minute.</p>
 <div class="section" id="cron-jobs">
 <span id="cron-job-label"></span><h2>Cron Jobs<a class="headerlink" href="#cron-jobs" title="Permalink to this headline">¶</a></h2>
 <p>You can schedule Cron jobs in three ways: <a class="reference internal" href="#cron">Cron</a>, <a class="reference internal" href="#webcron">Webcron</a>, or <a class="reference internal" href="#ajax">AJAX</a>.
@@ -163,21 +165,25 @@ Cron, however, will clear the entire queue.</p>
 <h3>Cron<a class="headerlink" href="#cron" title="Permalink to this headline">¶</a></h3>
 <p>Using the operating system Cron feature is the preferred method for executing regular tasks.
 This method enables the execution of scheduled jobs without the inherent limitations which the web server might have.</p>
-<p>For example, to run a Cron job on a *nix system every 15 minutes, under the default web server user (often, <code class="docutils literal"><span class="pre">www-data</span></code> or <code class="docutils literal"><span class="pre">wwwrun</span></code>) you must set up the following Cron job to call the <strong>cron.php</strong> script:</p>
+<p>For example, to run a Cron job on a *nix system every minute, under the default web server user (often, <code class="docutils literal"><span class="pre">www-data</span></code> or <code class="docutils literal"><span class="pre">wwwrun</span></code>) you must set up the following Cron job to call the <strong>cron.php</strong> script:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># crontab -u www-data -e</span>
-<span class="o">*/</span><span class="mi">15</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">cron</span><span class="o">.</span><span class="n">php</span>
+<span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">cron</span><span class="o">.</span><span class="n">php</span>
 </pre></div>
 </div>
 <p>You can verify if the cron job has been added and scheduled by executing:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># crontab -u www-data -l</span>
-<span class="o">*/</span><span class="mi">15</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">cron</span><span class="o">.</span><span class="n">php</span>
+<span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span>  <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">-</span><span class="n">f</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">your</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">cron</span><span class="o">.</span><span class="n">php</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">You have to make sure that <code class="docutils literal"><span class="pre">php</span></code> is found by <code class="docutils literal"><span class="pre">cron</span></code>, hence why we’ve deliberately added the full path to the PHP binary above (<code class="docutils literal"><span class="pre">/usr/bin/php</span></code>). On some systems it might be necessary to use <strong>php-cli</strong> instead of <strong>php</strong>.</p>
 </div>
-<p>Please refer to <a class="reference external" href="https://linux.die.net/man/1/crontab">the crontab man page</a> for the exact command syntax.</p>
+<p>Please refer to <a class="reference external" href="https://linux.die.net/man/1/crontab">the crontab man page</a> for the exact command syntax if you don’t want to have it run every minute.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There are other methods to invoke programs by the system regularly, e.g. <a class="reference external" href="https://wiki.archlinux.org/index.php/Systemd/Timers">systemd timers</a></p>
+</div>
 </div>
 <div class="section" id="webcron">
 <h3>Webcron<a class="headerlink" href="#webcron" title="Permalink to this headline">¶</a></h3>
@@ -189,7 +195,7 @@ For example:</p>
 </div>
 </div>
 <div class="section" id="ajax">
-<h3>AJAX<a class="headerlink" href="#ajax" title="Permalink to this headline">¶</a></h3>
+<span id="ajax-cron-label"></span><h3>AJAX<a class="headerlink" href="#ajax" title="Permalink to this headline">¶</a></h3>
 <p>The AJAX scheduling method is the default option.
 However, it is also the <em>least</em> reliable.
 Each time a user visits the ownCloud page, a single background job is executed.
@@ -217,11 +223,8 @@ Each of these processes would acquire their own list of jobs to process without 
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>These jobs are generally only needed on large instances and can be run as background jobs.
-If the number of users in your installation ranges between 1,000 and 3,000, or if you’re using LDAP
-and it becomes a bottleneck, then admins can delete several entries in the <cite>oc_jobs</cite> table and replace
-them with the corresponding <cite>occ</cite> command, which you can see here:</p>
+If the number of users in your installation ranges between 1,000 and 3,000, or if you’re using LDAP and it becomes a bottleneck, then admins can delete several entries in the <cite>oc_jobs</cite> table and replace them with the corresponding <cite>occ</cite> command, which you can see here:</p>
 <ul class="simple">
-<li><code class="docutils literal"><span class="pre">OCA\\DAV\\Command\\CleanupChunks</span></code> -&gt; <code class="docutils literal"><span class="pre">occ</span> <span class="pre">dav:cleanup-chunks</span></code></li>
 <li><code class="docutils literal"><span class="pre">OCA\\DAV\CardDAV\\SyncJob</span></code> -&gt; <code class="docutils literal"><span class="pre">occ</span> <span class="pre">dav:sync-system-addressbook</span></code></li>
 <li><code class="docutils literal"><span class="pre">OCA\\Federation\\SyncJob</span></code> -&gt; <code class="docutils literal"><span class="pre">occ</span> <span class="pre">federation:sync-addressbooks</span></code></li>
 <li><code class="docutils literal"><span class="pre">OCA\\Files_Trashbin\\BackgroundJob\\ExpireTrash</span></code> -&gt; <code class="docutils literal"><span class="pre">occ</span> <span class="pre">trashbin:expire</span></code></li>
@@ -232,11 +235,10 @@ them with the corresponding <cite>occ</cite> command, which you can see here:</p
 <p>While not exhaustive, these include:</p>
 <div class="section" id="cleanupchunks">
 <h4>CleanupChunks<a class="headerlink" href="#cleanupchunks" title="Permalink to this headline">¶</a></h4>
-<p>The CleanupChunks job, contained in <code class="docutils literal"><span class="pre">OCA\\DAV\\Command\\CleanupChunks</span></code>, will clean up outdated chunks (uploaded files) more than a certain number of days old.
-By default, the command cleans up chunks more than two days old. However, the command also accepts the number of days as an argument.
-It can be run, as follows, using the OCC command</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">occ</span> <span class="n">dav</span><span class="p">:</span><span class="n">cleanup</span><span class="o">-</span><span class="n">chunks</span>
-</pre></div>
+<p>The CleanupChunks command, <code class="docutils literal"><span class="pre">occ</span> <span class="pre">dav:cleanup-chunks</span></code>, will clean up outdated chunks (uploaded files) more than a certain number of days old and needs to be added to your crontab.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is no matching background job to delete from the <code class="docutils literal"><span class="pre">oc_jobs</span></code> table.</p>
 </div>
 </div>
 <div class="section" id="expiretrash">

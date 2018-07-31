@@ -6,7 +6,7 @@
  * @author Robin Appelman <icewind@owncloud.com>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -27,7 +27,9 @@ namespace OC\Files\ObjectStore;
 
 use Icewind\Streams\IteratorDirectory;
 use OC\Files\Cache\CacheEntry;
+use OCP\Files\NotFoundException;
 use OCP\Files\ObjectStore\IObjectStore;
+use OCP\Files\ObjectStore\IVersionedObjectStorage;
 
 class ObjectStoreStorage extends \OC\Files\Storage\Common {
 
@@ -317,6 +319,24 @@ class ObjectStoreStorage extends \OC\Files\Storage\Common {
 		return true;
 	}
 
+	public function moveFromStorage(\OCP\Files\Storage $sourceStorage, $sourceInternalPath, $targetInternalPath) {
+		if ($sourceStorage === $this) {
+			return $this->copy($sourceInternalPath, $targetInternalPath);
+		}
+		// cross storage moves need to perform a move operation
+		// TODO: there is some cache updating missing which requires bigger changes and is
+		//       subject to followup PRs
+		if (!$sourceStorage->instanceOfStorage(self::class)) {
+			return parent::moveFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
+		}
+
+		// source and target live on the same object store and we can simply rename
+		// which updates the cache properly
+		$this->getUpdater()->renameFromStorage($sourceStorage, $sourceInternalPath, $targetInternalPath);
+		return true;
+	}
+
+
 	public function getMimeType($path) {
 		$path = $this->normalizePath($path);
 		$stat = $this->stat($path);
@@ -410,4 +430,76 @@ class ObjectStoreStorage extends \OC\Files\Storage\Common {
 	public function hasUpdated($path, $time) {
 		return false;
 	}
+
+	public function saveVersion($internalPath) {
+		if ($this->objectStore instanceof IVersionedObjectStorage) {
+			$stat = $this->stat($internalPath);
+			// There are cases in the current implementation where saveVersion
+			// is called before the file was even written.
+			// There is nothing to be done in this case.
+			// We return true to not trigger the fallback implementation
+			if ($stat === false) {
+				return true;
+			}
+			return $this->objectStore->saveVersion($this->getURN($stat['fileid']));
+		}
+		return parent::saveVersion($internalPath);
+	}
+
+	public function getVersions($internalPath) {
+		if ($this->objectStore instanceof IVersionedObjectStorage) {
+			$stat = $this->stat($internalPath);
+			if ($stat === false) {
+				throw new NotFoundException();
+			}
+			$versions = $this->objectStore->getVersions($this->getURN($stat['fileid']));
+			list($uid, $path) = $this->convertInternalPathToGlobalPath($internalPath);
+			return \array_map(function(array $version) use ($uid, $path) {
+				$version['path'] = $path;
+				$version['owner'] = $uid;
+				return $version;
+			}, $versions);
+		}
+		return parent::getVersions($internalPath);
+	}
+
+	public function getVersion($internalPath, $versionId) {
+		if ($this->objectStore instanceof IVersionedObjectStorage) {
+			$stat = $this->stat($internalPath);
+			if ($stat === false) {
+				throw new NotFoundException();
+			}
+			$version = $this->objectStore->getVersion($this->getURN($stat['fileid']), $versionId);
+			list($uid, $path) = $this->convertInternalPathToGlobalPath($internalPath);
+			if (!empty($version)) {
+				$version['path'] = $path;
+				$version['owner'] = $uid;
+			}
+			return $version;
+		}
+		return parent::getVersion($internalPath, $versionId);
+	}
+
+	public function getContentOfVersion($internalPath, $versionId) {
+		if ($this->objectStore instanceof IVersionedObjectStorage) {
+			$stat = $this->stat($internalPath);
+			if ($stat === false) {
+				throw new NotFoundException();
+			}
+			return $this->objectStore->getContentOfVersion($this->getURN($stat['fileid']), $versionId);
+		}
+		return parent::getContentOfVersion($internalPath, $versionId);
+	}
+
+	public function restoreVersion($internalPath, $versionId) {
+		if ($this->objectStore instanceof IVersionedObjectStorage) {
+			$stat = $this->stat($internalPath);
+			if ($stat === false) {
+				throw new NotFoundException();
+			}
+			return $this->objectStore->restoreVersion($this->getURN($stat['fileid']), $versionId);
+		}
+		return parent::restoreVersion($internalPath, $versionId);
+	}
+
 }

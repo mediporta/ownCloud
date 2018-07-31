@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@ use OCP\UserInterface;
 /**
  * Class Account
  *
- * @method int getUserId()
+ * @method string getUserId()
  * @method string getDisplayName()
  * @method void setDisplayName(string $displayName)
  * @method string getEmail()
@@ -71,6 +71,9 @@ class Account extends Entity {
 		$this->addType('lastLogin', 'integer');
 	}
 
+	/**
+	 * @param string $uid
+	 */
 	public function setUserId($uid) {
 		parent::setter('lowerUserId', [strtolower($uid)]);
 		parent::setter('userId', [$uid]);

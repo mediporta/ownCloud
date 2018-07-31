@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>File Sharing and Management &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>File Sharing and Management &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -167,23 +167,25 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="encryption_configuration.html">Encryption Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#background-information">Background information</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#encryption-types">Encryption Types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#before-enabling-encryption">Before Enabling Encryption</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#how-to-enable-encryption">How To Enable Encryption</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#enabling-master-key-based-encryption">Enabling Master Key Based Encryption</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#sharing-encrypted-files">Sharing Encrypted Files</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#encrypting-external-mountpoints">Encrypting External Mountpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#enabling-master-key-based-encryption-from-the-command-line">Enabling Master Key Based Encryption from the Command-Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#view-current-encryption-status">View Current Encryption Status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#recreating-an-existing-master-key">Recreating an Existing Master Key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#decrypt-master-key-encryption">Decrypt Master-Key Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#disabling-encryption">Disabling Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#enabling-user-key-based-encryption-from-the-command-line">Enabling User-Key Based Encryption From the Command-line</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#how-to-enable-users-file-recovery-keys">How To Enable Users File Recovery Keys</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#changing-the-recovery-key-password">Changing The Recovery Key Password</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#disabling-encryption">Disabling Encryption</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#not-all-files-are-encrypted">Not All Files Are Encrypted</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#ldap-and-other-external-user-back-ends">LDAP and Other External User Back-ends</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#occ-encryption-commands">occ Encryption Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#decrypt-user-key-encryption">Decrypt User-Key Encryption</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#id1">Disabling Encryption</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#move-key-location">Move Key Location</a></li>
 <li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#files-not-encrypted">Files Not Encrypted</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#id2">LDAP and Other External User Back-ends</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#encryption-migration-to-owncloud-8-0">Encryption migration to ownCloud 8.0</a></li>
-<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#encryption-migration-to-owncloud-8-1">Encryption migration to ownCloud 8.1</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#ldap-and-other-external-user-back-ends">LDAP and Other External User Back-ends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#encrypting-external-mountpoints">Encrypting External Mountpoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#sharing-encrypted-files">Sharing Encrypted Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration.html#how-to-enable-encryption-from-the-web-ui">How To Enable Encryption From the Web-UI</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="files_locking_transactional.html">Transactional File Locking</a></li>

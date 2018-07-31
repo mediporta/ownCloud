@@ -2,7 +2,7 @@
 /**
  * @author Tom Needham <tom@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -52,6 +52,7 @@ use OC\Settings\Panels\Admin\BackgroundJobs;
 use OC\Settings\Panels\Admin\Certificates;
 use OC\Settings\Panels\Admin\Encryption;
 use OC\Settings\Panels\Admin\FileSharing;
+use OC\Settings\Panels\Admin\Legal;
 use OC\Settings\Panels\Admin\Mail;
 use OC\Settings\Panels\Admin\Logging;
 use OC\Settings\Panels\Admin\SecurityWarning;
@@ -236,6 +237,7 @@ class SettingsManager implements ISettingsManager {
 				Encryption::class,
 				Certificates::class,
 				Apps::class,
+				Legal::class,
 				Status::class
 			];
 		} else if($type === 'personal') {
@@ -291,7 +293,8 @@ class SettingsManager implements ISettingsManager {
 				$this->lockingProvider),
 			Tips::class => new Tips(),
 			LegacyAdmin::class => new LegacyAdmin($this->helper),
-			Apps::class => new Apps($this->config)
+			Apps::class => new Apps($this->config),
+			Legal::class => new Legal($this->config)
 		];
 		if(isset($panels[$className])) {
 			return $panels[$className];

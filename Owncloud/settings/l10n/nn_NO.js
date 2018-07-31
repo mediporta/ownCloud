@@ -83,6 +83,13 @@ OC.L10N.register(
     "Other" : "Anna",
     "Quota" : "Kvote",
     "set new password" : "lag nytt passord",
-    "Default" : "Standard"
+    "Default" : "Standard",
+    "Saved" : "Lagra",
+    "Share" : "Del",
+    "What to log" : "Kva skal sparast",
+    "Add" : "Legg til",
+    "%s password changed successfully" : "%spassord er endra",
+    "Download logfile (%s)" : "Last ned logg (%s)",
+    "The logfile is bigger than 100 MB. Downloading it may take some time!" : "Logg fil er større enn 100MB. Nedlasting kan ta tid."
 },
 "nplurals=2; plural=(n != 1);");

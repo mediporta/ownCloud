@@ -7,7 +7,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -28,12 +28,14 @@ namespace OC\Share20;
 
 use OC\Cache\CappedMemoryCache;
 use OC\Files\Mount\MoveableMount;
+use OC\Files\View;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Mount\IMountManager;
 use OCP\Files\NotFoundException;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\ILogger;
@@ -42,8 +44,11 @@ use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
 use OCP\Share\Exceptions\GenericShareException;
 use OCP\Share\Exceptions\ShareNotFound;
+use OCP\Share\Exceptions\TransferSharesException;
 use OCP\Share\IManager;
 use OCP\Share\IProviderFactory;
+use OCP\Share\IShare;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
@@ -73,6 +78,12 @@ class Manager implements IManager {
 	private $rootFolder;
 	/** @var CappedMemoryCache */
 	private $sharingDisabledForUsersCache;
+	/** @var EventDispatcher  */
+	private $eventDispatcher;
+	/** @var  View */
+	private $view;
+	/** @var IDBConnection  */
+	private $connection;
 
 
 	/**
@@ -99,7 +110,10 @@ class Manager implements IManager {
 			IL10N $l,
 			IProviderFactory $factory,
 			IUserManager $userManager,
-			IRootFolder $rootFolder
+			IRootFolder $rootFolder,
+			EventDispatcher $eventDispatcher,
+			View $view,
+			IDBConnection $connection
 	) {
 		$this->logger = $logger;
 		$this->config = $config;
@@ -112,6 +126,9 @@ class Manager implements IManager {
 		$this->userManager = $userManager;
 		$this->rootFolder = $rootFolder;
 		$this->sharingDisabledForUsersCache = new CappedMemoryCache();
+		$this->eventDispatcher = $eventDispatcher;
+		$this->view = $view;
+		$this->connection = $connection;
 	}
 
 	/**
@@ -148,15 +165,6 @@ class Manager implements IManager {
 	 * @throws \Exception
 	 */
 	protected function verifyPassword($password) {
-		if ($password === null) {
-			// No password is set, check if this is allowed.
-			if ($this->shareApiLinkEnforcePassword()) {
-				throw new \InvalidArgumentException('Passwords are enforced for link shares');
-			}
-
-			return;
-		}
-
 		// Let others verify the password
 		$accepted = true;
 		$message = '';
@@ -170,10 +178,27 @@ class Manager implements IManager {
 			throw new \Exception($message);
 		}
 
-		\OC::$server->getEventDispatcher()->dispatch(
+		$this->eventDispatcher->dispatch(
 			'OCP\Share::validatePassword',
 			new GenericEvent(null, ['password' => $password])
 		);
+	}
+
+	/**
+	 * Check if a password must be enforced if the shared has those permissions
+	 * @param int $permissions \OCP\Constants::PERMISSION_* ("|" can be use for sets of permissions)
+	 * @return bool true if the password must be enforced, false otherwise
+	 */
+	protected function passwordMustBeEnforced($permissions) {
+		$roEnforcement = $permissions === \OCP\Constants::PERMISSION_READ && $this->shareApiLinkEnforcePasswordReadOnly();
+		$woEnforcement = $permissions === \OCP\Constants::PERMISSION_CREATE && $this->shareApiLinkEnforcePasswordWriteOnly();
+		// use read & write enforcement for the rest of the cases
+		$rwEnforcement = ($permissions !== \OCP\Constants::PERMISSION_READ && $permissions !== \OCP\Constants::PERMISSION_CREATE) && $this->shareApiLinkEnforcePasswordReadWrite();
+		if ($roEnforcement || $woEnforcement || $rwEnforcement) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -585,7 +610,11 @@ class Manager implements IManager {
 			$this->validateExpirationDate($share);
 
 			//Verify the password
-			$this->verifyPassword($share->getPassword());
+			if ($this->passwordMustBeEnforced($share->getPermissions()) && $share->getPassword() === null) {
+				throw new \InvalidArgumentException('Passwords are enforced for link shares');
+			} else {
+				$this->verifyPassword($share->getPassword());
+			}
 
 			// If a password is set. Hash it!
 			if ($share->getPassword() !== null) {
@@ -623,6 +652,9 @@ class Manager implements IManager {
 		];
 		\OC_Hook::emit('OCP\Share', 'pre_shared', $preHookData);
 
+		$beforeEvent = new GenericEvent(null, ['shareData' => $preHookData, 'shareObject' => $share]);
+		$this->eventDispatcher->dispatch('share.beforeCreate', $beforeEvent);
+
 		if ($run === false) {
 			throw new \Exception($error);
 		}
@@ -649,7 +681,112 @@ class Manager implements IManager {
 
 		\OC_Hook::emit('OCP\Share', 'post_shared', $postHookData);
 
+		$afterEvent = new GenericEvent(null, ['shareData' => $postHookData, 'shareObject' => $share]);
+		$this->eventDispatcher->dispatch('share.afterCreate', $afterEvent);
+
 		return $share;
+	}
+
+	/**
+	 * Transfer shares from oldOwner to newOwner. Both old and new owners are uid
+	 *
+	 * finalTarget is of the form "user1/files/transferred from admin on 20180509"
+	 *
+	 * TransferShareException would be thrown when:
+	 *  - oldOwner, newOwner does not exist.
+	 *  - oldOwner and newOwner are same
+	 * NotFoundException would be thrown when finalTarget does not exist in the file
+	 * system
+	 *
+	 * @param IShare $share
+	 * @param string $oldOwner
+	 * @param string $newOwner
+	 * @param string $finalTarget
+	 * @param null|bool $isChild
+	 * @throws TransferSharesException
+	 * @throws NotFoundException
+	 */
+	public function transferShare(IShare $share, $oldOwner, $newOwner, $finalTarget, $isChild = null) {
+		if ($this->userManager->get($oldOwner) === null) {
+			throw new TransferSharesException("The current owner of the share $oldOwner doesn't exist");
+		}
+		if ($this->userManager->get($newOwner) === null) {
+			throw new TransferSharesException("The future owner $newOwner, where the share has to be moved doesn't exist");
+		}
+
+		if ($oldOwner === $newOwner) {
+			throw new TransferSharesException("The current owner of the share and the future owner of the share are same");
+		}
+
+		//If the destination location, i.e finalTarget is not present, then
+		//throw an exception
+		if (!$this->view->file_exists($finalTarget)) {
+			throw new NotFoundException("The target location $finalTarget doesn't exist");
+		}
+
+		if ($isChild === true) {
+			//Set the parent to null so that we don't lose the shares after transfer
+			$builder = $this->connection->getQueryBuilder();
+			$builder->update('share')
+				->set('parent', 'null')
+				->where($builder->expr()->eq('id', $builder->createNamedParameter($share->getId())))
+				->execute();
+		}
+		/**
+		 * If the share was already shared with new owner, then we can delete it
+		 */
+		if ($share->getSharedWith() === $newOwner) {
+			// Unmount the shares before deleting, so we don't try to get the storage later on.
+			$shareMountPoint = $this->mountManager->find('/' . $newOwner . '/files' . $share->getTarget());
+			if ($shareMountPoint) {
+				$this->mountManager->removeMount($shareMountPoint->getMountPoint());
+			}
+
+			$provider = $this->factory->getProviderForType($share->getShareType());
+			//Try to get the children transferred and then delete the parent
+			foreach ($provider->getChildren($share) as $child) {
+				$this->transferShare($child, $oldOwner, $newOwner, $finalTarget, true);
+			}
+			$this->deleteShare($share);
+		} else {
+			$sharedWith = $share->getSharedWith();
+
+			$targetFile = '/' . rtrim(basename($finalTarget), '/') . '/' . ltrim(basename($share->getTarget()), '/');
+			/**
+			 * Scenario where share is made by old owner to a user different
+			 * from new owner
+			 */
+			if (($sharedWith !== null) && ($sharedWith !== $oldOwner) && ($sharedWith !== $newOwner)) {
+				$sharedBy = $share->getSharedBy();
+				$sharedOwner = $share->getShareOwner();
+				//The origin of the share now has to be the destination user.
+				if ($sharedBy === $oldOwner) {
+					$share->setSharedBy($newOwner);
+				}
+				if ($sharedOwner === $oldOwner) {
+					$share->setShareOwner($newOwner);
+				}
+				if (($sharedBy === $oldOwner) || ($sharedOwner === $oldOwner)) {
+					$share->setTarget($targetFile);
+				}
+			} else {
+				if ($share->getShareOwner() === $oldOwner) {
+					$share->setShareOwner($newOwner);
+				}
+				if ($share->getSharedBy() === $oldOwner) {
+					$share->setSharedBy($newOwner);
+				}
+			}
+
+			/**
+			 * Here we update the target when the share is link
+			 */
+			if ($share->getShareType() === \OCP\Share::SHARE_TYPE_LINK) {
+				$share->setTarget($targetFile);
+			}
+
+			$this->updateShare($share);
+		}
 	}
 
 	/**
@@ -697,12 +834,17 @@ class Manager implements IManager {
 			$this->linkCreateChecks($share);
 
 			// Password updated.
-			if ($share->getPassword() !== $originalShare->getPassword()) {
-				//Verify the password
-				$this->verifyPassword($share->getPassword());
+			if ($share->getPassword() !== $originalShare->getPassword() ||
+					$share->getPermissions() !== $originalShare->getPermissions()) {
+				//Verify the password. Permissions must be taken into account in case the password must be enforced
+				if ($this->passwordMustBeEnforced($share->getPermissions()) && $share->getPassword() === null) {
+					throw new \InvalidArgumentException('Passwords are enforced for link shares');
+				} else {
+					$this->verifyPassword($share->getPassword(), $share->getPermissions());
+				}
 
-				// If a password is set. Hash it!
-				if ($share->getPassword() !== null) {
+				// If a password is set. Hash it! (only if the password has changed)
+				if ($share->getPassword() !== null && $share->getPassword() !== $originalShare->getPassword()) {
 					$share->setPassword($this->hasher->hash($share->getPassword()));
 				}
 			}
@@ -721,6 +863,9 @@ class Manager implements IManager {
 		$provider = $this->factory->getProviderForType($share->getShareType());
 		$share = $provider->update($share);
 
+		$shareAfterUpdateEvent = new GenericEvent(null);
+		$shareAfterUpdateEvent->setArgument('shareobject', $share);
+		$update = false;
 		if ($expirationDateUpdated === true) {
 			\OC_Hook::emit('OCP\Share', 'post_set_expiration_date', [
 				'itemType' => $share->getNode() instanceof \OCP\Files\File ? 'file' : 'folder',
@@ -728,6 +873,9 @@ class Manager implements IManager {
 				'date' => $share->getExpirationDate(),
 				'uidOwner' => $share->getSharedBy(),
 			]);
+			$shareAfterUpdateEvent->setArgument('expirationdateupdated', true);
+			$shareAfterUpdateEvent->setArgument('oldexpirationdate', $originalShare->getExpirationDate());
+			$update = true;
 		}
 
 		if ($share->getPassword() !== $originalShare->getPassword()) {
@@ -738,6 +886,8 @@ class Manager implements IManager {
 				'token' => $share->getToken(),
 				'disabled' => is_null($share->getPassword()),
 			]);
+			$shareAfterUpdateEvent->setArgument('passwordupdate', true);
+			$update = true;
 		}
 
 		if ($share->getPermissions() !== $originalShare->getPermissions()) {
@@ -755,8 +905,21 @@ class Manager implements IManager {
 				'permissions' => $share->getPermissions(),
 				'path' => $userFolder->getRelativePath($share->getNode()->getPath()),
 			]);
+			$shareAfterUpdateEvent->setArgument('permissionupdate', true);
+			$shareAfterUpdateEvent->setArgument('oldpermissions', $originalShare->getPermissions());
+			$shareAfterUpdateEvent->setArgument('path', $userFolder->getRelativePath($share->getNode()->getPath()));
+			$update = true;
 		}
 
+		if ($share->getName() !== $originalShare->getName()) {
+			$shareAfterUpdateEvent->setArgument('sharenameupdated', true);
+			$shareAfterUpdateEvent->setArgument('oldname', $originalShare->getName());
+			$update = true;
+		}
+
+		if ($update === true) {
+			$this->eventDispatcher->dispatch('share.afterupdate', $shareAfterUpdateEvent);
+		}
 		return $share;
 	}
 
@@ -829,6 +992,8 @@ class Manager implements IManager {
 		// Emit pre-hook
 		\OC_Hook::emit('OCP\Share', 'pre_unshare', $hookParams);
 
+		$beforeEvent = new GenericEvent(null, ['shareData' => $hookParams, 'shareObject' => $share]);
+		$this->eventDispatcher->dispatch('share.beforeDelete', $beforeEvent);
 		// Get all children and delete them as well
 		$deletedShares = $this->deleteChildren($share);
 
@@ -846,6 +1011,8 @@ class Manager implements IManager {
 
 		// Emit post hook
 		\OC_Hook::emit('OCP\Share', 'post_unshare', $hookParams);
+		$afterEvent = new GenericEvent(null, ['shareData' => $hookParams['deletedShares'], 'shareObject' => $share]);
+		$this->eventDispatcher->dispatch('share.afterDelete', $afterEvent);
 	}
 
 
@@ -878,36 +1045,24 @@ class Manager implements IManager {
 			'recipientPath' => $share->getTarget(),
 			'ownerPath' => $share->getNode()->getPath(),
 			'nodeType' => $share->getNodeType()]);
-		\OC::$server->getEventDispatcher()->dispatch('fromself.unshare',$event);
+		$this->eventDispatcher->dispatch('fromself.unshare',$event);
 	}
 
 	/**
 	 * @inheritdoc
 	 */
 	public function moveShare(\OCP\Share\IShare $share, $recipientId) {
-		if ($share->getShareType() === \OCP\Share::SHARE_TYPE_LINK) {
-			throw new \InvalidArgumentException('Can\'t change target of link share');
-		}
+		return $this->updateShareForRecipient($share, $recipientId);
+	}
 
-		if ($share->getShareType() === \OCP\Share::SHARE_TYPE_USER && $share->getSharedWith() !== $recipientId) {
-			throw new \InvalidArgumentException('Invalid recipient');
-		}
-
-		if ($share->getShareType() === \OCP\Share::SHARE_TYPE_GROUP) {
-			$sharedWith = $this->groupManager->get($share->getSharedWith());
-			if (is_null($sharedWith)) {
-				throw new \InvalidArgumentException('Group "' . $share->getSharedWith() . '" does not exist');
-			}
-			$recipient = $this->userManager->get($recipientId);
-			if (!$sharedWith->inGroup($recipient)) {
-				throw new \InvalidArgumentException('Invalid recipient');
-			}
-		}
-
+	/**
+	 * @inheritdoc
+	 */
+	public function updateShareForRecipient(\OCP\Share\IShare $share, $recipientId) {
 		list($providerId, ) = $this->splitFullId($share->getFullId());
 		$provider = $this->factory->getProvider($providerId);
 
-		$provider->move($share, $recipientId);
+		return $provider->updateForRecipient($share, $recipientId);
 	}
 
 	/**
@@ -1251,12 +1406,39 @@ class Manager implements IManager {
 	}
 
 	/**
-	 * Is password on public link requires
+	 * Is password on public link requires (fallback to shareApiLinkEnforcePasswordReadOnly)
 	 *
 	 * @return bool
 	 */
 	public function shareApiLinkEnforcePassword() {
-		return $this->config->getAppValue('core', 'shareapi_enforce_links_password', 'no') === 'yes';
+		return $this->shareApiLinkEnforcePasswordReadOnly();
+	}
+
+	/**
+	 * Is password enforced for read-only shares?
+	 *
+	 * @return bool
+	 */
+	public function shareApiLinkEnforcePasswordReadOnly() {
+		return $this->config->getAppValue('core', 'shareapi_enforce_links_password_read_only', 'no') === 'yes';
+	}
+
+	/**
+	 * Is password enforced for read & write shares?
+	 *
+	 * @return bool
+	 */
+	public function shareApiLinkEnforcePasswordReadWrite() {
+		return $this->config->getAppValue('core', 'shareapi_enforce_links_password_read_write', 'no') === 'yes';
+	}
+
+	/**
+	 * Is password enforced for write-only shares?
+	 *
+	 * @return bool
+	 */
+	public function shareApiLinkEnforcePasswordWriteOnly() {
+		return $this->config->getAppValue('core', 'shareapi_enforce_links_password_write_only', 'no') === 'yes';
 	}
 
 	/**
@@ -1323,7 +1505,7 @@ class Manager implements IManager {
 	/**
 	 * Copied from \OC_Util::isSharingDisabledForUser
 	 *
-	 * TODO: Deprecate fuction from OC_Util
+	 * TODO: Deprecate function from OC_Util
 	 *
 	 * @param string $userId
 	 * @return bool
@@ -1347,14 +1529,11 @@ class Manager implements IManager {
 			}
 			$user = $this->userManager->get($userId);
 			$usersGroups = $this->groupManager->getUserGroupIds($user);
-			if (!empty($usersGroups)) {
-				$remainingGroups = array_diff($usersGroups, $excludedGroups);
-				// if the user is only in groups which are disabled for sharing then
-				// sharing is also disabled for the user
-				if (empty($remainingGroups)) {
-					$this->sharingDisabledForUsersCache[$userId] = true;
-					return true;
-				}
+			$matchingGroups = \array_intersect($usersGroups, $excludedGroups);
+			if (!empty($matchingGroups)) {
+				// If the user is a member of any of the excluded groups they cannot use sharing
+				$this->sharingDisabledForUsersCache[$userId] = true;
+				return true;
 			}
 		}
 

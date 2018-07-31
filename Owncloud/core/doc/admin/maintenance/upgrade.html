@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>How to Upgrade Your ownCloud Server &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>How to Upgrade Your ownCloud Server &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -80,7 +80,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#testing-a-migration">Testing a Migration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#migrating-with-the-encryption-backend-enabled">Migrating with the Encryption Backend Enabled</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#migrating-from-debian-to-official-owncloud-packages">Migrating from Debian to Official ownCloud Packages</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#upgrading-from-9-1-to-version">Upgrading from 9.1 to 10.0.7</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#upgrading-from-9-1-to-version">Upgrading from 9.1 to 10.0.9</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="package_upgrade.html">Upgrade ownCloud From Packages</a></li>
@@ -122,7 +122,7 @@
 <p>We recommend that you keep your ownCloud server upgraded regularly installing all point releases and major releases, without skipping any of them, as doing so increases the risk of errors.</p>
 <ul class="simple">
 <li>Major releases are 8.0, 8.1, 8.2, 9.0, 9.1, and 10.0.</li>
-<li>Point releases are intermediate releases for each major release, e.g., 8.0.9, 8.1.3, and 10.0.7.</li>
+<li>Point releases are intermediate releases for each major release, e.g., 8.0.9, 8.1.3, and 10.0.9.</li>
 </ul>
 <p>When an update is available for your ownCloud server, you will see a notification at the top of your ownCloud Web interface.
 When you click the notification, it will bring you here.</p>
@@ -148,16 +148,13 @@ After the upgrade is complete re-enable any which are compatible with the new re
 </div>
 <div class="section" id="upgrade-options">
 <h2>Upgrade Options<a class="headerlink" href="#upgrade-options" title="Permalink to this headline">¶</a></h2>
-<p>There are three ways to upgrade your ownCloud server:</p>
-<ol class="arabic simple">
-<li>Using the <a class="reference internal" href="update.html"><span class="doc">Updater App</span></a> (Server Edition only). This is recommended for shared hosters and for users who want an easy way to track different release channels. It is <em>not available</em> and <em>not supported</em> on the Enterprise edition. This is the recommended method.</li>
-<li>Using your <a class="reference internal" href="package_upgrade.html"><span class="doc">Linux package manager</span></a> with our official ownCloud repositories.</li>
-<li><a class="reference internal" href="manual_upgrade.html"><span class="doc">Manually upgrading</span></a> with the latest ownCloud release from <a class="reference external" href="https://owncloud.org/install/">owncloud.org/install/</a>.</li>
-</ol>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Please remember that in scale-out deployments (where your database is sitting somewehere else, not on the same machine as the webserver) using the package manager is going to install all the related dependencies, unless the <code class="docutils literal"><span class="pre">owncloud-enterprise-files</span></code> (for the Enterprise edition) or the <code class="docutils literal"><span class="pre">owncloud-files</span></code> (for the Community edition) package is being used.</p>
-</div>
+<p>There are three ways to upgrade your ownCloud server.
+The first — <em>and recommended</em> —&nbsp;way is to perform a <a class="reference internal" href="manual_upgrade.html"><span class="doc">manual upgrade</span></a>, using <a class="reference external" href="https://owncloud.org/install/">the latest ownCloud release</a>.
+The second way is to use your distribution’s <a class="reference internal" href="package_upgrade.html"><span class="doc">package manager</span></a>, in conjunction with our official ownCloud repositories.
+However, this approach should not be used unattended nor in clustered setups.</p>
+<p>The third way is to use the <a class="reference internal" href="update.html"><span class="doc">Updater App</span></a>.
+This is needed in scenarios where the admin does not have access to the command line.
+It is recommended for shared hosting environments and for users who want an easy way to track different release channels.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Enterprise customers will use their Enterprise software repositories to maintain their ownCloud servers, rather than the Open Build Service. Please see <a class="reference internal" href="../enterprise/installation/install.html"><span class="doc">Installing &amp; Upgrading ownCloud Enterprise Edition</span></a> for more information.</p>
@@ -207,7 +204,7 @@ This doubled the upgrade time, so admins could skip this test (by risking a fail
 <div class="section" id="migrating-with-the-encryption-backend-enabled">
 <h2>Migrating with the Encryption Backend Enabled<a class="headerlink" href="#migrating-with-the-encryption-backend-enabled" title="Permalink to this headline">¶</a></h2>
 <p>The encryption backend was changed twice between ownCloud 7.0 and 8.0 as well as
-between 8.0 and 8.1. If you’re upgrading from these older versions, please refer to <a class="reference internal" href="../configuration/files/encryption_configuration.html#upgrading-encryption-label"><span class="std std-ref">Encryption migration to ownCloud 8.0</span></a> for the needed migration steps.</p>
+between 8.0 and 8.1. If you’re upgrading from these older versions, please refer to <span class="xref std std-ref">upgrading_encryption_label</span> for the needed migration steps.</p>
 </div>
 <div class="section" id="migrating-from-debian-to-official-owncloud-packages">
 <h2>Migrating from Debian to Official ownCloud Packages<a class="headerlink" href="#migrating-from-debian-to-official-owncloud-packages" title="Permalink to this headline">¶</a></h2>
@@ -215,11 +212,11 @@ between 8.0 and 8.1. If you’re upgrading from these older versions, please ref
 migrate to the official ownCloud packages by following this guide, <a class="reference external" href="https://owncloud.org/blog/upgrading-owncloud-on-debian-stable-to-official-packages/">Upgrading ownCloud on Debian Stable to official packages</a>.</p>
 </div>
 <div class="section" id="upgrading-from-9-1-to-version">
-<h2>Upgrading from 9.1 to 10.0.7<a class="headerlink" href="#upgrading-from-9-1-to-version" title="Permalink to this headline">¶</a></h2>
-<p>To upgrade ownCloud from version 9.1 to 10.0.7 requires just a few steps.
+<h2>Upgrading from 9.1 to 10.0.9<a class="headerlink" href="#upgrading-from-9-1-to-version" title="Permalink to this headline">¶</a></h2>
+<p>To upgrade ownCloud from version 9.1 to 10.0.9 requires just a few steps.
 In this guide, the following assumptions are made:</p>
 <ol class="arabic simple">
-<li>ownCloud 10.0.7 is the latest version.</li>
+<li>ownCloud 10.0.9 is the latest version.</li>
 <li>Your existing installation is in <code class="docutils literal"><span class="pre">/var/www/owncloud</span></code>.</li>
 <li>Your new installation is in <code class="docutils literal"><span class="pre">/var/www/owncloud-10.0.4</span></code>.</li>
 <li>The commands are executed as the web server user, which is <code class="docutils literal"><span class="pre">www-data</span></code>.</li>
@@ -243,7 +240,7 @@ To do this, run the following command:</p>
 </div>
 </div>
 <div class="section" id="get-a-copy-of-owncloud-version">
-<h3>Get a Copy of ownCloud 10.0.7<a class="headerlink" href="#get-a-copy-of-owncloud-version" title="Permalink to this headline">¶</a></h3>
+<h3>Get a Copy of ownCloud 10.0.9<a class="headerlink" href="#get-a-copy-of-owncloud-version" title="Permalink to this headline">¶</a></h3>
 <p>You can download ownCloud 10 from several places.
 However, the best place is <a class="reference external" href="https://owncloud.org/install/">https://owncloud.org/install/</a>.
 To do so, run the following command:</p>
@@ -253,7 +250,7 @@ To do so, run the following command:</p>
 </pre></div>
 </div>
 <p>Copy config/config.php from the existing installation to the new source</p>
-<p>Next, copy <code class="docutils literal"><span class="pre">config/config.php</span></code> from the current installation to the new, 10.0.7, source.
+<p>Next, copy <code class="docutils literal"><span class="pre">config/config.php</span></code> from the current installation to the new, 10.0.9, source.
 You can do this by running the following command:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">cp -v /var/www/owncloud/config/config.php /var/www/owncloud-10.0.4/config/config.php</span>
 </pre></div>
@@ -299,7 +296,7 @@ In your editor of choice, open <code class="docutils literal"><span class="pre">
 <span class="go">&lt;/VirtualHost&gt;</span>
 </pre></div>
 </div>
-<p>In that configuration, change the <a class="reference external" href="https://httpd.apache.org/docs/current/mod/mod_alias.html#alias">Alias</a> and <a class="reference external" href="https://httpd.apache.org/docs/current/mod/core.html#documentroot">DocumentRoot</a> directives to point to the ownCloud 10.0.7 source.
+<p>In that configuration, change the <a class="reference external" href="https://httpd.apache.org/docs/current/mod/mod_alias.html#alias">Alias</a> and <a class="reference external" href="https://httpd.apache.org/docs/current/mod/core.html#documentroot">DocumentRoot</a> directives to point to the ownCloud 10.0.9 source.
 Specifically, change them to be as in the following example:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">Alias /owncloud &quot;/var/www/owncloud-10.0.0RC1/&quot;</span>
 <span class="go">DocumentRoot /var/www/owncloud-10.0.0RC1/</span>

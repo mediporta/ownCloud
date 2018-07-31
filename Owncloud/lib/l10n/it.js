@@ -177,6 +177,13 @@ OC.L10N.register(
     "Storage incomplete configuration. %s" : "Configurazione dell'archiviazione incompleta.%s",
     "Storage connection error. %s" : "Errore di connessione all'archiviazione. %s",
     "Storage is temporarily not available" : "L'archiviazione non è temporaneamente disponibile",
-    "Storage connection timeout. %s" : "Timeout di connessione all'archiviazione. %s"
+    "Storage connection timeout. %s" : "Timeout di connessione all'archiviazione. %s",
+    "A safe home for all your data" : "Una casa sicura per tutti i tuoi dati",
+    "User Authentication" : "Autenticazione utente",
+    "File cannot be read" : "Il File non può essere letto",
+    "%s is not supported and %s will not work properly on this platform. Use it at your own risk! " : "%s non è supportato e %s non potrà funzionare su questa piattaforma. Utilizzalo a tuo rischio !",
+    "Sharing %s failed, could not find %s, check spelling and server availability." : "Errore nella condivisione di %s, non trovo %s, verifica come scritto e la disponibilità del server.",
+    "The username must be at least 3 characters long" : "Il nome utente deve essere lungo almeno  tre caratteri",
+    "Imprint" : "Imprint"
 },
 "nplurals=2; plural=(n != 1);");

@@ -12,7 +12,7 @@
  * @author Victor Dubiniuk <dubiniuk@owncloud.com>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -43,6 +43,7 @@ use OCP\IConfig;
 use OCP\IUserBackend;
 use OCP\IUserSession;
 use OCP\User\IChangePasswordBackend;
+use OCP\UserInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
@@ -152,6 +153,12 @@ class User implements IUser {
 		}
 		$this->account->setDisplayName($displayName);
 		$this->mapper->update($this->account);
+
+		$backend = $this->account->getBackendInstance();
+		if ($backend->implementsActions(Backend::SET_DISPLAYNAME)) {
+			$backend->setDisplayName($this->account->getUserId(), $displayName);
+		}
+
 		$this->triggerChange('displayName', $displayName);
 
 		return true;
@@ -229,6 +236,7 @@ class User implements IUser {
 
 		// Delete the users entry in the storage table
 		Storage::remove('home::' . $this->getUID());
+		Storage::remove('object::user:' . $this->getUID());
 
 		\OC::$server->getCommentsManager()->deleteReferencesOfActor('users', $this->getUID());
 		\OC::$server->getCommentsManager()->deleteReadMarksFromUser($this);
@@ -252,7 +260,7 @@ class User implements IUser {
 				$this->emitter->emit('\OC\User', 'preSetPassword', [$this, $password, $recoveryPassword]);
 				\OC::$server->getEventDispatcher()->dispatch(
 					'OCP\User::validatePassword',
-					new GenericEvent(null, ['password' => $password])
+					new GenericEvent(null, ['uid'=> $this->getUID(), 'password' => $password])
 				);
 			}
 			if ($this->canChangePassword()) {
@@ -269,7 +277,10 @@ class User implements IUser {
 			} else {
 				return false;
 			}
-		}, ['before' => [], 'after' => ['user' => $this, 'password' => $password, 'recoveryPassword' => $recoveryPassword]], 'user', 'setpassword');
+		}, [
+			'before' => ['user' => $this, 'password' => $password, 'recoveryPassword' => $recoveryPassword],
+			'after' => ['user' => $this, 'password' => $password, 'recoveryPassword' => $recoveryPassword]
+		], 'user', 'setpassword');
 	}
 
 	/**

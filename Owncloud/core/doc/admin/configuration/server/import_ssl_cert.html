@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Importing System-wide and Personal SSL Certificates &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Importing System-wide and Personal SSL Certificates &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -88,6 +88,7 @@
 <li class="toctree-l3"><a class="reference internal" href="custom_client_repos.html">Custom Client Download Repositories</a></li>
 <li class="toctree-l3"><a class="reference internal" href="knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
@@ -145,11 +146,17 @@
 </div>
 <div class="section" id="site-wide-ssl-import">
 <h2>Site-wide SSL Import<a class="headerlink" href="#site-wide-ssl-import" title="Permalink to this headline">¶</a></h2>
-<p>The personal imports only work for individual users. You can enable site-wide SSL certificates for all of your users on your ownCloud admin page. To enable this, you must add this line to your <code class="docutils literal"><span class="pre">config.php</span></code> file:</p>
+<p>The personal imports only work for individual users. You can enable site-wide SSL certificates for all of your users on your ownCloud admin page.
+To enable this, you must add this line to your <code class="docutils literal"><span class="pre">config.php</span></code> file:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;enable_certificate_management&#39;</span> <span class="o">=&gt;</span> <span class="n">true</span><span class="p">,</span>
 </pre></div>
 </div>
-<p>Then you’ll have a  <strong>Import root certificate</strong> button on your admin page, just like the one on your personal page.</p>
+<p>Then you’ll have a  <strong>Import root certificate</strong> button on your admin page, just like the one on your personal page.
+Navigate to it by clicking “<em>admin -&gt; Settings -&gt; (Admin) General</em>” and then scroll almost to the bottom, where you will find the “<em>SSL Root Certificates</em>” section.</p>
+<div class="figure" id="id2">
+<img alt="../../_images/import-ssl-root-certificates-admin.png" src="../../_images/import-ssl-root-certificates-admin.png" />
+<p class="caption"><span class="caption-text">Site-wide SSL Root Certificate Import</span></p>
+</div>
 </div>
 <div class="section" id="using-occ-to-import-and-manage-ssl-certificates">
 <h2>Using OCC to Import and Manage SSL Certificates<a class="headerlink" href="#using-occ-to-import-and-manage-ssl-certificates" title="Permalink to this headline">¶</a></h2>

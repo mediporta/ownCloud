@@ -37,7 +37,7 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  * @author Volkan Gezer <volkangezer@gmail.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -144,7 +144,14 @@ class OC {
 				'SCRIPT_FILENAME' => $_SERVER['SCRIPT_FILENAME'],
 			],
 		];
-		$fakeRequest = new \OC\AppFramework\Http\Request($params, null, new \OC\AllConfig(new \OC\SystemConfig(self::$config)));
+		/**
+		 * The event dispatcher added here will not be used to listen any event.
+		 * So if the modifications made in the configuration, by fakeRequest
+		 * will not throw events.
+		 */
+		$fakeRequest = new \OC\AppFramework\Http\Request($params, null,
+			new \OC\AllConfig(new \OC\SystemConfig(self::$config),
+				new \Symfony\Component\EventDispatcher\EventDispatcher()));
 		$scriptName = $fakeRequest->getScriptName();
 		if (substr($scriptName, -1) == '/') {
 			$scriptName .= 'index.php';
@@ -833,7 +840,6 @@ class OC {
 	public static function handleRequest() {
 
 		\OC::$server->getEventLogger()->start('handle_request', 'Handle request');
-
 		$systemConfig = \OC::$server->getSystemConfig();
 		// load all the classpaths from the enabled apps so they are available
 		// in the routing files of each app
@@ -899,7 +905,6 @@ class OC {
 			} else {
 				// For guests: Load only filesystem and logging
 				OC_App::loadApps(['filesystem', 'logging']);
-				self::handleLogin($request);
 			}
 		}
 

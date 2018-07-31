@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Enterprise Features &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Enterprise Features &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -181,14 +181,20 @@
 <li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#creating-a-new-share">Creating a New Share</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#personal-wnd-mounts">Personal WND Mounts</a></li>
-<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#libsmclient-issues">libsmclient Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#libsmbclient-issues">libsmbclient Issues</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#windows-network-drive-listener">Windows Network Drive Listener</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#setup-notifications-for-an-smb-share">Setup Notifications for an SMB Share</a></li>
-<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#one-listener-for-many-shares">One Listener for Many Shares</a></li>
-<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#running-the-wnd-listener-as-a-service">Running the WND Listener as a Service</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#setting-up-the-wnd-listener">Setting Up the WND Listener</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#wnd-listen">wnd:listen</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#wnd-process-queue">wnd:process-queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#basic-setup-for-one-owncloud-server">Basic Setup for One ownCloud Server</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#password-options">Password Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#optimizing-wnd-process-queue">Optimizing wnd:process-queue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#the-file-serializer">The File Serializer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#interaction-between-listener-serializer-and-windows-password-lockout">Interaction Between Listener, Serializer, and Windows Password Lockout</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#multiple-server-setup">Multiple Server Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="external_storage/windows-network-drive_configuration.html#basic-command-execution-examples">Basic Command Execution Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage/s3_swift_as_primary_object_store_configuration.html">Configuring S3 and OpenStack Swift Objects as Primary Storage</a><ul>

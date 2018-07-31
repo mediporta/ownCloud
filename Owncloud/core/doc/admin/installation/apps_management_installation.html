@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Installing and Managing Apps &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Installing and Managing Apps &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,13 +65,13 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -90,6 +90,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -156,7 +157,7 @@ If they are, then they will not be installed.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">If you would like to create or add your own ownCloud app, please
-refer to the <a class="reference external" href="https://doc.owncloud.org/server/9.0/developer_manual/app/index.html">developer manual</a>.</p>
+refer to the <a class="reference external" href="https://doc.owncloud.org/server/latest/developer_manual/app/index.html">developer manual</a>.</p>
 </div>
 </div>
 <div class="section" id="using-custom-app-directories">
@@ -176,18 +177,18 @@ These are:</p>
 <li><code class="docutils literal"><span class="pre">url</span></code>: The request path to that folder relative to the ownCloud web root, prefixed with <code class="docutils literal"><span class="pre">/</span></code>.</li>
 <li><code class="docutils literal"><span class="pre">writable</span></code>: Whether users can install apps in that folder. After the configuration is added, new apps will only install in a directory where <code class="docutils literal"><span class="pre">writable</span></code> is set to <code class="docutils literal"><span class="pre">true</span></code>.</li>
 </ul>
-<p>The configuration example below shows how to add a second directory, called <code class="docutils literal"><span class="pre">apps2</span></code>.</p>
+<p>The configuration example below shows how to add a second directory, called <code class="docutils literal"><span class="pre">apps-external</span></code>.</p>
 <div class="highlight-php"><div class="highlight"><pre><span></span><span class="cp">&lt;?php</span>
 <span class="nv">$CONFIG</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;apps_paths&#39;</span> <span class="o">=&gt;</span> <span class="p">[</span>
         <span class="p">[</span>
-            <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/var/www/owncloud/apps&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="nx">OC</span><span class="o">::</span><span class="nv">$SERVERROOT</span><span class="o">.</span><span class="s1">&#39;/apps&#39;</span><span class="p">,</span>
             <span class="s1">&#39;url&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/apps&#39;</span><span class="p">,</span>
             <span class="s1">&#39;writable&#39;</span> <span class="o">=&gt;</span> <span class="k">false</span><span class="p">,</span>
         <span class="p">],</span>
 <span class="hll">        <span class="p">[</span>
-</span><span class="hll">            <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/var/www/owncloud/apps2&#39;</span><span class="p">,</span>
-</span><span class="hll">            <span class="s1">&#39;url&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/apps2&#39;</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">&#39;path&#39;</span> <span class="o">=&gt;</span> <span class="nx">OC</span><span class="o">::</span><span class="nv">$SERVERROOT</span><span class="o">.</span><span class="s1">&#39;/apps-external&#39;</span><span class="p">,</span>
+</span><span class="hll">            <span class="s1">&#39;url&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;/apps-external&#39;</span><span class="p">,</span>
 </span><span class="hll">            <span class="s1">&#39;writable&#39;</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">,</span>
 </span><span class="hll">        <span class="p">],</span>
 </span>    <span class="p">],</span>

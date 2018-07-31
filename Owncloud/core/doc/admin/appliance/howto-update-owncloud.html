@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>How to Update ownCloud &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>How to Update ownCloud &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -28,7 +28,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Managing UCS" href="managing-ucs.html" />
-    <link rel="prev" title="How to Install It" href="installation.html" />
+    <link rel="prev" title="ownCloud Appliance Login Information" href="login_information.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -74,14 +74,20 @@
 <li class="toctree-l1"><a class="reference internal" href="../enterprise/index.html">Enterprise Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">The ownCloud X Appliance</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="what-is-it.html">What is the Appliance?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html">How to Install It</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html">How to Install the Appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="certificates.html">How to add certificates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="login_information.html">ownCloud Appliance Login Information</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to Update ownCloud</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#use-the-univention-management-console">Use the Univention Management Console</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#use-the-command-line">Use the Command Line</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="managing-ucs.html">Managing UCS</a></li>
-<li class="toctree-l2"><a class="reference internal" href="clamav.html">Install Antivirus Software in the ownCloud Appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Clamav.html">Install Antivirus Software in the ownCloud Appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Active_Directory.html">Active Directory Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Backup.html">Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Collabora.html">How to use Collabora with the appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="firewall.html">Firewall protected environment</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../faq/index.html">FAQ</a></li>
@@ -98,7 +104,7 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="installation.html" title="Previous Chapter: How to Install It"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; How to Install It</span>
+    <a href="login_information.html" title="Previous Chapter: ownCloud Appliance Login Information"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; ownCloud Appl...</span>
     </a>
   </li>
   <li class="next">
@@ -123,6 +129,10 @@
 </ul>
 <div class="section" id="in-place-upgrade-for-10-1-users">
 <h3>In-place Upgrade (for 10.1 users)<a class="headerlink" href="#in-place-upgrade-for-10-1-users" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Existing certificates and themes persist after an upgrade</p>
+</div>
 <p>To perform an in-place upgrade, after logging in to the Univention server, under “<strong>Administration</strong>”, click the first option labeled “<strong>System and domain settings</strong>”.
 This takes you to the Univention Management Console.
 From there, click the “<strong>Software</strong>” shortcut (1), and then click “<strong>Software update</strong>” (2).</p>
@@ -157,7 +167,7 @@ From there, begin uninstalling ownCloud by clicking “<strong>UNINSTALL</strong
 <p>This takes you to an uninstall confirmation page.
 On that page, click UNINSTALL on the lower left-hand side of the page.</p>
 <img alt="../_images/confirm-owncloud-uninstall.png" src="../_images/confirm-owncloud-uninstall.png" />
-<p>, responding to the required confirmations, until the process is finished.
+<p>Follow the process until it’s finished.
 Then, click on “<strong>Close</strong>” in the upper right corner.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -196,25 +206,9 @@ When it is finished, you will have the latest version of ownCloud installed.</p>
 <h3>Upgrading From Version 10.0.1 to 10.0.3<a class="headerlink" href="#upgrading-from-version-10-0-1-to-10-0-3" title="Permalink to this headline">¶</a></h3>
 <p>Upgrading from the command line is also available.
 To do so, login to your ownCloud X Appliance, either via ssh or directly on the server.
-Once logged in, check if there is an upgrade available.
-There are two ways to do this.</p>
-<p>The first option is by running the <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">list</span></code> command.
-This command lists the available versions of ownCloud, along with the installed version.
-For example, the example below shows that four versions of ownCloud are available (in ascending order of version), and that version <code class="docutils literal"><span class="pre">10.0.1-20170523</span></code> is installed.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">root</span><span class="nd">@ucs</span><span class="o">-</span><span class="mi">9446</span><span class="p">:</span><span class="o">~</span><span class="c1"># univention-app list owncloud</span>
-<span class="n">owncloud</span>
-  <span class="n">Name</span><span class="p">:</span> <span class="n">ownCloud</span>
-  <span class="n">Versions</span><span class="p">:</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="mi">20170523</span>
-      <span class="n">Installed</span><span class="p">:</span> <span class="n">ucs</span><span class="o">-</span><span class="mf">9446.</span><span class="n">setts</span><span class="o">.</span><span class="n">intranet</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="n">copy</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="n">testing</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">3</span><span class="o">-</span><span class="mi">20170918</span>
-</pre></div>
-</div>
-<p>The second way is by running the command <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">info</span></code>.
-This command lists information about the current state of the App Center itself.
-However, it also lists the currently installed version of ownCloud, along with if it’s upgradable.</p>
+Once logged in, check if there is an upgrade available.</p>
+<p>You can use the command <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">info</span></code>.
+This command lists information about the current state of every installed App.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">root</span><span class="nd">@ucs</span><span class="o">-</span><span class="mi">9446</span><span class="p">:</span><span class="o">~</span><span class="c1"># univention-app info</span>
 <span class="n">UCS</span><span class="p">:</span> <span class="mf">4.2</span><span class="o">-</span><span class="mi">1</span> <span class="n">errata165</span>
 <span class="n">App</span> <span class="n">Center</span> <span class="n">compatibility</span><span class="p">:</span> <span class="mi">4</span>
@@ -226,8 +220,7 @@ However, it also lists the currently installed version of ownCloud, along with i
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">univention</span><span class="o">-</span><span class="n">app</span> <span class="n">upgrade</span> <span class="n">owncloud</span>
 </pre></div>
 </div>
-<p>This command takes some time to complete, primarily based on the appliance’s network connection speed.
-However, it should not take more than a few minutes.</p>
+<p>You will have to enter your Administrator password to start the upgrade. This command takes some time to complete, primarily based on the appliance’s network connection speed. However, it should not take more than a few minutes.</p>
 <p>After the upgrade has completed (if it was successful) as a sanity check, run <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">info</span></code>, to confirm the currently installed version of ownCloud.
 As in the example below, you should see that the installed version is now higher than before, and that ownCloud is no longer upgradable.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">root</span><span class="nd">@ucs</span><span class="o">-</span><span class="mi">9446</span><span class="p">:</span><span class="o">~</span><span class="c1"># univention-app info</span>
@@ -237,19 +230,6 @@ As in the example below, you should see that the installed version is now higher
 <span class="n">Upgradable</span><span class="p">:</span>
 </pre></div>
 </div>
-<p>You can also run <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">list</span> <span class="pre">owncloud</span></code> again, as below, to ensure that the latest version has been installed.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">owncloud</span>
-  <span class="n">Name</span><span class="p">:</span> <span class="n">ownCloud</span>
-  <span class="n">Versions</span><span class="p">:</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="mi">20170523</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="n">copy</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">1</span><span class="o">-</span><span class="n">testing</span>
-    <span class="mf">10.0</span><span class="o">.</span><span class="mi">3</span><span class="o">-</span><span class="mi">20170918</span>
-      <span class="n">Installed</span><span class="p">:</span> <span class="n">ucs</span><span class="o">-</span><span class="mf">9446.</span><span class="n">setts</span><span class="o">.</span><span class="n">intranet</span>
-</pre></div>
-</div>
-<p>Finally, update the apps on the appliance, by running <code class="docutils literal"><span class="pre">univention-app</span> <span class="pre">update</span></code>.
-After the upgrade completes, you can then login to ownCloud just as you usually would.</p>
 </div>
 <div class="section" id="upgrading-from-versions-prior-to-10-0">
 <h3>Upgrading From Versions Prior to 10.0<a class="headerlink" href="#upgrading-from-versions-prior-to-10-0" title="Permalink to this headline">¶</a></h3>
@@ -266,6 +246,11 @@ To do so, run the following commands:</p>
 </pre></div>
 </div>
 <p>And after the upgrade and updates are completed, you can then login to ownCloud and verify the upgrade.</p>
+<p>Username and Password remain the same as before the upgrade:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">owncloudadmin</span>
+<span class="n">password</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -274,7 +259,7 @@ To do so, run the following commands:</p>
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="installation.html" title="Previous Chapter: How to Install It"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; How to Install It</span>
+    <a href="login_information.html" title="Previous Chapter: ownCloud Appliance Login Information"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; ownCloud Appl...</span>
     </a>
   </li>
   <li class="next">

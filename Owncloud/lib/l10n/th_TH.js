@@ -178,6 +178,14 @@ OC.L10N.register(
     "Storage incomplete configuration. %s" : "การตั้งค่าการจัดเก็บข้อมูลไม่สำเร็จ %s",
     "Storage connection error. %s" : "ข้อผิดพลาดการเชื่อมต่อพื้นที่จัดเก็บข้อมูล %s",
     "Storage is temporarily not available" : "ไม่สามารถใช้พื้นที่จัดเก็บได้ชั่วคราว",
-    "Storage connection timeout. %s" : "หมดเวลาการเชื่อมต่อพื้นที่จัดเก็บข้อมูล %s"
+    "Storage connection timeout. %s" : "หมดเวลาการเชื่อมต่อพื้นที่จัดเก็บข้อมูล %s",
+    "A safe home for all your data" : "ปลอดภัยสำหรับสำหรับข้อมูลทั้งหมดของคุณ",
+    "The username must be at least 3 characters long" : "ชื่อผู้ใช้ต้องมีความยาวอย่างน้อย 3 ตัวอักษร",
+    "File cannot be read" : "ไม่สามารถอ่านไฟล์ได้",
+    "%s is not supported and %s will not work properly on this platform. Use it at your own risk! " : "%s ไม่ได้รับการสนับสนุนและ %s จะทำงานไม่ถูกต้องบนแพลตฟอร์มนี้ มันค่อนข้างเสี่ยงนะคุณ!",
+    "Sharing %s failed, could not find %s, check spelling and server availability." : "แชร์ %s ล้มเหลวหรือไม่พบ %s โปรดตรวจสอบตัวสะกดและความพร้อมใช้งานของเซิร์ฟเวอร์",
+    "Imprint" : "ประทับ",
+    "The username can not be longer than 64 characters" : "ชื่อผู้ใช้จะต้องมีความยาวไม่เกิน 64 ตัวอักษร",
+    "Privacy Policy" : "นโยบายส่วนบุคคล"
 },
 "nplurals=1; plural=0;");

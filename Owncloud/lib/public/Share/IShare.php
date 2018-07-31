@@ -2,7 +2,7 @@
 /**
  * @author Roeland Jago Douma <rullzer@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -339,4 +339,20 @@ interface IShare {
 	 * @since 10.0.0
 	 */
 	public function getName();
+
+	/**
+	 * Set share accepted state
+	 *
+	 * @param int $state
+	 * @since 10.0.9
+	 */
+	public function setState($state);
+
+	/**
+	 * Get share accepted state
+	 *
+	 * @return int state
+	 * @since 10.0.9
+	 */
+	public function getState();
 }

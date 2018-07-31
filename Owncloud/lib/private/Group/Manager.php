@@ -16,7 +16,7 @@
  * @author Vincent Petry <pvince81@owncloud.com>
  * @author voxsim <Simon Vocella>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -36,8 +36,12 @@
 namespace OC\Group;
 
 use OC\Hooks\PublicEmitter;
+use OC\User\Manager as UserManager;
 use OCP\GroupInterface;
 use OCP\IGroupManager;
+use OCP\Util\UserSearch;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\GenericEvent;
 
 /**
  * Class Manager
@@ -61,9 +65,14 @@ class Manager extends PublicEmitter implements IGroupManager {
 	private $backends = [];
 
 	/**
-	 * @var \OC\User\Manager $userManager
+	 * @var UserManager $userManager
 	 */
 	private $userManager;
+
+	/**
+	 * @var UserSearch $userSearch
+	 */
+	private $userSearch;
 
 	/**
 	 * @var \OC\Group\Group[]
@@ -78,11 +87,17 @@ class Manager extends PublicEmitter implements IGroupManager {
 	/** @var \OC\SubAdmin */
 	private $subAdmin = null;
 
+	/** @var EventDispatcherInterface */
+	private $eventDispatcher;
+
 	/**
 	 * @param \OC\User\Manager $userManager
+	 * @param UserSearch $userSearch
 	 */
-	public function __construct(\OC\User\Manager $userManager) {
+	public function __construct(UserManager $userManager, UserSearch $userSearch, EventDispatcherInterface $eventDispatcher) {
 		$this->userManager = $userManager;
+		$this->userSearch = $userSearch;
+		$this->eventDispatcher = $eventDispatcher;
 		$cachedGroups = & $this->cachedGroups;
 		$cachedUserGroups = & $this->cachedUserGroups;
 		$this->listen('\OC\Group', 'postDelete', function ($group) use (&$cachedGroups, &$cachedUserGroups) {
@@ -177,7 +192,7 @@ class Manager extends PublicEmitter implements IGroupManager {
 		if (count($backends) === 0) {
 			return null;
 		}
-		$this->cachedGroups[$gid] = new Group($gid, $backends, $this->userManager, $this, $displayName);
+		$this->cachedGroups[$gid] = new Group($gid, $backends, $this->userManager, $this->eventDispatcher, $this, $displayName);
 		return $this->cachedGroups[$gid];
 	}
 
@@ -200,11 +215,13 @@ class Manager extends PublicEmitter implements IGroupManager {
 			return $group;
 		} else {
 			$this->emit('\OC\Group', 'preCreate', [$gid]);
+			$this->eventDispatcher->dispatch('group.preCreate', new GenericEvent(null, ['gid' => $gid]));
 			foreach ($this->backends as $backend) {
 				if ($backend->implementsActions(\OC\Group\Backend::CREATE_GROUP)) {
 					$backend->createGroup($gid);
 					$group = $this->getGroupObject($gid);
 					$this->emit('\OC\Group', 'postCreate', [$group]);
+					$this->eventDispatcher->dispatch('group.postCreate', new GenericEvent($group, ['gid' => $gid]));
 					return $group;
 				}
 			}
@@ -221,22 +238,24 @@ class Manager extends PublicEmitter implements IGroupManager {
 	 */
 	public function search($search, $limit = null, $offset = null, $scope = null) {
 		$groups = [];
-		foreach ($this->backends as $backend) {
-			if (!$backend->isVisibleForScope($scope)) {
-				// skip backend
-				continue;
-			}
-			$groupIds = $backend->getGroups($search, $limit, $offset);
-			foreach ($groupIds as $groupId) {
-				$aGroup = $this->get($groupId);
-				if (!is_null($aGroup)) {
-					$groups[$groupId] = $aGroup;
-				} else {
-					\OC::$server->getLogger()->debug('Group "' . $groupId . '" was returned by search but not found through direct access', array('app' => 'core'));
+		if ($this->userSearch->isSearchable($search)) {
+			foreach ($this->backends as $backend) {
+				if (!$backend->isVisibleForScope($scope)) {
+					// skip backend
+					continue;
 				}
-			}
-			if (!is_null($limit) and $limit <= 0) {
-				return array_values($groups);
+				$groupIds = $backend->getGroups($search, $limit, $offset);
+				foreach ($groupIds as $groupId) {
+					$aGroup = $this->get($groupId);
+					if (!is_null($aGroup)) {
+						$groups[$groupId] = $aGroup;
+					} else {
+						\OC::$server->getLogger()->debug('Group "' . $groupId . '" was returned by search but not found through direct access', array('app' => 'core'));
+					}
+				}
+				if (!is_null($limit) and $limit <= 0) {
+					return array_values($groups);
+				}
 			}
 		}
 		return array_values($groups);

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>System Requirements &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>System Requirements &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">System Requirements</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#officially-recommended-supported-options">Officially Recommended &amp; Supported Options</a></li>
@@ -76,8 +76,8 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -88,6 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -138,23 +139,51 @@
 </thead>
 <tbody valign="top">
 <tr class="row-even"><td>Operating System</td>
-<td>Ubuntu 16.04, Debian 7 and 8, SUSE Linux Enterprise Server 12
-and 12 SP1, Red Hat Enterprise Linux/Centos 6.5 and 7</td>
+<td><ul class="first last simple">
+<li>Ubuntu 16.04 and 18.04</li>
+<li>Debian 7, 8, and 8</li>
+<li>Red Hat Enterprise Linux/Centos 6.9, 7.3, 7.4, and 7.5</li>
+<li>Fedora 26, 27 and 28</li>
+<li>SUSE Linux Enterprise Server 12 with SP1, SP2 and SP3</li>
+<li>openSUSE Tumbleweed and Leap 42.1, 42.2, 42.3</li>
+</ul>
+</td>
 </tr>
 <tr class="row-odd"><td>Database</td>
-<td>MySQL or MariaDB 5.5+, Oracle 11g, PostgreSQL, &amp; SQLite</td>
+<td><ul class="first last simple">
+<li>MySQL or MariaDB 5.5+</li>
+<li>Oracle 11g</li>
+<li>PostgreSQL</li>
+<li>SQLite</li>
+</ul>
+</td>
 </tr>
 <tr class="row-even"><td>Web server</td>
-<td>Apache 2.4 with <code class="docutils literal"><span class="pre">prefork</span></code> <a class="reference internal" href="source_installation.html#apache-mpm-label"><span class="std std-ref">Multi-Processing Module (MPM)</span></a> and <code class="docutils literal"><span class="pre">mod_php</span></code></td>
+<td><ul class="first last simple">
+<li>Apache 2.4 with <code class="docutils literal"><span class="pre">prefork</span></code> <a class="reference internal" href="source_installation.html#apache-mpm-label"><span class="std std-ref">Multi-Processing Module (MPM)</span></a> and <code class="docutils literal"><span class="pre">mod_php</span></code></li>
+</ul>
+</td>
 </tr>
 <tr class="row-odd"><td>PHP Runtime</td>
-<td>PHP (5.6+, 7.0, &amp; 7.1)</td>
+<td><ul class="first last simple">
+<li>5.6+, 7.0, &amp; 7.1</li>
+</ul>
+</td>
 </tr>
 </tbody>
 </table>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p>For the future release of ownCloud 10.1, a minimum php version of 7.1 is needed.
+If you use Ubuntu 16.04:</p>
+<ul class="last simple">
+<li>PHP 7.1 is only available via ppa. To add a ppa to your system, use this command: <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">add-apt-repository</span> <span class="pre">ppa:user/ppa-name</span></code>.</li>
+</ul>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <ul class="last simple">
+<li>Ubuntu 18.04 ships with PHP 7.2. For production use, install PHP 7.1</li>
 <li>Red Hat Enterprise Linux &amp; Centos 7 are 64-bit only.</li>
 <li>Oracle 11g is only supported for the Enterprise edition.</li>
 <li>SQLite is not encouraged for production use.</li>
@@ -169,12 +198,12 @@ and 12 SP1, Red Hat Enterprise Linux/Centos 6.5 and 7</td>
 </ul>
 </div>
 <div class="section" id="web-browser">
-<h3>Web Browser<a class="headerlink" href="#web-browser" title="Permalink to this headline">¶</a></h3>
+<span id="supported-browsers-label"></span><h3>Web Browser<a class="headerlink" href="#web-browser" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Edge (current version on Windows 10)</li>
 <li>IE11+ (except Compatibility Mode)</li>
-<li>Firefox 55+ or 52 ESR</li>
-<li>Chrome 61+</li>
+<li>Firefox 57+ or 52 ESR</li>
+<li>Chrome 66+</li>
 <li>Safari 10+</li>
 </ul>
 </div>
@@ -193,10 +222,10 @@ and 12 SP1, Red Hat Enterprise Linux/Centos 6.5 and 7</td>
 <li>Windows 7+</li>
 <li>Mac OS X 10.7+ (64-bit only)</li>
 <li>CentOS 6 &amp; 7 (64-bit only)</li>
-<li>Debian 7.0 &amp; 8.0 &amp; 9.0</li>
-<li>Fedora 24 &amp; 25 &amp; 26</li>
-<li>Ubuntu 16.04 &amp; 16.10 &amp; 17.04</li>
-<li>openSUSE Leap 42.1 &amp; 42.2 &amp; 42.3</li>
+<li>Debian 8.0 &amp; 9.0</li>
+<li>Fedora 27 &amp; 28</li>
+<li>Ubuntu 16.04 &amp; 18.04</li>
+<li>openSUSE Leap 42.3</li>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>

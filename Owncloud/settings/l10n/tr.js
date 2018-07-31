@@ -303,6 +303,11 @@ OC.L10N.register(
     "change full name" : "tam adı değiştir",
     "set new password" : "yeni parola belirle",
     "change email address" : "e-posta adresini değiştir",
-    "Default" : "Öntanımlı"
+    "Default" : "Öntanımlı",
+    "Change" : "Değiştir",
+    "Share" : "Paylaş",
+    "Domain" : "Alan adı",
+    "Add" : "Ekle",
+    "%s password changed successfully" : "%s parola başarıyla değiştirildi"
 },
 "nplurals=2; plural=(n > 1);");

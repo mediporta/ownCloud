@@ -56,6 +56,11 @@ OC.L10N.register(
     "web services under your control" : "servicios web sobre los que tenés control",
     "Application is not enabled" : "La aplicación no está habilitada",
     "Authentication error" : "Error al autenticar",
-    "Token expired. Please reload page." : "Token expirado. Por favor, recargá la página."
+    "Token expired. Please reload page." : "Token expirado. Por favor, recargá la página.",
+    "See %s" : "Ver %s",
+    "A safe home for all your data" : "Un lugar seguro para todos sus datos",
+    "Storage is temporarily not available" : "El repositorio no está disponible temporalmente",
+    "Unknown user" : "Usuario desconocido",
+    "Imprint" : "Imprint"
 },
 "nplurals=2; plural=(n != 1);");

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>General Troubleshooting &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>General Troubleshooting &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -74,6 +74,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">General Troubleshooting</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#bugs">Bugs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id1">General Troubleshooting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#oauth2">OAuth2</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#missing-data-directory">Missing Data Directory</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#troubleshooting-web-server-and-php-problems">Troubleshooting Web server and PHP problems</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#troubleshooting-webdav">Troubleshooting WebDAV</a></li>
@@ -119,7 +120,7 @@
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The ownCloud forums have a <a class="reference external" href="https://central.owncloud.org/c/faq">FAQ category</a> where each topic corresponds
+<p class="last">The ownCloud forums have a <a class="reference external" href="https://owncloud.org/faq/">FAQ category</a> where each topic corresponds
 to typical mistakes or frequently occurring issues</p>
 </div>
 <ul class="simple">
@@ -141,7 +142,7 @@ support options.</p>
 <li>Search for a solution (see the options above)</li>
 <li>Double-check your configuration</li>
 </ul>
-<p>If you can’t find a solution, please use our <a class="reference external" href="https://doc.owncloud.org/server/10.0/developer_manual/bugtracker/index.html">bugtracker</a>. You can generate a
+<p>If you can’t find a solution, please use our <a class="reference external" href="https://doc.owncloud.org/server/latest/developer_manual/bugtracker/index.html">bugtracker</a>. You can generate a
 configuration report with the <a class="reference internal" href="../configuration/server/occ_command.html#config-commands-label"><span class="std std-ref">occ config command</span></a>, with passwords automatically obscured.</p>
 </div>
 <div class="section" id="id1">
@@ -244,6 +245,23 @@ PHP and so the login to ownCloud via WebDAV, CalDAV and CardDAV clients is
 failing. More information on how to correctly configure your environment can be
 found <a class="reference external" href="https://central.owncloud.org/t/no-basic-authentication-headers-were-found-message/819">at the forums</a>.</li>
 </ul>
+</div>
+</div>
+<div class="section" id="oauth2">
+<h2>OAuth2<a class="headerlink" href="#oauth2" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="owncloud-clients-cannot-connect-to-the-owncloud-server">
+<span id="bearer-auth-header-problem-label"></span><h3>ownCloud clients cannot connect to the ownCloud server<a class="headerlink" href="#owncloud-clients-cannot-connect-to-the-owncloud-server" title="Permalink to this headline">¶</a></h3>
+<p>If ownCloud clients cannot connect to your ownCloud server, check to see if <cite>PROPFIND</cite> requests receive <code class="docutils literal"><span class="pre">HTTP/1.1</span> <span class="pre">401</span> <span class="pre">Unauthorized</span></code> responses.
+If this is happening, more than likely your webserver configuration is stripping out <a class="reference external" href="https://tools.ietf.org/html/rfc6750">the bearer authorization header</a>.</p>
+<p>If you’re using the Apache web server, add the following <code class="docutils literal"><span class="pre">SetEnvIf</span></code> directive to your Apache configuration, whether in the general Apache config, in a configuration include file, or in ownCloud’s .htaccess file.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>SetEnvIf Authorization &quot;(.*)&quot; HTTP_AUTHORIZATION=$1
+</pre></div>
+</div>
+<p>Alternatively, if you’re using NGINX, add the following configuration to your NGINX setup:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span># Adding this allows the variable to be accessed with $_SERVER[&#39;Authorization&#39;]
+fastcgi_param Authorization $http_authorization;
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="missing-data-directory">
@@ -351,21 +369,14 @@ which contains various additional information about WebDAV problems.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Error</span> <span class="mh">0x80070043</span> <span class="s2">&quot;The network name cannot be found.&quot;</span> <span class="k">while</span> <span class="n">adding</span> <span class="n">a</span> <span class="n">network</span> <span class="n">drive</span>
 </pre></div>
 </div>
-<p>A known workaround for this issue is to update your Web server configuration. For Apache
-you need to add something like the following (please update the path accordingly) to your
-main Web server / Vhost configuration or the <code class="docutils literal"><span class="pre">.htaccess</span></code> placed in your document root:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>RewriteEngine On
-RewriteCond %{REQUEST_URI} ^(/)$ [NC]
+<p>A known workaround for this issue is to update your web server configuration.</p>
+<p><strong>Apache</strong></p>
+<p>You need to add the following rule set to your main web server or virtual host configuration, or the <code class="docutils literal"><span class="pre">.htaccess</span></code> file in your document root.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span># Fixes Windows WebDav client error 0x80070043 &quot;The network name cannot be found.&quot;
+RewriteEngine On
+RewriteCond %{HTTP_USER_AGENT} ^(DavClnt)$
 RewriteCond %{REQUEST_METHOD} ^(OPTIONS)$
-RewriteRule .* https://%{SERVER_NAME}/owncloud/remote.php/webdav/ [R=301,L]
-</pre></div>
-</div>
-<p>For NGINX an example config addition could be:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>location = / {
-    if ($http_user_agent = DavClnt) {
-        return 401;
-    }
-}
+RewriteRule .* - [R=401,L]
 </pre></div>
 </div>
 </div>

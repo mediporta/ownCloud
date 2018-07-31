@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Configuration Notes &amp; Tips &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Configuration Notes &amp; Tips &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,13 +65,13 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Preferred Installation Method</a></li>
 <li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="linux_installation.html">Linux Package Manager Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -88,6 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -128,10 +129,31 @@ SELinux-enabled distributions such as Fedora and CentOS.</p>
 </div>
 <div class="section" id="php-ini">
 <span id="php-ini-tips-label"></span><h2>php.ini<a class="headerlink" href="#php-ini" title="Permalink to this headline">¶</a></h2>
-<p>Several core PHP settings have to be configured correctly, otherwise ownCloud may
-not work properly. Known settings causing issues are listed here. Please note that
-there might be other settings causing unwanted behaviours. In general it is recommended
-to keep the <code class="docutils literal"><span class="pre">php.ini</span></code> at their defaults.</p>
+<p>Several core PHP settings must be configured correctly, otherwise ownCloud may not work properly.
+Known settings causing issues are listed here.
+Please note that, there might be other settings which cause unwanted behavior.
+In general, however, it is recommended to keep the <code class="docutils literal"><span class="pre">php.ini</span></code> settings at their defaults, except when you know exactly why the change is required, and its implications.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Keep in mind that, changes to <code class="docutils literal"><span class="pre">php.ini</span></code> may have to be configured in more than one ini file.
+This can be the case, for example, for the <code class="docutils literal"><span class="pre">date.timezone</span></code> setting.</p>
+</div>
+<div class="section" id="php-ini-used-by-the-web-server">
+<h3>php.ini - Used by the Web server<a class="headerlink" href="#php-ini-used-by-the-web-server" title="Permalink to this headline">¶</a></h3>
+<p>For PHP version 7.0 onward, replace <code class="docutils literal"><span class="pre">php_version</span></code> with the version number installed, e.g., <code class="docutils literal"><span class="pre">7.0</span></code> in the following examples.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php</span><span class="o">/</span><span class="p">[</span><span class="n">php_version</span><span class="p">]</span><span class="o">/</span><span class="n">apache2</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
+<span class="ow">or</span>
+  <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php</span><span class="o">/</span><span class="p">[</span><span class="n">php_version</span><span class="p">]</span><span class="o">/</span><span class="n">fpm</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
+<span class="ow">or</span> <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="php-ini-used-by-the-php-cli-and-so-by-owncloud-cron-jobs">
+<h3>php.ini - used by the php-cli and so by ownCloud CRON jobs<a class="headerlink" href="#php-ini-used-by-the-php-cli-and-so-by-owncloud-cron-jobs" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php</span><span class="o">/</span><span class="p">[</span><span class="n">php_version</span><span class="p">]</span><span class="o">/</span><span class="n">cli</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="session-auto-start-enable-post-data-reading">
 <h3>session.auto_start &amp;&amp; enable_post_data_reading<a class="headerlink" href="#session-auto-start-enable-post-data-reading" title="Permalink to this headline">¶</a></h3>
 <p>Ensure that <a class="reference external" href="https://secure.php.net/manual/en/session.configuration.php#ini.session.auto-start">session.auto_start</a> is set to <code class="docutils literal"><span class="pre">0</span></code> or <code class="docutils literal"><span class="pre">Off</span></code> and <a class="reference external" href="https://secure.php.net/manual/en/ini.core.php#ini.enable-post-data-reading">enable_post_data_reading</a>
@@ -167,26 +189,45 @@ amount of memory for use with ownCloud, which is 512 MB.</p>
 <p class="last">Please be careful when you set this value if you use the byte value shortcut as it is very specific.
 Use <cite>K</cite> for kilobyte, <cite>M</cite> for megabyte and <cite>G</cite> for gigabyte. <cite>KB</cite>, <cite>MB</cite>, and <cite>GB</cite> <strong>do not work!</strong></p>
 </div>
+</div>
+<div class="section" id="realpath-cache-size">
+<h3>realpath_cache_size<a class="headerlink" href="#realpath-cache-size" title="Permalink to this headline">¶</a></h3>
+<p>This determines the size of the realpath cache used by PHP.
+This value should be increased on systems where PHP opens many files, to reflect the number of file operations performed.
+For a detailed description see <a class="reference external" href="http://php.net/manual/en/ini.core.php#ini.realpath-cache-size">realpath-cache-size</a>.
+This setting has been available since PHP 5.1.0.
+Prior to PHP 7.0.16 and 7.1.2, the default was 16 KB.</p>
+<p>To see your current value, query your <code class="docutils literal"><span class="pre">phpinfo()</span></code> output for this key.
+It is recommended to set the value if it is currently set to the default of 16 KB.
+A good reading about the background can be found at <a class="reference external" href="https://tideways.io/profiler/blog/how-does-the-php-realpath-cache-work-and-how-to-configure-it">tideways.io</a>.</p>
+<div class="section" id="how-to-get-a-working-value">
+<h4>How to get a working value<a class="headerlink" href="#how-to-get-a-working-value" title="Permalink to this headline">¶</a></h4>
+<p>With the assumption of 112 bytes per file path needed, this would allow the cache to hold around 37.000 items with a cache size of 4096K (4M), but only about a hundred entries for a cache size of 16 KB.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Keep in mind that changes to <code class="docutils literal"><span class="pre">php.ini</span></code> may have to be configured in more
-than one ini file. This can be the case, for example, for the
-<code class="docutils literal"><span class="pre">date.timezone</span></code> setting.</p>
+<p class="last">It’s a good rule of thumb to always have a realpath cache that can hold entries for all your files paths in memory.
+If you use symlink deployment, then set it to double or triple the amount of files.</p>
 </div>
-</div>
-<div class="section" id="php-ini-used-by-the-web-server">
-<h3>php.ini - Used by the Web server<a class="headerlink" href="#php-ini-used-by-the-web-server" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php5</span><span class="o">/</span><span class="n">apache2</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
-<span class="ow">or</span>
-  <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php5</span><span class="o">/</span><span class="n">fpm</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
-<span class="ow">or</span> <span class="o">...</span>
+<p>The easiest way to get the quantity of PHP files is to use cloc, which can be installed by running <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">cloc</span></code>.
+The cloc package is available for nearly all distributions.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">cloc</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span> <span class="o">--</span><span class="n">exclude</span><span class="o">-</span><span class="nb">dir</span><span class="o">=</span><span class="n">data</span> <span class="o">--</span><span class="n">follow</span><span class="o">-</span><span class="n">links</span>
+   <span class="mi">12179</span> <span class="n">text</span> <span class="n">files</span><span class="o">.</span>
+   <span class="mi">11367</span> <span class="n">unique</span> <span class="n">files</span><span class="o">.</span>
+   <span class="mi">73126</span> <span class="n">files</span> <span class="n">ignored</span><span class="o">.</span>
+
+<span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">cloc</span><span class="o">.</span><span class="n">sourceforge</span><span class="o">.</span><span class="n">net</span> <span class="n">v</span> <span class="mf">1.60</span>  <span class="n">T</span><span class="o">=</span><span class="mf">1308.98</span> <span class="n">s</span> <span class="p">(</span><span class="mf">6.4</span> <span class="n">files</span><span class="o">/</span><span class="n">s</span><span class="p">,</span> <span class="mf">1283.5</span> <span class="n">lines</span><span class="o">/</span><span class="n">s</span><span class="p">)</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+<span class="n">Language</span>                      <span class="n">files</span>          <span class="n">blank</span>        <span class="n">comment</span>           <span class="n">code</span>
+<span class="o">--------------------------------------------------------------------------------</span>
+<span class="n">PHP</span>                            <span class="mi">4896</span>          <span class="mi">96509</span>         <span class="mi">285384</span>         <span class="mi">558135</span>
+<span class="o">...</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="php-ini-used-by-the-php-cli-and-so-by-owncloud-cron-jobs">
-<h3>php.ini - used by the php-cli and so by ownCloud CRON jobs<a class="headerlink" href="#php-ini-used-by-the-php-cli-and-so-by-owncloud-cron-jobs" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">php5</span><span class="o">/</span><span class="n">cli</span><span class="o">/</span><span class="n">php</span><span class="o">.</span><span class="n">ini</span>
-</pre></div>
+<p>Taking the math from above and assuming a symlinked instance, using factor 3.
+For example: <code class="docutils literal"><span class="pre">4896</span> <span class="pre">*</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">112</span> <span class="pre">=</span> <span class="pre">1.6MB</span></code>
+This result shows that you can run with the PHP setting of 4M two instances of ownCloud.</p>
+<p>Having the default of 16 KB means that only 1/100 of the existing PHP file paths can be cached and need continuous cache refresh slowing down performance.
+If you run more web services using PHP, you have to calculate accordingly.</p>
 </div>
 </div>
 </div>
@@ -202,14 +243,14 @@ variables in the appropriate <code class="docutils literal"><span class="pre">ph
 <p>Here are some example root paths for these ini/config files:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="47%" />
-<col width="53%" />
+<col width="59%" />
+<col width="41%" />
 </colgroup>
 <tbody valign="top">
 <tr class="row-odd"><td>Ubuntu/Mint</td>
 <td>CentOS/Red Hat/Fedora</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">/etc/php5/fpm/</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">/etc/php/[php_version]/fpm/</span></code></td>
 <td><code class="docutils literal"><span class="pre">/etc/php-fpm.d/</span></code></td>
 </tr>
 </tbody>

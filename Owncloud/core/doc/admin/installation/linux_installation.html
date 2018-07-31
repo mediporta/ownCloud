@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Preferred Installation Method &#8212; ownCloud 10.0.7 Server Administration Manual 10.0.7 documentation</title>
+    <title>Linux Package Manager Installation &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.7',
+        VERSION:     '10.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Manual Installation on Linux" href="source_installation.html" />
-    <link rel="prev" title="Deployment Considerations" href="deployment_considerations.html" />
+    <link rel="next" title="The Installation Wizard" href="installation_wizard.html" />
+    <link rel="prev" title="Manual Installation on Linux" href="source_installation.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,19 +65,20 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.7</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Installation</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="system_requirements.html">System Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_recommendations.html">Deployment Recommendations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="deployment_considerations.html">Deployment Considerations</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Preferred Installation Method</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#changes-in-the-linux-distribution-packages-9">Changes in the Linux Distribution Packages 9</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Linux Package Manager Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#available-packages">Available Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-owncloud-community-edition">Installing ownCloud Community Edition</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#installing-owncloud-enterprise-edition">Installing ownCloud Enterprise Edition</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#downgrading">Downgrading</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#additional-installation-guides-and-notes">Additional Installation Guides and Notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-guides-and-notes">Additional Guides and Notes</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="source_installation.html">Manual Installation on Linux</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation_wizard.html">The Installation Wizard</a></li>
 <li class="toctree-l2"><a class="reference internal" href="docker/index.html">Installing with Docker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="command_line_installation.html">Command Line Installation</a></li>
@@ -88,6 +89,7 @@
 <li class="toctree-l2"><a class="reference internal" href="apps_supported.html">Supported Apps in ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="selinux_configuration.html">SELinux Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx_configuration.html">NGINX Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="letsencrypt/index.html">Using Let’s Encrypt SSL Certificates</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
@@ -110,54 +112,32 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="deployment_considerations.html" title="Previous Chapter: Deployment Considerations"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Deployment Co...</span>
+    <a href="source_installation.html" title="Previous Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Manual Instal...</span>
     </a>
   </li>
   <li class="next">
-    <a href="source_installation.html" title="Next Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Manual Instal... &raquo;</span>
+    <a href="installation_wizard.html" title="Next Chapter: The Installation Wizard"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">The Installat... &raquo;</span>
     </a>
   </li>
 </ul>
 						
-  <div class="section" id="preferred-installation-method">
-<h1>Preferred Installation Method<a class="headerlink" href="#preferred-installation-method" title="Permalink to this headline">¶</a></h1>
-<p>For production environments, we recommend the installation from the tar archive.
-This applies in particular to scenarios, where the Web server, storage and database are on separate machines.
-In this constellation, all dependencies and requirements are managed by the package management
-of your operating system, while the ownCloud code itself is maintained in a sequence of simple steps
-as documented in our instructions for the <a class="reference internal" href="source_installation.html"><span class="doc">Manual Installation on Linux</span></a> and the <a class="reference internal" href="../maintenance/manual_upgrade.html"><span class="doc">Manual ownCloud Upgrade</span></a>.</p>
-<p>The package installation is for single-server setups only.</p>
-<div class="section" id="changes-in-the-linux-distribution-packages-9">
-<h2>Changes in the Linux Distribution Packages 9<a class="headerlink" href="#changes-in-the-linux-distribution-packages-9" title="Permalink to this headline">¶</a></h2>
-<p>Linux distribution packages (from <a class="reference external" href="https://download.owncloud.org/download/repositories/10.0/owncloud/">Open Build Service</a>) have been divided into
-multiple packages: <code class="docutils literal"><span class="pre">owncloud</span></code>, <code class="docutils literal"><span class="pre">owncloud-deps</span></code> and <code class="docutils literal"><span class="pre">owncloud-files</span></code>.</p>
-<ul class="simple">
-<li><strong>owncloud-files (recommended):</strong> This package installs only ownCloud. It does not install <em>Apache</em>, <em>a database</em>, or any <em>PHP dependencies</em>.</li>
-<li><strong>owncloud:</strong> This package installs ownCloud, complete with all dependencies.</li>
-<li><strong>owncloud-deps:</strong> This packages install only ownCloud’s dependencies (<em>Apache</em>, <em>PHP</em>, and <em>MySQL</em>). It is not intended to be installed by itself, but rather is pulled in by the <code class="docutils literal"><span class="pre">owncloud</span></code> metapackage.</li>
-</ul>
+  <div class="section" id="linux-package-manager-installation">
+<h1>Linux Package Manager Installation<a class="headerlink" href="#linux-package-manager-installation" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">The <code class="docutils literal"><span class="pre">owncloud</span></code> package is a meta-package that only installs ownCloud’s dependencies, such as Apache, and the required PHP modules. We don’t recommend it, as it can be harmful, such as in environments where several applications are hosted simultaneously. As such we recommend using <code class="docutils literal"><span class="pre">owncloud-files</span></code> (which actually installs ownCloud) and further recommend administrators manage both the environment as well as <a class="reference external" href="https://doc.owncloud.org/server/10.0/admin_manual/installation/source_installation.html">ownCloud’s dependencies</a>.</p>
+<p class="last">Package managers should only be used for single-server setups.
+For production environments, we recommend installing from <a class="reference external" href="https://owncloud.org/download/#owncloud-server-tar-ball">the tar archive</a>.</p>
 </div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last"><code class="docutils literal"><span class="pre">owncloud-files</span></code> is available for the following distributions, but not <code class="docutils literal"><span class="pre">owncloud-deps</span></code>.</p>
+<div class="section" id="available-packages">
+<h2>Available Packages<a class="headerlink" href="#available-packages" title="Permalink to this headline">¶</a></h2>
+<p>The recommended package to use is <code class="docutils literal"><span class="pre">owncloud-files</span></code>.
+It only installs ownCloud, and does not install Apache, a database, or any of the required PHP dependencies.</p>
 </div>
-<p>You will have to install your own LAMP stack first. This
-allows you to create your own custom LAMP stack without dependency conflicts
-with the ownCloud package. Browse
-<a class="reference external" href="http://download.owncloud.org/download/repositories/9.1/owncloud/">http://download.owncloud.org/download/repositories/9.1/owncloud/</a> to find
-the <code class="docutils literal"><span class="pre">owncloud-files</span></code> package for your distro:</p>
-<ul class="simple">
-<li>Ubuntu 14.04, 16.04</li>
-<li>Debian 7, 8</li>
-<li>RHEL 6, 7</li>
-<li>CentOS 6 SCL, 7</li>
-<li>SLES 12, 12 SP1</li>
-<li>openSUSE 13.2, Leap 42.1</li>
-</ul>
-<p>ownCloud packages with dependencies are available for the following Linux distributions:</p>
+<div class="section" id="installing-owncloud-community-edition">
+<h2>Installing ownCloud Community Edition<a class="headerlink" href="#installing-owncloud-community-edition" title="Permalink to this headline">¶</a></h2>
+<p>First, install your own LAMP stack, as doing so allows you to create your own custom LAMP stack without dependency conflicts with the ownCloud package.
+Then, <a class="reference external" href="http://download.owncloud.org/download/repositories/10.0/owncloud/">update package manager’s configuration</a>.</p>
+<p>Configurations are available for the following Linux distributions:</p>
 <ul class="simple">
 <li>Ubuntu 14.04 &amp; 16.04</li>
 <li>Debian 7 &amp; 8</li>
@@ -166,64 +146,74 @@ the <code class="docutils literal"><span class="pre">owncloud-files</span></code
 <li>SLES 11SP4 &amp; 12SP2</li>
 <li>openSUSE Leap 42.2 &amp; 42.3</li>
 </ul>
-<p>Repositories for Fedora, openSUSE Tumbleweed and Ubuntu 15.04 were dropped.
-If you use Fedora, use the tar archive with your own LAMP stack. openSUSE
-users can rely on LEAP packages for Tumbleweed.</p>
-<p>Follow the instructions on the download page to install ownCloud. Then run the
-Installation Wizard to complete your installation. (see
-<a class="reference internal" href="installation_wizard.html"><span class="doc">The Installation Wizard</span></a>).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Repositories for Fedora, openSUSE Tumbleweed, and Ubuntu 15.04 have been dropped.
+If you use Fedora, use <a class="reference external" href="https://owncloud.org/download/#owncloud-server-tar-ball">the tar archive</a> with your own LAMP stack.
+openSUSE users can rely on LEAP packages for Tumbleweed.</p>
+</div>
+<p>Once your package manager has been updated, follow the rest of the instructions on the download page to install ownCloud.
+Once ownCloud’s installed, run <a class="reference internal" href="installation_wizard.html"><span class="doc">the Installation Wizard</span></a> to complete your installation.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">See the <a class="reference internal" href="system_requirements.html"><span class="doc">System Requirements</span></a> for the recommended ownCloud setup and supported platforms.</p>
+</div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">Do not move the folders provided by these packages after the
-installation, as this will break updates.</p>
+<p class="last">Do not move the folders provided by these packages after the installation, as
+this will break updates.</p>
 </div>
-<p>See the <a class="reference internal" href="system_requirements.html"><span class="doc">System Requirements</span></a> for the recommended ownCloud setup and
-supported platforms.</p>
-<div class="section" id="repositories">
-<h3>Repositories<a class="headerlink" href="#repositories" title="Permalink to this headline">¶</a></h3>
-<p>You may use either of the following repositories for ownCloud, substituting <code class="docutils literal"><span class="pre">&lt;version&gt;</span></code> for the version of ownCloud that you want to install, or <code class="docutils literal"><span class="pre">stable</span></code>:</p>
-<ul class="simple">
-<li><code class="docutils literal"><span class="pre">https://download.owncloud.org/download/repositories/&lt;version&gt;/owncloud/</span></code></li>
-</ul>
-<ul class="simple">
-<li>If you use <code class="docutils literal"><span class="pre">stable</span></code>, you never have to change it, as it always tracks the current stable ownCloud version through all major releases. Major releases are indicated by the second number, so 8.0, 8.1, 8.2, and 9.0 were all major releases.</li>
-<li>If you wish to track a specific major release, such as 9.0 or 9.1, then substitute <code class="docutils literal"><span class="pre">&lt;version&gt;</span></code> with that instead. Doing so avoids you accidentally upgrading to the next major release before you’re ready.</li>
-</ul>
+<div class="section" id="what-is-the-correct-version">
+<h3>What is the Correct Version?<a class="headerlink" href="#what-is-the-correct-version" title="Permalink to this headline">¶</a></h3>
+<p>Package versions are composed of a major, a minor, and a patch number, such as 9.0, 9.1, 10.0, 10.0.1, and 10.0.2.
+The second number represents a major release, and the third number represents a minor release.</p>
+<div class="section" id="major-releases">
+<h4>Major Releases<a class="headerlink" href="#major-releases" title="Permalink to this headline">¶</a></h4>
+<p>If you want to follow either of the most recent major releases, then substitute <code class="docutils literal"><span class="pre">version</span></code> with either 9.0 or 10.0.</p>
+</div>
+<div class="section" id="minor-releases">
+<h4>Minor Releases<a class="headerlink" href="#minor-releases" title="Permalink to this headline">¶</a></h4>
+<p>If you want to follow any of the four most recent patch releases, then substitute <code class="docutils literal"><span class="pre">version</span></code> with one of 10.0.1, 10.0.2, 10.0.3, or 10.0.4.
+Following a minor release avoids you accidentally upgrading to the next major release before you’re ready.</p>
+</div>
+<div class="section" id="the-latest-stable-version">
+<h4>The Latest Stable Version<a class="headerlink" href="#the-latest-stable-version" title="Permalink to this headline">¶</a></h4>
+<p>Alternatively you can use <code class="docutils literal"><span class="pre">stable</span></code> for the latest stable version.
+If you do, you never have to change it as it always tracks the current stable ownCloud version through all major releases.</p>
+</div>
 </div>
 </div>
 <div class="section" id="installing-owncloud-enterprise-edition">
 <h2>Installing ownCloud Enterprise Edition<a class="headerlink" href="#installing-owncloud-enterprise-edition" title="Permalink to this headline">¶</a></h2>
-<p>See <a class="reference internal" href="../enterprise/installation/install.html"><span class="doc">Installing &amp; Upgrading ownCloud Enterprise Edition</span></a> for instructions on
-installing ownCloud Enterprise edition.</p>
+<p>See <a class="reference internal" href="../enterprise/installation/install.html"><span class="doc">Installing &amp; Upgrading ownCloud Enterprise Edition</span></a> for instructions on installing ownCloud Enterprise edition.</p>
 </div>
 <div class="section" id="downgrading">
 <h2>Downgrading<a class="headerlink" href="#downgrading" title="Permalink to this headline">¶</a></h2>
-<p>Downgrading is not supported and risks corrupting your data! If you want to
-revert to an older ownCloud version, install it from scratch and then restore
-your data from backup. Before doing this, file a support ticket (if you have
-paid support) or ask for help in the ownCloud forums to see if your issue can be
-resolved without downgrading.</p>
+<p>Downgrading is not supported and risks corrupting your data!
+If you want to revert to an older ownCloud version, install it from scratch and then restore your data from backup.
+Before doing this, file a support ticket (<a class="reference external" href="https://owncloud.com/pricing/">if you have paid support</a>) or ask for help in the ownCloud forums to see if your issue can be resolved without downgrading.</p>
 </div>
-<div class="section" id="additional-installation-guides-and-notes">
-<h2>Additional Installation Guides and Notes<a class="headerlink" href="#additional-installation-guides-and-notes" title="Permalink to this headline">¶</a></h2>
-<p>See <a class="reference internal" href="installation_wizard.html"><span class="doc">The Installation Wizard</span></a> for important steps such as choosing the best
-database and setting correct directory permissions.</p>
-<p>See <a class="reference internal" href="selinux_configuration.html"><span class="doc">SELinux Configuration</span></a> for a suggested configuration for
-SELinux-enabled distributions such as Fedora and CentOS.</p>
-<p>If your distribution is not listed, your Linux distribution may maintain its
-own
-ownCloud packages, or you may prefer to install from source code (see
-<a class="reference internal" href="source_installation.html"><span class="doc">Manual Installation on Linux</span></a>).</p>
-<p><strong>Archlinux:</strong> The current <a class="reference external" href="https://www.archlinux.org/packages/community/any/owncloud">stable version</a> is in the
-official community repository, and more packages are in
-the <a class="reference external" href="https://aur.archlinux.org/packages/?O=0&amp;K=owncloud">Arch User Repository</a>.</p>
-<p><strong>Mageia:</strong> The <a class="reference external" href="https://wiki.mageia.org/en/OwnCloud">Mageia Wiki</a> has a good page on installing ownCloud from the
-Mageia software repository.</p>
-<p><strong>Running ownCloud in a subdirectory</strong>: If you’re running ownCloud in a
-subdirectory and want to use CalDAV or CardDAV clients make sure you have
-configured the correct <a class="reference internal" href="../issues/general_troubleshooting.html#service-discovery-label"><span class="std std-ref">Service discovery</span></a> URLs.</p>
-<p><strong>Note for MySQL/MariaDB environments</strong>: Please refer to <a class="reference internal" href="../configuration/database/linux_database_configuration.html#db-binlog-label"><span class="std std-ref">MySQL / MariaDB with Binary Logging Enabled</span></a>
-on how to correctly configure your environment if you have binary logging enabled.</p>
+<div class="section" id="additional-guides-and-notes">
+<h2>Additional Guides and Notes<a class="headerlink" href="#additional-guides-and-notes" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference internal" href="installation_wizard.html"><span class="doc">The Installation Wizard</span></a> for important steps, such as choosing the best database and setting correct directory permissions.
+See <a class="reference internal" href="selinux_configuration.html"><span class="doc">SELinux Configuration</span></a> for a suggested configuration for SELinux-enabled distributions such as Fedora and CentOS.</p>
+<p>If your distribution is not listed, your Linux distribution may maintain its own ownCloud packages or you may prefer to <a class="reference internal" href="source_installation.html"><span class="doc">install from source</span></a>.</p>
+<div class="section" id="archlinux">
+<h3>Archlinux<a class="headerlink" href="#archlinux" title="Permalink to this headline">¶</a></h3>
+<p>The current <a class="reference external" href="https://www.archlinux.org/packages/community/any/owncloud">stable version</a> is in the official community repository, and more packages are in the <a class="reference external" href="https://aur.archlinux.org/packages/?O=0&amp;K=owncloud">Arch User Repository</a>.</p>
+</div>
+<div class="section" id="mageia">
+<h3>Mageia<a class="headerlink" href="#mageia" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://wiki.mageia.org/en/OwnCloud">Mageia Wiki</a> has a good page on installing ownCloud from the Mageia software repository.</p>
+</div>
+<div class="section" id="note-for-mysql-mariadb-environments">
+<h3>Note for MySQL/MariaDB environments<a class="headerlink" href="#note-for-mysql-mariadb-environments" title="Permalink to this headline">¶</a></h3>
+<p>Please refer to <a class="reference internal" href="../configuration/database/linux_database_configuration.html#db-binlog-label"><span class="std std-ref">MySQL / MariaDB with Binary Logging Enabled</span></a> on how to correctly configure your environment if you have binary logging enabled.</p>
+</div>
+<div class="section" id="running-owncloud-in-a-sub-directory">
+<h3>Running ownCloud in a sub-directory<a class="headerlink" href="#running-owncloud-in-a-sub-directory" title="Permalink to this headline">¶</a></h3>
+<p>If you’re running ownCloud in a sub-directory and want to use CalDAV or CardDAV clients, make sure you have configured the correct <a class="reference internal" href="../issues/general_troubleshooting.html#service-discovery-label"><span class="std std-ref">service discovery</span></a> URLs.</p>
+</div>
 </div>
 </div>
 
@@ -231,11 +221,11 @@ on how to correctly configure your environment if you have binary logging enable
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="deployment_considerations.html" title="Previous Chapter: Deployment Considerations"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Deployment Co...</span>
+    <a href="source_installation.html" title="Previous Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Manual Instal...</span>
     </a>
   </li>
   <li class="next">
-    <a href="source_installation.html" title="Next Chapter: Manual Installation on Linux"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Manual Instal... &raquo;</span>
+    <a href="installation_wizard.html" title="Next Chapter: The Installation Wizard"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">The Installat... &raquo;</span>
     </a>
   </li>
 </ul>

@@ -233,6 +233,9 @@ OC.L10N.register(
     "change full name" : "canvia el nom complet",
     "set new password" : "estableix nova contrasenya",
     "change email address" : "canvi d'adreça de correu electrònic",
-    "Default" : "Per defecte"
+    "Default" : "Per defecte",
+    "Share" : "Compartir",
+    "Add" : "Afegeix",
+    "%s password changed successfully" : "%scontrassenya actualitzada correctament"
 },
 "nplurals=2; plural=(n != 1);");

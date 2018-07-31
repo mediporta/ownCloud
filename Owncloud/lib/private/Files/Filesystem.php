@@ -18,7 +18,7 @@
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -407,11 +407,12 @@ class Filesystem {
 		$userManager = \OC::$server->getUserManager();
 		$userObject = $userManager->get($user);
 
-		if (is_null($userObject)) {
-			\OCP\Util::writeLog('files', ' Backends provided no user object for ' . $user, \OCP\Util::ERROR);
+		if ($userObject === null) {
+			$msg = "Backends provided no user object for $user";
+			\OC::$server->getLogger()->error($msg, ['app' => __CLASS__]);
 			// reset flag, this will make it possible to rethrow the exception if called again
 			unset(self::$usersSetup[$user]);
-			throw new \OC\User\NoUserException('Backends provided no user object for ' . $user);
+			throw new \OC\User\NoUserException($msg);
 		}
 
 		$realUid = $userObject->getUID();
