@@ -33,6 +33,7 @@ use OCP\Migration\ISqlMigration;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
+use OCP\ILogger;
 
 class MigrationService {
 
@@ -46,6 +47,8 @@ class MigrationService {
 	private $connection;
 	/** @var string */
 	private $appName;
+	/** @var ILogger */
+	private $logger;
 
 	/**
 	 * MigrationService constructor.
@@ -56,22 +59,27 @@ class MigrationService {
 	 * @param IOutput|null $output
 	 * @throws \Exception
 	 */
-	function __construct($appName,
-						 IDBConnection $connection,
-						 IOutput $output = null,
-						 AppLocator $appLocator = null) {
+	public function __construct($appName,
+						IDBConnection $connection,
+						IOutput $output = null,
+						AppLocator $appLocator = null,
+						ILogger $logger = null) {
 		$this->appName = $appName;
 		$this->connection = $connection;
 		$this->output = $output;
-		if (is_null($this->output)) {
+		if ($this->output === null) {
 			$this->output = new SimpleOutput(\OC::$server->getLogger(), $appName);
+		}
+		$this->logger = $logger;
+		if ($this->logger === null) {
+			$this->logger = \OC::$server->getLogger();
 		}
 
 		if ($appName === 'core') {
 			$this->migrationsPath = \OC::$SERVERROOT . '/core/Migrations';
 			$this->migrationsNamespace = 'OC\\Migrations';
 		} else {
-			if (is_null($appLocator)) {
+			if ($appLocator === null) {
 				$appLocator = new AppLocator();
 			}
 			$appPath = $appLocator->getAppPath($appName);
@@ -79,8 +87,8 @@ class MigrationService {
 			$this->migrationsNamespace = "OCA\\$appName\\Migrations";
 		}
 
-		if (!is_dir($this->migrationsPath)) {
-			if (!mkdir($this->migrationsPath)) {
+		if (!\is_dir($this->migrationsPath)) {
+			if (!\mkdir($this->migrationsPath)) {
 				throw new \Exception("Could not create migration folder \"{$this->migrationsPath}\"");
 			};
 		}
@@ -165,11 +173,11 @@ class MigrationService {
 	 */
 	public function getAvailableVersions() {
 		$this->ensureMigrationsAreLoaded();
-		return array_keys($this->migrations);
+		return \array_keys($this->migrations);
 	}
 
 	protected function findMigrations() {
-		$directory = realpath($this->migrationsPath);
+		$directory = \realpath($this->migrationsPath);
 		$iterator = new \RegexIterator(
 			new \RecursiveIteratorIterator(
 				new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
@@ -178,23 +186,23 @@ class MigrationService {
 			'#^.+\\/Version[^\\/]{1,255}\\.php$#i',
 			\RegexIterator::GET_MATCH);
 
-		$files = array_keys(iterator_to_array($iterator));
-		uasort($files, function ($a, $b) {
-			return (basename($a) < basename($b)) ? -1 : 1;
+		$files = \array_keys(\iterator_to_array($iterator));
+		\uasort($files, function ($a, $b) {
+			return (\basename($a) < \basename($b)) ? -1 : 1;
 		});
 
 		$migrations = [];
 
 		foreach ($files as $file) {
 			static::requireOnce($file);
-			$className = basename($file, '.php');
-			$version = (string) substr($className, 7);
+			$className = \basename($file, '.php');
+			$version = (string) \substr($className, 7);
 			if ($version === '0') {
 				throw new \InvalidArgumentException(
 					"Cannot load a migrations with the name '$version' because it is a reserved number"
 				);
 			}
-			$migrations[$version] = sprintf('%s\\%s', $this->migrationsNamespace, $className);
+			$migrations[$version] = \sprintf('%s\\%s', $this->migrationsNamespace, $className);
 		}
 
 		return $migrations;
@@ -227,7 +235,7 @@ class MigrationService {
 	 * @return bool
 	 */
 	private function shallBeExecuted($m, $knownMigrations) {
-		if (in_array($m, $knownMigrations)) {
+		if (\in_array($m, $knownMigrations)) {
 			return false;
 		}
 
@@ -278,7 +286,7 @@ class MigrationService {
 	 * @return mixed|null|string
 	 */
 	public function getMigration($alias) {
-		switch($alias) {
+		switch ($alias) {
 			case 'current':
 				return $this->getCurrentVersion();
 			case 'next':
@@ -288,7 +296,7 @@ class MigrationService {
 			case 'latest':
 				$this->ensureMigrationsAreLoaded();
 
-				return @end($this->getAvailableVersions());
+				return @\end($this->getAvailableVersions());
 		}
 		return '0';
 	}
@@ -302,8 +310,8 @@ class MigrationService {
 		$this->ensureMigrationsAreLoaded();
 
 		$versions = $this->getAvailableVersions();
-		array_unshift($versions, 0);
-		$offset = array_search($version, $versions);
+		\array_unshift($versions, 0);
+		$offset = \array_search($version, $versions);
 		if ($offset === false || !isset($versions[$offset + $delta])) {
 			// Unknown version or delta out of bounds.
 			return null;
@@ -317,10 +325,10 @@ class MigrationService {
 	 */
 	private function getCurrentVersion() {
 		$m = $this->getMigratedVersions();
-		if (count($m) === 0) {
+		if (\count($m) === 0) {
 			return '0';
 		}
-		return @end(array_values($m));
+		return @\end(\array_values($m));
 	}
 
 	/**
@@ -369,7 +377,7 @@ class MigrationService {
 		try {
 			$s = \OC::$server->query($class);
 		} catch (QueryException $e) {
-			if (class_exists($class)) {
+			if (\class_exists($class)) {
 				$s = new $class();
 			} else {
 				throw new \Exception("Migration step '$class' is unknown");
@@ -385,7 +393,7 @@ class MigrationService {
 	 * @param string $version
 	 */
 	public function executeStep($version) {
-
+		$this->logger->debug("Migrations: starting $version from app {$this->appName}", ['app' => 'core']);
 		$instance = $this->createInstance($version);
 		if ($instance instanceof ISimpleMigration) {
 			$instance->run($this->output);
@@ -404,6 +412,7 @@ class MigrationService {
 			$this->connection->migrateToSchema($toSchema);
 		}
 		$this->markAsExecuted($version);
+		$this->logger->debug("Migrations: completed $version from app {$this->appName}", ['app' => 'core']);
 	}
 
 	private function ensureMigrationsAreLoaded() {

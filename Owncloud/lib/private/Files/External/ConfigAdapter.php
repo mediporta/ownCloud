@@ -36,6 +36,8 @@ use OCP\Files\External\IStorageConfig;
 use OC\Files\Storage\FailedStorage;
 use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
+use OCP\Files\ObjectStore\IObjectStore;
+use OCP\ISession;
 
 /**
  * Make the old files_external config work with the new public mount config api
@@ -51,6 +53,9 @@ class ConfigAdapter implements IMountProvider {
 	/** @var IUserGlobalStoragesService */
 	private $userGlobalStoragesService;
 
+	/** @var ISession */
+	private $session;
+
 	/**
 	 * @param IUserStoragesService $userStoragesService
 	 * @param IUserGlobalStoragesService $userGlobalStoragesService
@@ -58,11 +63,13 @@ class ConfigAdapter implements IMountProvider {
 	public function __construct(
 		IConfig $config,
 		IUserStoragesService $userStoragesService,
-		IUserGlobalStoragesService $userGlobalStoragesService
+		IUserGlobalStoragesService $userGlobalStoragesService,
+		ISession $session
 	) {
 		$this->config = $config;
 		$this->userStoragesService = $userStoragesService;
 		$this->userGlobalStoragesService = $userGlobalStoragesService;
+		$this->session = $session;
 	}
 
 	/**
@@ -74,14 +81,14 @@ class ConfigAdapter implements IMountProvider {
 	private function prepareStorageConfig(IStorageConfig &$storage, IUser $user) {
 		foreach ($storage->getBackendOptions() as $option => $value) {
 			$storage->setBackendOption($option, $this->setUserVars(
-				$user->getUID(), $value
+				$user->getUserName(), $value
 			));
 		}
 
 		$objectStore = $storage->getBackendOption('objectstore');
 		if ($objectStore) {
 			$objectClass = $objectStore['class'];
-			if (!is_subclass_of($objectClass, '\OCP\Files\ObjectStore\IObjectStore')) {
+			if (!\is_subclass_of($objectClass, '\OCP\Files\ObjectStore\IObjectStore')) {
 				throw new \InvalidArgumentException('Invalid object store');
 			}
 			$storage->setBackendOption('objectstore', new $objectClass($objectStore));
@@ -193,15 +200,15 @@ class ConfigAdapter implements IMountProvider {
 	 * @return string
 	 */
 	private function setUserVars($user, $input) {
-		if (is_array($input)) {
+		if (\is_array($input)) {
 			foreach ($input as $key => $value) {
-				if (is_string($value)) {
-					$input[$key] = str_replace('$user', $user, $value);
+				if (\is_string($value)) {
+					$input[$key] = \str_replace('$user', $user, $value);
 				}
 			}
 		} else {
-			if (is_string($input)) {
-				$input = str_replace('$user', $user, $input);
+			if (\is_string($input)) {
+				$input = \str_replace('$user', $user, $input);
 			}
 		}
 		return $input;

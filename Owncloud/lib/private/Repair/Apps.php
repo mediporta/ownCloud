@@ -1,6 +1,6 @@
 <?php
 /**
- * @author Victor Dubiniuk <dubiniuk@aheadworks.com>
+ * @author Viktar Dubiniuk <dubiniuk@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -21,6 +21,8 @@
 
 namespace OC\Repair;
 
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Types\Type;
 use OC\RepairException;
 use OC_App;
 use OCP\App\AppAlreadyInstalledException;
@@ -37,7 +39,6 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 use OCP\IConfig;
 
 class Apps implements IRepairStep {
-
 	const KEY_COMPATIBLE = 'compatible';
 	const KEY_INCOMPATIBLE = 'incompatible';
 	const KEY_MISSING = 'missing';
@@ -82,8 +83,8 @@ class Apps implements IRepairStep {
 	 */
 	private function isCoreUpdate() {
 		$installedVersion = $this->config->getSystemValue('version', '0.0.0');
-		$currentVersion = implode('.', Util::getVersion());
-		$versionDiff = version_compare($currentVersion, $installedVersion);
+		$currentVersion = \implode('.', Util::getVersion());
+		$versionDiff = \version_compare($currentVersion, $installedVersion);
 		if ($versionDiff > 0) {
 			return true;
 		}
@@ -96,12 +97,11 @@ class Apps implements IRepairStep {
 	 */
 	private function requiresMarketEnable() {
 		$installedVersion = $this->config->getSystemValue('version', '0.0.0');
-		$versionDiff = version_compare('10.0.0', $installedVersion);
+		$versionDiff = \version_compare('10.0.0', $installedVersion);
 		if ($versionDiff < 0) {
 			return false;
 		}
 		return true;
-
 	}
 
 	/**
@@ -109,7 +109,6 @@ class Apps implements IRepairStep {
 	 * @throws RepairException
 	 */
 	public function run(IOutput $output) {
-
 		if ($this->config->getSystemValue('has_internet_connection', true) !== true) {
 			$link = $this->defaults->buildDocLinkToKey('admin-marketplace-apps');
 			$output->info('No internet connection available - no app updates will be taken from the marketplace.');
@@ -141,7 +140,7 @@ class Apps implements IRepairStep {
 				try {
 					// Try to update incompatible apps
 					if (!empty($appsToUpgrade[self::KEY_INCOMPATIBLE])) {
-						$output->info('Attempting to update the following existing but incompatible app from market: ' . implode(', ', $appsToUpgrade[self::KEY_INCOMPATIBLE]));
+						$output->info('Attempting to update the following existing but incompatible app from market: ' . \implode(', ', $appsToUpgrade[self::KEY_INCOMPATIBLE]));
 						$failedIncompatibleApps = $this->getAppsFromMarket(
 							$output,
 							$appsToUpgrade[self::KEY_INCOMPATIBLE],
@@ -151,7 +150,7 @@ class Apps implements IRepairStep {
 
 					// Try to download missing apps
 					if (!empty($appsToUpgrade[self::KEY_MISSING])) {
-						$output->info('Attempting to update the following missing apps from market: ' . implode(', ', $appsToUpgrade[self::KEY_MISSING]));
+						$output->info('Attempting to update the following missing apps from market: ' . \implode(', ', $appsToUpgrade[self::KEY_MISSING]));
 						$failedMissingApps = $this->getAppsFromMarket(
 							$output,
 							$appsToUpgrade[self::KEY_MISSING],
@@ -161,7 +160,7 @@ class Apps implements IRepairStep {
 
 					// Try to update compatible apps
 					if (!empty($appsToUpgrade[self::KEY_COMPATIBLE])) {
-						$output->info('Attempting to update the following existing compatible apps from market: ' . implode(', ', $appsToUpgrade[self::KEY_MISSING]));
+						$output->info('Attempting to update the following existing compatible apps from market: ' . \implode(', ', $appsToUpgrade[self::KEY_MISSING]));
 						$failedCompatibleApps = $this->getAppsFromMarket(
 							$output,
 							$appsToUpgrade[self::KEY_COMPATIBLE],
@@ -169,7 +168,7 @@ class Apps implements IRepairStep {
 						);
 					}
 
-					$hasNotUpdatedCompatibleApps = count($failedCompatibleApps);
+					$hasNotUpdatedCompatibleApps = \count($failedCompatibleApps);
 				} catch (AppManagerException $e) {
 					$output->warning($e->getMessage());
 				}
@@ -180,15 +179,15 @@ class Apps implements IRepairStep {
 			}
 		}
 
-		$hasBlockingMissingApps = count($failedMissingApps);
-		$hasBlockingIncompatibleApps = count($failedIncompatibleApps);
+		$hasBlockingMissingApps = \count($failedMissingApps);
+		$hasBlockingIncompatibleApps = \count($failedIncompatibleApps);
 
 		if ($hasBlockingIncompatibleApps || $hasBlockingMissingApps) {
 			// fail
 			$output->warning('You have incompatible or missing apps enabled that could not be found or updated via the marketplace.');
 			$output->warning(
 				'Please install or update the following apps manually or disable them with:'
-				. $this->getOccDisableMessage(array_merge($failedIncompatibleApps, $failedMissingApps))
+				. $this->getOccDisableMessage(\array_merge($failedIncompatibleApps, $failedMissingApps))
 			);
 			$link = $this->defaults->buildDocLinkToKey('admin-marketplace-apps');
 			$output->warning("For manually updating, see $link");
@@ -218,7 +217,7 @@ class Apps implements IRepairStep {
 			$output->info("Fetching app from market: $app");
 			try {
 				$this->eventDispatcher->dispatch(
-					sprintf('%s::%s', IRepairStep::class, $event),
+					\sprintf('%s::%s', IRepairStep::class, $event),
 					new GenericEvent($app)
 				);
 			} catch (AppAlreadyInstalledException $e) {
@@ -239,7 +238,7 @@ class Apps implements IRepairStep {
 			} catch (\Exception $e) {
 				// TODO: check the reason
 				$failedApps[] = $app;
-				$output->warning(get_class($e));
+				$output->warning(\get_class($e));
 
 				$output->warning($e->getMessage());
 			}
@@ -262,7 +261,7 @@ class Apps implements IRepairStep {
 
 		foreach ($installedApps as $appId) {
 			$info = $this->appManager->getAppInfo($appId);
-			if (!isset($info['id']) || is_null($info['id'])) {
+			if (!isset($info['id']) || $info['id'] === null) {
 				$appsToUpgrade[self::KEY_MISSING][] = $appId;
 				continue;
 			}
@@ -274,16 +273,16 @@ class Apps implements IRepairStep {
 	}
 
 	protected function getOccDisableMessage($appList) {
-		if (!count($appList)) {
+		if (!\count($appList)) {
 			return '';
 		}
-		$appList = array_map(
+		$appList = \array_map(
 			function ($appId) {
 				return "occ app:disable $appId";
 			},
 			$appList
 		);
-		return "\n" . implode("\n", $appList);
+		return "\n" . \implode("\n", $appList);
 	}
 
 	/**
@@ -328,7 +327,64 @@ class Apps implements IRepairStep {
 
 		// Then we need to enable the market app to support app updates / downloads during upgrade
 		$output->info('Enabling market app to assist with update');
-		$this->appManager->enableApp('market');
-		return true;
+		try {
+			// Prepare oc_jobs for older ownCloud version fixes https://github.com/owncloud/update-testing/issues/5
+			$connection = \OC::$server->getDatabaseConnection();
+			$toSchema = $connection->createSchema();
+			$this->changeSchema($toSchema, ['tablePrefix' => $connection->getPrefix()]);
+			$connection->migrateToSchema($toSchema);
+
+			$this->appManager->enableApp('market');
+			return true;
+		} catch (\Exception $ex) {
+			$output->warning($ex->getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * DB update for oc_jobs table
+	 * it is intentionally duplicates 20170213215145 and a part of 20170101215145
+	 * to allow seamless market app installation
+	 *
+	 * @param Schema $schema
+	 * @param array $options
+	 * @throws \Doctrine\DBAL\Schema\SchemaException
+	 */
+	private function changeSchema(Schema $schema, array $options) {
+		$prefix = $options['tablePrefix'];
+		if ($schema->hasTable("${prefix}jobs")) {
+			$jobsTable = $schema->getTable("${prefix}jobs");
+
+			if (!$jobsTable->hasColumn('last_checked')) {
+				$jobsTable->addColumn(
+					'last_checked',
+					Type::INTEGER,
+					[
+						'default' => 0,
+						'notnull' => false
+					]
+				);
+			}
+
+			if (!$jobsTable->hasColumn('reserved_at')) {
+				$jobsTable->addColumn(
+					'reserved_at',
+					Type::INTEGER,
+					[
+						'default' => 0,
+						'notnull' => false
+					]
+				);
+			}
+
+			if (!$jobsTable->hasColumn('execution_duration')) {
+				$jobsTable->addColumn('execution_duration', Type::INTEGER, [
+					'notnull' => true,
+					'length' => 5,
+					'default' => -1,
+				]);
+			}
+		}
 	}
 }

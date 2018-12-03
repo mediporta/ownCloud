@@ -2,6 +2,7 @@
 Release Notes
 =============
 
+* :ref:`10.0.10_release_notes_label`
 * :ref:`10.0.9_release_notes_label`
 * :ref:`10.0.8_release_notes_label`
 * :ref:`10.0.7_release_notes_label`
@@ -17,6 +18,136 @@ Release Notes
 * :ref:`8.1_release_notes_label`
 * :ref:`8.0_release_notes_label`
 * :ref:`7.0_release_notes_label`
+
+.. _10.0.10_release_notes_label:
+
+Changes in 10.0.10
+--------------------------
+
+Dear ownCloud administrator, please find below the changes and known issues in ownCloud Server 10.0.10 that need your attention. You can also read `the full ownCloud Server changelog`_ for further details on what has changed.
+
+Official PHP 7.2 Support
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+After announcing the future deprecation of PHP 5.6 and 7.0 with the `10.0.8 release <https://doc.owncloud.com/server/10.0/admin_manual/release_notes.html#php-5-6-deprecation>`_, ownCloud Server now follows up by officially adding PHP 7.2 support. The Server Core and all apps maintained by ownCloud have received a full QA cycle and are proven to work reliably with PHP 7.2.
+
+ownCloud Server is also being prepared for PHP 7.3, which is `scheduled to become available by the end of 2018 <https://wiki.php.net/todo/php73>`_. If you are still using versions 5.6 or 7.0, please plan an upgrade to 7.2 soon. See the `system requirements in the ownCloud Documentation <https://doc.owncloud.com/server/latest/admin_manual/installation/system_requirements.html#officially-recommended-supported-options>`_.
+
+.. note:: With PHP 7.2 some extensions have changed. If you have not yet upgraded, you need to install ``php-openssl``. See `#30337 <https://github.com/owncloud/core/issues/30337>`_ for more information.
+
+New Local User Creation Flow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In previous versions, administrators created local users by entering a username and a password. In many cases this is undesirable, as administrators set the password for new users and need to provide it via a second communication channel. For this reason the local user creation flow has been changed to expect a username and an email address, which will be used to send an activation link to new users.
+
+This way user creation is easier and more secure as new users are informed automatically and can choose a password in self-service. For cases where administrators want to set the initial password, it's possible to deviate from the default by setting the option "*Set a password for new users*" on the bottom left settings cog. The former option "*Send email to new users*" has been removed, as this change made it obsolete.
+
+HTTP API for Search
+~~~~~~~~~~~~~~~~~~~
+
+ownCloud Server 10.0.10 introduces an HTTP API for search functionality. It enables the use of search terms to query the server and the delivery of search results via HTTP (WebDAV). In upcoming releases, ownCloud clients will make use of it to search content on the server, without the need to have them available locally.
+
+In combination with the Full-Text Search integration, which is soon to be released as an ownCloud Server extension (Community Edition), HTTP API for Search will boost usability and productivity for users. For example, they will be able to search through all the content which they store in their account and quickly find files on their smartphones.
+
+Native Brute-Force Protection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Together with the new server version, another security-enhancing extension is available, `Brute Force Protection <https://marketplace.owncloud.com/apps/brute_force_protection>`_. This extension is tasked with preventing attackers from guessing user passwords (brute-force attack) by delaying subsequent failed login attempts for a user account from the same IP address.
+
+While in the past similar functionality was only achievable via third party applications, such as *Fail2Ban*, this extension provides the functionality natively, configurable by ownCloud administrators on the Security settings section.
+
+The new extension supersedes the former `Security <https://marketplace.owncloud.com/apps/security>`_ extension together with the new `Password Policy <https://marketplace.owncloud.com/apps/password_policy>`_ extension, which `has been released with ownCloud Server 10.0.9 <https://doc.owncloud.com/server/latest/admin_manual/release_notes.html#password-history-and-expiration>`_. This community-contributed extension is well-tested, but out of ownCloud's general support scope. However, individual support can be obtained on request.
+
+Improved Reliability for Uploads Via Web Interface on Unreliable Connections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The reliability of the file upload feature in the ownCloud web interface has been improved. When uploading larger amounts of data on unreliable connections (e.g., on the train or with mobile data) you have to deal with interruptions and timeouts, which in the past required users to restart stalled uploads from the beginning in the worst case.
+
+On top of ownCloud's chunking mechanism, which splits large files into pieces and uploads them separately, there's new logic that takes care of retrying stalled chunks. With this, uploads can now continue from the point they froze when a connection becomes available again.
+
+New Option to Prevent Sharing With Specific System Groups
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+System groups in ownCloud can have many purposes. They can be used for sharing with many users at once, for feature and access restrictions, or for storage mounts to specific users - just to name a few. In some cases, especially in larger deployments, it's undesirable that groups which are used for other purposes are also available for sharing. To prevent users from sharing with such groups, administrators can now blacklist the respective system groups using the option "*Exclude groups from receiving shares*" in the administration settings "*Sharing*" section.
+
+New Options for the occ Command to Reset User Passwords
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The occ command ``user:resetpassword`` allows system administrators to reset or change user passwords. It has been extended to provide the additional options ``--send-email`` and ``--output-link``, which can be used to send a password reset link to the user via mail and output the password reset link to the command line, respectively. This change is in line with the new local user creation flow, which is explained above, and can also be used for further processing with scripts. See the ownCloud Documentation and the ``--help`` option for more information.
+
+New Default Minimum Supported Desktop Client Version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To ensure clean and reliable operation of the ownCloud platform it is important to stay up-to-date with the latest releases for the server as well as the clients. To take care of compatibility between the server and desktop clients, the minimum version the server will accept connections from has been raised to version ``2.3.3``. While it's recommended to keep up with later versions, this is the new default value. It can be changed by altering the config.php parameter ``'minimum.supported.desktop.version' => '2.3.3',`` if absolutely necessary.
+
+New Option to Configure the Language of Mail Notifications for Public Links
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Usually ownCloud renders mail notifications in the language of the recipients, when they are known. For the `recently improved feature <https://doc.owncloud.com/server/10.0/admin_manual/release_notes.html#personal-note-for-public-link-mail-notification>`_ to send public links with a personal note directly from the user interface, the recipients' language can't be determined automatically, it just knows the recipients' mail addresses.
+
+ownCloud therefore uses the language of the user who sent the notification, which can have the drawback that recipients can't understand them. This is still the default behavior but administrators can now change it via a dropdown menu "*Language used for public mail notifications for shared files*" in the settings "*Sharing*" section.
+
+Theming Changes
+~~~~~~~~~~~~~~~
+
+Mail templates for share notifications do not strip line breaks from the personal note anymore. This affects the HTML (``core/templates/mail.php``) and plain text (``core/templates/altmail.php``) mail templates. The default templates shipped with ownCloud Server 10.0.10 have been modified to accommodate these changes. If your custom theme overrides these templates, you have to follow up with the changes:
+
+- Replace the following line of the HTML template
+``p($l->t("Personal note from the sender: %s.", [$_['personal_note']]));``
+
+with
+
+``print_unescaped($l->t("Personal note from the sender: <br> %s.", $_['personal_note']));``.
+
+- Replace the following line of the plain text template
+
+``print_unescaped($l->t("Personal note from the sender: %s.", [$_['personal_note']]));``
+
+with
+
+``print_unescaped($l->t("Personal note from the sender: \n %s.", $_['personal_note']));``.
+
+Other Notable Changes
+~~~~~~~~~~~~~~~~~~~~~
+
+- Allow automated SSL certificate verifications for CAs other than Let's Encrypt. See `#31858 <https://github.com/owncloud/core/issues/31858>`_ for further details.
+-  "/" and "%" are now valid characters in group names. See `#31109 <https://github.com/owncloud/core/issues/31109>`_ for further details.
+- New audit events for login action with token or Apache. See `_#31985 <https://github.com/owncloud/core/issues/31985>`_ for further details.
+- Log entries for exceeding user quota: Loglevel changed to "debug" (Insufficient storage exception is now logged with "debug" log level).
+- The app for embedding external sites to the app launcher ("*external*") now supports icons that originate from theme apps.
+- The occ command to deactivate storage encryption (``occ encryption:decrypt-all``) has received stability improvements and can now read the required recovery key from an environment variable which is very helpful for a scripted per-user decryption process.
+
+Solved Known Issues
+~~~~~~~~~~~~~~~~~~~
+
+ownCloud Server 10.0.10 takes care of `10.0.9 known issues <https://doc.owncloud.com/server/latest/admin_manual/release_notes.html#id10>`_ and provides remedies for several others:
+
+- The Password Policy extension now works with two- or multi-factor authentication extensions. See `#32058 <https://github.com/owncloud/core/issues/32058>`_ for further details.
+- The ``Versions`` feature now works also when the ``Comments`` app is disabled. See `#32208 <https://github.com/owncloud/core/issues/32208>`_ for further details.
+- E-mail addresses with subdomains with hyphens are now also accepted for public link emails. See `#32281 <https://github.com/owncloud/core/issues/32281>`_ for further details.
+- Allow null in "Origin" header for third party clients that send it with WebDAV. See `#32189 <https://github.com/owncloud/core/issues/32189>`_ for further details.
+- Properly log failed message when token based authentication is enforced (fail2ban). See `#31948 <https://github.com/owncloud/core/issues/31948>`_ for further details.
+- Deleting a user now also properly deletes their external storages and storage assignations. See `#32069 <https://github.com/owncloud/core/issues/32069>`_ for further details.
+- Lockout issues with wrong passwords for Windows Network Drives are mitigated: Fixed mount config in frontend to only load once to avoid side effects. See `#32095 <https://github.com/owncloud/core/issues/32095>`_ for further details.
+- Fixed update issue related to oc_jobs when automatically enabling market app to assist for update in OC 10. See `#32573 <https://github.com/owncloud/core/pull/32573>`_ for further details.
+- Fixed missing migrations in files_sharing app and add indices to improve performance. See `#32562 <https://github.com/owncloud/core/issues/32562>`_ for further details.
+- Fixed issue with spam filters when sending public link emails. See `#32542 <https://github.com/owncloud/core/issues/32542>`_ for further details.
+
+Known Issues
+~~~~~~~~~~~~
+
+Currently there are no known issues with ownCloud Server 10.0.10.
+This section will be updated in the case that issues become known.
+
+For Developers
+~~~~~~~~~~~~~~
+
+- Search API for files using WebDAV REPORT and an underlying search provider. See `#31946 <https://github.com/owncloud/core/issues/31946>`_ and `#32328 <https://github.com/owncloud/core/issues/32328>`_ for further details.
+- Add information whether user can share to capabilities API. See `#31824 <https://github.com/owncloud/core/issues/31824>`_ for further details.
+- Hook ``loadAdditionalScripts`` now also available for public link page. See `#31944 <https://github.com/owncloud/core/issues/31944>`_ for further details.
+- Added URL parameter to files app which opens a specific sidebar tab. See `#32202 <https://github.com/owncloud/core/issues/32202>`_ for further details.
+- Allow slashes in generated resource routes in app framework. See `#31939 <https://github.com/owncloud/core/issues/31939>`_ for further details.
+- The app for embedding external sites to the app launcher ("*external*") has been moved to a `separate repository <https://github.com/owncloud/external>`_. It is still bundled with ownCloud Server releases and can be used normally.
 
 .. _10.0.9_release_notes_label:
 
@@ -74,13 +205,39 @@ The Password Policy Extension
 .. note::
    These features don't apply to users imported from LDAP or other backends but only for local users created by administrators or the `Guests <https://marketplace.owncloud.com/apps/guests>`_ extension.
 
-Imposing password expiration and history policies enhance security. For example, when users are forced to choose a new password, they can be blocked from using their previous passwords (the password history count is configurable). However, increasing security can also decrease user satisfaction, such as forcing them to change their password upon first login, or change their passwords too frequently (such as every 90 days). That said, we encourage an acceptable balance between security and usability.
+Imposing password expiration and history policies enhances security for a number of reasons.
+For example, by forcing users to choose a new password, they can be prevented from using one or more of their previous passwords.
+In doing this, it encourages them to not use a previous password, which may be known to attackers.
+
+Two further examples are manually expiring passwords and configuring the number of days that have to pass since the last change before the password expires.
+These help ensure that users change their passwords on a semi-regular basis, making them harder to crack.
+
+However, we encourage administrators to always consider the implication of their password policies, so that they strike an appropriate balance between security and usability.
+For example, a high frequency of password changes, for instance, might increase security but could also decrease user satisfaction.
+
+To help ensure a good user experience it is possible to configure:
+
+- Email notifications.
+- Internal notifications (they appear on the web interface and clients).
+- The password history count.
+- The days before reminder notification are sent.
+
+Users will always be informed when passwords have expired.
 
 .. note::
-   Although the above two password practices `are discouraged by NIST <https://pages.nist.gov/800-63-3/sp800-63b.html>`_, ownCloud is now fully compliant with common password guidelines in enterprise scenarios.
+   Although the above two password practices `are discouraged by NIST
+   <https://pages.nist.gov/800-63-3/sp800-63b.html>`_, ownCloud is now fully
+   compliant with common password guidelines in enterprise scenarios.
 
 .. note::
-   When imposing password expiration policies on an existing installation it is necessary to take some further actions once. Please consult the `ownCloud Documentation <https://doc.owncloud.com/server/latest/admin_manual/configuration/server/security/password-policy.html>`_ for guidance.
+   When users employ tokens for client authentication, which can be configured
+   on the user settings page ("App passwords"), those are not affected from
+   password policies.
+
+.. note::
+   When imposing password expiration policies on an existing installation it is
+   necessary to take some further actions. Please consult `the ownCloud documentation`_ for guidance.
+
 Technology preview for new S3 Objectstore implementation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -189,7 +346,10 @@ ownCloud Server 10.0.9 takes care of `10.0.8 known issues <https://doc.owncloud.
 Known issues
 ~~~~~~~~~~~~
 
-Currently there are no known issues with ownCloud Server 10.0.9.
+The new Password Policy feature `"Password Expiration"`_:
+
+- Does not work together with Multi-Factor Authentication (e.g. ``twofactor_totp``, ``twofactor_privacyidea``). Please do not deploy expiration policies yet when Two- or Multi-Factor Authentication extensions are in place. This issue will be solved with the next ownCloud Server release. See `#32059`_ for more information.
+- The new Password Policy feature `"Password Expiration"`_ includes an *occ* command to manually force password expiration. Please run it directly after imposing expiration policies on an instance with existing users. Currently the command will only work when the policy *X days until user password expires* has been enabled. This might be confusing and will be solved with the next release of the extension. See `#66`_ for more information.
 
 For developers
 ~~~~~~~~~~~~~~
@@ -769,6 +929,7 @@ Fix this by disabling the ``memberof`` attribute on your ownCloud server with
 the ``occ`` command, like this example on Ubuntu Linux::
 
  sudo -u www-data php occ ldap:set-config "s01" useMemberOfToDetectMembership 0
+
  
 Run ``sudo -u www-data php occ ldap:show-config`` to find the correct ``sNN`` 
 value; if there is not one then use empty quotes, ``""``. (See 
@@ -790,6 +951,7 @@ SMB external storage now based on ``php5-libsmbclient``, which must be downloade
 from the ownCloud software repositories (`installation instructions 
 <https://software.opensuse.org/download.html?project=isv%3AownCloud%3Acommunity% 
 3A8.1&package=php5-libsmbclient>`_).
+
   
 "Download from link" feature has been removed.
 
@@ -826,10 +988,11 @@ the ``user_webdavauth`` application instead.
 ownCloud ships now with its own root certificate bundle derived from Mozilla's 
 root certificates file. The system root certificate bundle will not be used 
 anymore for most requests.
+
   
 When you upgrade from ownCloud 8.0, with encryption enabled, to 8.1, you must 
 enable the new encryption backend and migrate your encryption keys. See 
-:ref:`upgrading_encryption_label`.
+:ref:`occ_encryption_label`.
 
 Encryption can no longer be disabled in ownCloud 8.1. It is planned to re-add
 this feature to the command line client for a future release.
@@ -897,7 +1060,7 @@ Manually Migrate Encryption Keys after Upgrade
 
 If you are using the Encryption application and upgrading from older versions of 
 ownCloud to ownCloud 8.0, you must manually migrate your encryption keys.
-See :ref:`upgrading_encryption_label`.
+See :ref:`occ_encryption_label`.
 
 Windows Server Not Supported
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -918,6 +1081,7 @@ configuration. Look for lines like this::
 
  <Directory /var/www/owncloud>
  Options Indexes FollowSymLinks Multiviews
+
  
 Delete ``Multiviews`` and restart Apache.
 
@@ -1036,6 +1200,7 @@ and a better user experience.
 
 Substring searches can still be performed by prepending the search term with 
 "*".For example, a search for ``te`` will find Terri, but not Nate::
+
  
  occ ldap:search "te"
 
@@ -1171,6 +1336,7 @@ The LDAP Home Connector application requires Linux (with MySQL, MariaDB,
 or PostgreSQL) to operate correctly.
 
 .. Links
+
    
 .. _the latest desktop client version: https://doc.owncloud.com/desktop/latest/
 .. _syncing user backends: configuration/server/occ_command.html#syncing-user-accounts
@@ -1189,3 +1355,7 @@ or PostgreSQL) to operate correctly.
 .. _repository on GitHub: https://github.com/owncloud/theme-example
 .. _the ownCloud Ransomware Protection: https://marketplace.owncloud.com/apps/ransomware_protection
 .. _the ownCloud Marketplace: https://marketplace.owncloud.com
+.. _the ownCloud documentation: https://doc.owncloud.com/server/latest/admin_manual/configuration/server/security/password_policy.html
+.. _"Password Expiration": https://doc.owncloud.com/server/latest/admin_manual/release_notes.html#the-password-policy-extension
+.. _#32059: https://github.com/owncloud/core/issues/32059
+.. _#66: https://github.com/owncloud/password_policy/issues/66

@@ -1,11 +1,14 @@
-=====================
-Using the occ Command
-=====================
+=======================
+Using occ core commands
+=======================
 
-ownCloud's ``occ`` command (ownCloud console) is ownCloud's command-line interface. 
+This command description references to ownCloud core commands only.
+
+ownCloud's ``occ`` command (ownCloud console) is ownCloud's command-line interface.
 You can perform many common server operations with ``occ``, such as installing and upgrading ownCloud, managing users and groups, encryption, passwords, LDAP setting, and more.
 
-``occ`` is in the :file:`owncloud/` directory; for example :file:`/var/www/owncloud` on Ubuntu Linux. ``occ`` is a PHP script. 
+``occ`` is in the :file:`owncloud/` directory; for example :file:`/var/www/owncloud` on Ubuntu Linux. 
+``occ`` is a PHP script. 
 **You must run it as your HTTP user** to ensure that the correct permissions are maintained on your ownCloud files and directories. 
 
 occ Command Directory
@@ -24,20 +27,14 @@ occ Command Directory
 * :ref:`group_commands_label`
 * :ref:`integrity_check_label`
 * :ref:`create_javascript_translation_files_label`
-* :ref:`ldap_commands_label`
 * :ref:`logging_commands_label`
 * :ref:`maintenance_commands_label`
-* :ref:`market_commands_label`
-* :ref:`reports_commands_label`
 * :ref:`security_commands_label`
-* :ref:`ransomware_commands_label`
-* :ref:`shibboleth_label`
 * :ref:`trashbin_label`
 * :ref:`user_commands_label`
 * :ref:`versions_label`
 * :ref:`command_line_installation_label`
 * :ref:`command_line_upgrade_label`
-* :ref:`two_factor_auth_label`
 * :ref:`disable_user_label`
 
 .. _http_user_label:
@@ -58,7 +55,11 @@ For example, in CentOS 6.5 with SCL-PHP54 installed, the command looks like this
 
   sudo -u apache /opt/rh/php54/root/usr/bin/php /var/www/html/owncloud/occ
 
-Running ``occ`` with no options lists all commands and options, like this example on Ubuntu::
+The following examples are based on Ubuntu.
+
+Running ``occ`` with no options lists all commands and options
+
+::
 
  sudo -u www-data php occ 
  ownCloud version 10.0.8
@@ -86,16 +87,28 @@ Running ``occ`` with no options lists all commands and options, like this exampl
                         a new release. The release has to be installed before
 
 This is the same as ``sudo -u www-data php occ list``.
-Run it with the ``-h`` option for syntax help::
+
+General syntax help
+~~~~~~~~~~~~~~~~~~~
+
+Run occ with the ``-h`` option for syntax help
+
+::
 
  sudo -u www-data php occ -h
  
-Display your ownCloud version::
+Display your ownCloud version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
 
  sudo -u www-data php occ -V
    ownCloud version 10.0.8
    
-Query your ownCloud server status::
+Query your ownCloud server status
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
 
  sudo -u www-data php occ status
    - installed: true
@@ -103,21 +116,14 @@ Query your ownCloud server status::
    - versionstring: 10.0.8
    - edition: Community
 
-``occ`` has *options*, *commands*, and *arguments*. 
-Commands are required.
-Options are optional.
-Arguments can be required *or* optional.
-The, generic, syntax is
+Command syntax help
+~~~~~~~~~~~~~~~~~~~
 
-::
-
- occ [options] command [arguments]
- 
 Get detailed information on individual commands with the ``help`` command, like this example for the ``maintenance:mode`` command
 
 ::
 
- sudo -u www-data php occ help maintenance:mode
+ sudo -u www-data php occ --help maintenance:mode
  Usage:
   maintenance:mode [options]
 
@@ -135,7 +141,21 @@ Get detailed information on individual commands with the ``help`` command, like 
   -v|vv|vvv, --verbose  Increase the verbosity of messages: 1 for normal output, 
                         2 for more verbose output and 3 for debug
 
+Options and Arguments
+~~~~~~~~~~~~~~~~~~~~~
+
+``occ`` has *options*, *commands*, and *arguments*. 
+Commands are required.
+Options are optional.
+Arguments can be required *or* optional.
+The, generic, syntax is
+
+::
+
+ occ [options] command [arguments]
+ 
 The ``status`` command from above has an option to define the output format.
+
 The default is plain text, but it can also be ``json``
 
 ::
@@ -157,10 +177,30 @@ or ``json_pretty``
 
 This output option is available on all list and list-like commands, which include ``status``, ``check``, ``app:list``, ``config:list``, ``encryption:status`` and ``encryption:list-modules``.
 
+Usage of parameters in Options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In case an option requires parameters, following format should be used for short or long Options forms
+
+The following example command has an option in ``-p`` (short) form and ``--path`` (long) form.
+
+Parameters for long form options will be written after a blank or equal sign  
+
+::
+
+ sudo -u www-data ./occ files:scan --path="user_x/files/folder"
+ 
+Parameters for short form options will be written either directly after the option or after a blank.
+Do not use the equal sign as this could be interpreted as part of the parameter.
+
+::
+
+ sudo -u www-data ./occ files:scan -p "user_x/files/folder"  
+
 .. _apps_commands_label:
 
-Apps Commands
--------------
+Commands managing Apps
+----------------------
 
 The ``app`` commands list, enable, and disable apps
 
@@ -227,6 +267,10 @@ You can get the full file path to an app
     
     sudo -u www-data php occ app:getpath notifications
     /var/www/owncloud/apps/notifications
+
+.. note::
+   Please see the command set ``market`` for managing apps (install, uninstall ect) from the marketplace
+
 
 .. _background_jobs_selector_label:   
    
@@ -309,7 +353,7 @@ It is also possible to import remote files, by piping the input:
   commands instead.  
 
 Getting a Single Configuration Value
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These commands get the value of a single app or system configuration:
 
@@ -322,7 +366,7 @@ These commands get the value of a single app or system configuration:
   2.2.1
 
 Setting a Single Configuration Value
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These commands set the value of a single app or system configuration:
 
@@ -363,7 +407,7 @@ When you want to e.g., disable the maintenance mode run the following command:
   System config value maintenance set to boolean false
 
 Setting an Array of Configuration Values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Some configurations (e.g., the trusted domain setting) are an array of data.
 In order to set (and also get) the value of one key, you can specify multiple ``config`` names separated by spaces:
@@ -383,7 +427,7 @@ To replace ``sample.tld`` with ``example.com`` trusted_domains => 2 needs to be 
   sudo -u www-data php occ config:system:get trusted_domains localhost owncloud.local example.com
 
 Deleting a Single Configuration Value
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 These commands delete the configuration of an app or system configuration:
 
@@ -623,7 +667,7 @@ File Operations
   These commands are not available in :ref:`single-user (maintenance) mode <maintenance_commands_label>`.
 
 The files:checksums:verify command
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ownCloud supports file integrity checking, by computing and matching checksums.
 Doing so ensures that transferred files arrive at their target in the exact state as they left their origin.
@@ -652,12 +696,12 @@ Below is sample output that you can expect to see when using the command.
    Actual:	SHA1:da39a3ee5e6b4b0d3255bfef95601890afd80709 MD5:d41d8cd98f00b204e9800998ecf8427e ADLER32:00000001
 
 The files:cleanup command
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``files:cleanup`` tidies up the server's file cache by deleting all file entries that have no matching entries in the storage table. 
 
 The files:scan command
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 The ``files:scan`` command 
 
@@ -715,6 +759,12 @@ For example:
 
 In the example above, the user_id ``alice`` is determined implicitly from the path component given.
 
+To get a list of scannable mounts for a given user, use following command:
+
+::
+
+  sudo -u www-data php occ files_external:list user_id
+  
 .. note::
   Mounts are only scannable at the point of origin. Scanning of shares including federated shares 
   is not necessary on the receiver side and therefore not possible.
@@ -725,7 +775,7 @@ The ``--repair`` Option
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 As noted above, repairs can be performed for individual users, groups of users, and for all users in an ownCloud installation.
-What’s more, repair scans can be run even if no files are known to need repairing and if one or more files are known to be in need of repair.
+What's more, repair scans can be run even if no files are known to need repairing and if one or more files are known to be in need of repair.
 Two examples of when files need repairing are:
 
 - If folders have the same entry twice in the web UI (known as a "*ghost folder*"), this can also lead to strange error messages in the desktop client.
@@ -800,6 +850,343 @@ Use ``files_external:export`` to export all admin mounts to stdout, and ``files_
   (``files_external``) is enabled.
   It is not available in :ref:`single-user (maintenance) mode <maintenance_commands_label>`.
 
+files_external:list        
+~~~~~~~~~~~~~~~~~~~
+
+List configured mounts.
+
+Usage::
+
+    files_external:list [--show-password] [--full] [-a|--all] [--] [<user_id>]
+
+Arguments:
+
++-------------+----------------------------------------------------------------------------------------------+
+| ``user_id`` | User ID to list the personal mounts for, if no user is provided admin mounts will be listed. |
++-------------+----------------------------------------------------------------------------------------------+
+
+Example::
+
+    sudo -u www-data php occ files_external:list -- user1
+
+files_external:applicable     
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Manage applicable users and groups for a mount.
+
+Usage::
+
+    files_external:applicable 
+    [--add-user     ADD-USER]       
+    [--remove-user  REMOVE-USER]    
+    [--add-group    ADD-GROUP]      
+    [--remove-group REMOVE-GROUP]   
+    [--remove-all]                  
+    [--output       [OUTPUT]]       
+    [--]
+    <mount_id>                      
+
+Arguments:
+
++------------------+--------------------------------------------------------------------------+
+| ``mount_id``     | The ID of the mount to edit                                              |
++------------------+--------------------------------------------------------------------------+
+
+Options:
+
++-------------------+--------------------------------------------------------------------------+
+| ``--add-user``    | user to add as applicable (multiple values allowed)                      |
++-------------------+--------------------------------------------------------------------------+
+| ``--remove-user`` | user to remove as applicable (multiple values allowed)                   |
++-------------------+--------------------------------------------------------------------------+
+| ``--add-group``   | group to add as applicable (multiple values allowed)                     |
++-------------------+--------------------------------------------------------------------------+
+| ``--remove-group``| group to remove as applicable (multiple values allowed)                  |
++-------------------+--------------------------------------------------------------------------+
+| ``--remove-all``  | Set the mount to be globally applicable                                  |
++-------------------+--------------------------------------------------------------------------+
+| ``--output``      | The output format to use (plain, json or json_pretty, default is plain). |
++-------------------+--------------------------------------------------------------------------+
+
+
+files_external:backends    
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Show available authentication and storage backends.
+
+Usage::
+
+    files_external:backends [options] 
+    [--] 
+    [<type>] 
+    [<backend>]
+
+Arguments:
+
++-------------+----------------------------------------------------------------------------------------------+
+| ``type``    | Only show backends of a certain type. Possible values are ``authentication`` or ``storage``. |
++-------------+----------------------------------------------------------------------------------------------+
+| ``backend`` | Only show information of a specific backend.                                                 |
++-------------+----------------------------------------------------------------------------------------------+
+
+Options:
+
++------------------+--------------------------------------------------------------------------+
+| ``--output``     | The output format to use (plain, json or json_pretty, default is plain). |
++------------------+--------------------------------------------------------------------------+
+
+files_external:config      
+~~~~~~~~~~~~~~~~~~~~~
+
+Manage backend configuration for a mount.
+
+Usage::
+
+    files_external:config [options] 
+    [--] 
+    <mount_id> 
+    <key> 
+    [<value>]
+
+Arguments:
+
++--------------+--------------------------------------------------------------------------------------------------+
+| ``mount_id`` | The ID of the mount to edit.                                                                     |
++--------------+--------------------------------------------------------------------------------------------------+
+| ``key``      | Key of the config option to set/get.                                                             |
++--------------+--------------------------------------------------------------------------------------------------+
+| ``value``    | Value to set the config option to, when no value is provided the existing value will be printed. |
++--------------+--------------------------------------------------------------------------------------------------+
+
+Options:
+
++------------------+--------------------------------------------------------------------------+
+| ``--output``     | The output format to use (plain, json or json_pretty, default is plain). |
++------------------+--------------------------------------------------------------------------+
+
+
+files_external:create      
+~~~~~~~~~~~~~~~~~~~~~
+
+Create a new mount configuration.
+
+Usage::
+
+    files_external:create [options] 
+    [--] 
+    <mount_point> 
+    <storage_backend> 
+    <authentication_backend>
+
+Arguments
+^^^^^^^^^
+
++----------------------------+-------------------------------------------------------------------------------------------------------------+
+| ``mount_point``            | Mount point for the new mount.                                                                              |
++----------------------------+-------------------------------------------------------------------------------------------------------------+
+| ``storage_backend``        | Storage backend identifier for the new mount, see `occ files_external:backends` for possible values.        |
++----------------------------+-------------------------------------------------------------------------------------------------------------+
+| ``authentication_backend`` | Authentication backend identifier for the new mount, see `occ files_external:backends` for possible values. |
++----------------------------+-------------------------------------------------------------------------------------------------------------+
+
+Options
+^^^^^^^
+
++-------------------------+-----------------------------------------------------------------------------------------------+
+| ``--user[=USER]``       | User to add the mount configurations for, if not set the mount will be added as system mount. |
++-------------------------+-----------------------------------------------------------------------------------------------+
+| ``-c, --config=CONFIG`` | Mount configuration option in ``key=value`` format (multiple values allowed).                 |
++-------------------------+-----------------------------------------------------------------------------------------------+
+| ``--dry``               | Don't save the imported mounts, only list the new mounts.                                     |
++-------------------------+-----------------------------------------------------------------------------------------------+
+| ``--output``            | The output format to use (plain, json or json_pretty, default is plain).                      |
++-------------------------+-----------------------------------------------------------------------------------------------+
+
+Storage Backend Details
+^^^^^^^^^^^^^^^^^^^^^^^
+
+======================== =======================
+Storage Backend          Identifier
+======================== =======================
+Windows Network Drive    windows_network_drive
+WebDav                   dav
+Local                    local
+ownCloud                 owncloud
+SFTP                     sftp
+Amazon S3                amazons3
+Dropbox                  dropbox
+Google Drive             googledrive
+OpenStack Object Storage swift
+SMB / CIFS               smb
+======================== =======================
+
+Authentication Details
+^^^^^^^^^^^^^^^^^^^^^^
+
+==================================== =========================================
+Authentication method                Identifier, name, configuration
+==================================== =========================================
+Log-in credentials, save in session  password::sessioncredentials
+Log-in credentials, save in database password::logincredentials
+User entered, store in database      password::userprovided (*)
+Global Credentials                   password::global
+None                                 null::null
+Builtin                              builtin::builtin
+Username and password                password::password
+OAuth1                               oauth1::oauth1 (*)
+OAuth2                               oauth2::oauth2 (*)
+RSA public key                       publickey::rsa (*)
+OpenStack                            openstack::openstack (*)
+Rackspace                            openstack::rackspace (*)
+Access key (Amazon S3)               amazons3::accesskey (*)
+==================================== =========================================
+
+ (\*) - Authentication methods require additional configuration.
+
+.. note:: Each Storage Backend needs its corresponding authentication methods.
+
+files_external:delete      
+~~~~~~~~~~~~~~~~~~~~~
+
+Delete an external mount.
+
+Usage::
+    
+    files_external:delete [options] [--] <mount_id>
+
+Arguments:
+
++--------------+------------------------------+
+| ``mount_id`` | The ID of the mount to edit. |
++--------------+------------------------------+
+
+Options:
+
++------------------+--------------------------------------------------------------------------+
+| ``-y, --yes``    | Skip confirmation.                                                       |
++------------------+--------------------------------------------------------------------------+
+| ``--output``     | The output format to use (plain, json or json_pretty, default is plain). |
++------------------+--------------------------------------------------------------------------+
+
+files_external:export
+~~~~~~~~~~~~~~~~~~~~~
+
+Usage::
+
+    files_external:export [options] [--] [<user_id>]
+
+Arguments:
+
++-------------+--------------------------------------------------------------------------------------------------+
+| ``user_id`` | User ID to export the personal mounts for, if no user is provided admin mounts will be exported. |
++-------------+--------------------------------------------------------------------------------------------------+
+
+Options:
+
++---------------+-------------------------------------------------------+
+| ``-a, --all`` | Show both system wide mounts and all personal mounts. |
++---------------+-------------------------------------------------------+
+
+files_external:import      
+~~~~~~~~~~~~~~~~~~~~~
+
+Import mount configurations.
+
+Usage::
+
+    files_external:import [options] [--] <path>
+
+Arguments:
+
++----------+------------------------------------------------------------------------------------+
+| ``path`` | Path to a json file containing the mounts to import, use ``-`` to read from stdin. |
++----------+------------------------------------------------------------------------------------+
+
+Options:
+
++-------------------+-----------------------------------------------------------------------------------------------+
+| ``--user[=USER]`` | User to add the mount configurations for, if not set the mount will be added as system mount. |
++-------------------+-----------------------------------------------------------------------------------------------+
+| ``--dry``         | Don't save the imported mounts, only list the new mounts.                                     |
++-------------------+-----------------------------------------------------------------------------------------------+
+| ``--output``      | The output format to use (plain, json or json_pretty, default is plain).                      |
++-------------------+-----------------------------------------------------------------------------------------------+
+
+files_external:list        
+~~~~~~~~~~~~~~~~~~~
+
+List configured mounts.
+
+Usage::
+
+    files_external:list [--show-password] [--full] [-a|--all] [--] [<user_id>]
+
+Arguments:
+
++-------------+----------------------------------------------------------------------------------------------+
+| ``user_id`` | User ID to list the personal mounts for, if no user is provided admin mounts will be listed. |
++-------------+----------------------------------------------------------------------------------------------+
+
+Options:
+
++---------------------+-----------------------------------------------------------------------------------------------+
+| ``--show-password`` | User to add the mount configurations for, if not set the mount will be added as system mount. |
++---------------------+-----------------------------------------------------------------------------------------------+
+| ``--full``          | Don't save the imported mounts, only list the new mounts.                                     |
++---------------------+-----------------------------------------------------------------------------------------------+
+| ``-a, --all``       | Show both system wide mounts and all personal mounts.                                         |
++---------------------+-----------------------------------------------------------------------------------------------+
+| ``--output``        | The output format to use (plain, json or json_pretty, default is plain).                      |
++---------------------+-----------------------------------------------------------------------------------------------+
+
+
+Example::
+
+   sudo -u www-data php occ files_external:list -- user1
+
+files_external:option      
+~~~~~~~~~~~~~~~~~~~~~
+
+Manage mount options for a mount.
+
+Usage::
+    files_external:option <mount_id> <key> [<value>]
+
+Arguments:
+
++--------------+-------------------------------------------------------------------------------------------------+
+| ``mount_id`` | The ID of the mount to edit.                                                                    |
++--------------+-------------------------------------------------------------------------------------------------+
+| ``key``      | Key of the mount option to set/get.                                                             |
++--------------+-------------------------------------------------------------------------------------------------+
+| ``value``    | Value to set the mount option to, when no value is provided the existing value will be printed. |
++--------------+-------------------------------------------------------------------------------------------------+
+
+files_external:verify      
+~~~~~~~~~~~~~~~~~~~~~
+
+Verify mount configuration.
+
+Usage::
+
+    files_external:verify [options] [--] <mount_id>
+
+Arguments:
+
++--------------+-------------------------------+
+| ``mount_id`` | The ID of the mount to check. |
++--------------+-------------------------------+
+
+Options:
+
++-------------------------+------------------------------------------------------------------------------------------------+
+| ``-c, --config=CONFIG`` | Additional config option to set before checking in ``key=value``                               |
+|                         | pairs, required for certain auth backends such as login credentails (multiple values allowed). |
++-------------------------+------------------------------------------------------------------------------------------------+
+| ``--output``            | The output format to use (plain, json or json_pretty, default is plain).                       |
++-------------------------+------------------------------------------------------------------------------------------------+
+
+
 .. _group_commands_label:
 
 Group Commands
@@ -822,7 +1209,7 @@ The full list of commands is:
   group:remove-member                 Remove member(s) from a group
 
 Creating Groups
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 You can create a new group with the ``group:add`` command. 
 The syntax is::
@@ -837,7 +1224,7 @@ This example adds a new group, called "Finance":
    Created group "Finance"
 
 Listing Groups
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 You can list the names of existing groups with the ``group:list`` command.
 The syntax is::
@@ -875,7 +1262,7 @@ This example lists groups containing the string "finance" formatted with ``json_
   ]
 
 Listing Group Members
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 You can list the user IDs of group members with the ``group:list-members`` command.
 The syntax is::
@@ -907,7 +1294,7 @@ This example lists members of the Finance group formatted with ``json_pretty``.
   }
 
 Adding Members to Groups
-^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can add members to an existing group with the ``group:add-member`` command.
 Members must be existing users. 
@@ -933,7 +1320,7 @@ For example::
    User fred" added to group "Finance"
 
 Removing Members from Groups
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can remove members from a group with the ``group:remove-member`` command.
 The syntax is::
@@ -959,7 +1346,7 @@ For example:
    Member "fred" removed from group "Finance"
 
 Deleting a Group
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 To delete a group, you use the ``group:delete`` command, as in the example below:
 
@@ -1029,16 +1416,16 @@ The command takes two parameters; these are:
 To create the two translation files, the command reads translation data from a source PHP translation file. 
 
 A Working Example
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 In this example, we'll create Austrian German translations for the Gallery app.
 
 .. note:: 
-   This example assumes that the ownCloud directory is `/var/www/owncloud`` and that it uses ownCloud’s standard apps directory, ``app``. 
+   This example assumes that the ownCloud directory is `/var/www/owncloud`` and that it uses ownCloud's standard apps directory, ``app``.
 
 First, create a source translation file in ``/var/www/owncloud/apps/gallery/l10n``, called ``de_AT.php``.
 In it, add the required translation strings, as in the following example.
-Refer to the developer documentation on `creating translation files`_, if you’re not familiar with creating them.
+Refer to the developer documentation on `creating translation files`_, if you're not familiar with creating them.
 
 .. code-block:: php
 
@@ -1063,224 +1450,8 @@ Create Translations in Multiple Languages
 To create translations in multiple languages simultaneously, supply multiple languages to the command, as in the following example:
 
 ::
-  
+
  sudo -u www-data php occ l10n:createjs gallery de_AT de_DE hu_HU es fr
-
-.. _ldap_commands_label: 
- 
-LDAP Commands
--------------
-
-.. note::
-  These commands are only available when the "LDAP user and group backend" app
-  (``user_ldap``) is enabled.
-
-These LDAP commands appear only when you have enabled the LDAP app. 
-Then you can run the following LDAP commands with ``occ``:
-
-.. code-block:: console
-
- ldap
-  ldap:check-user               Checks whether a user exists on LDAP.
-  ldap:create-empty-config      Creates an empty LDAP configuration
-  ldap:delete-config            Deletes an existing LDAP configuration
-  ldap:search                   Executes a user or group search
-  ldap:set-config               Modifies an LDAP configuration
-  ldap:show-config              Shows the LDAP configuration
-  ldap:test-config              Tests an LDAP configuration
-  ldap:update-group             Update the specified group membership
-                                Information stored locally
-
-Search for an LDAP user, using this syntax:
-
-::
-
- sudo -u www-data php occ ldap:search [--group] [--offset="..."] 
- [--limit="..."] search
-
-Searches will match at the beginning of the attribute value only. 
-This example searches for ``givenNames`` that start with "rob":
-
-::
-
- sudo -u www-data php occ ldap:search "rob"
- 
-This will find robbie, roberta, and robin. Broaden the search to find, for example, ``jeroboam`` with the asterisk wildcard:
-
-::
-
- sudo -u www-data php occ ldap:search "*rob"
-
-User search attributes are set with ``ldap:set-config`` (below). 
-For example, if your search attributes are ``givenName`` and ``sn`` you can find users by first name + last name very quickly. 
-For example, you'll find Terri Hanson by searching for ``te ha``. 
-Trailing whitespace is ignored.
- 
-Check if an LDAP user exists. 
-This works only if the ownCloud server is connected to an LDAP server.
-
-::
-
- sudo -u www-data php occ ldap:check-user robert
- 
-``ldap:check-user`` will not run a check when it finds a disabled LDAP connection. 
-This prevents users that exist on disabled LDAP connections from being marked as deleted. 
-If you know for certain that the user you are searching for is not in one of the disabled connections, and exists on an active connection, use the ``--force`` option to force it to check all active LDAP connections.
-
-::
-
- sudo -u www-data php occ ldap:check-user --force robert
-
-``ldap:create-empty-config`` creates an empty LDAP configuration. 
-The first one you create has no ``configID``, like this example:
-
-::
-
- sudo -u www-data php occ ldap:create-empty-config
-   Created new configuration with configID ''
-   
-This is a holdover from the early days, when there was no option to create additional configurations. 
-The second, and all subsequent, configurations that you create are automatically assigned IDs.
-
-::
- 
- sudo -u www-data php occ ldap:create-empty-config
-    Created new configuration with configID 's01' 
- 
-Then you can list and view your configurations:
-
-::
-
- sudo -u www-data php occ ldap:show-config
- 
-And view the configuration for a single ``configID``:
-
-::
-
- sudo -u www-data php occ ldap:show-config s01
- 
-``ldap:delete-config [configID]`` deletes an existing LDAP configuration.
-
-:: 
-
- sudo -u www-data php occ ldap:delete  s01
- Deleted configuration with configID 's01'
- 
-The ``ldap:set-config`` command is for manipulating configurations, like this example that sets search attributes:
-
-::
- 
- sudo -u www-data php occ ldap:set-config s01 ldapAttributesForUserSearch 
- "cn;givenname;sn;displayname;mail"
-
-The command takes the following format:
-
-::
-
-  ldap:set-config <configID> <configKey> <configValue>
-
-All of the available keys, along with default values for `configValue`, are listed in the table below.
-
-================================ ==============================================
-Configuration                    Setting
-================================ ==============================================
-hasMemberOfFilterSupport
-hasPagedResultSupport
-homeFolderNamingRule
-lastJpegPhotoLookup              0 
-ldapAgentName                    `cn=admin,dc=owncloudqa,dc=com`
-ldapAgentPassword                *\**
-ldapAttributesForGroupSearch
-ldapAttributesForUserSearch
-ldapBackupHost
-ldapBackupPort
-ldapBase                         `dc=owncloudqa,dc=com`
-ldapBaseGroups                   `dc=owncloudqa,dc=com`
-ldapBaseUsers                    `dc=owncloudqa,dc=com`
-ldapCacheTTL                     600 
-ldapConfigurationActive          1
-ldapDynamicGroupMemberURL
-ldapEmailAttribute
-ldapExperiencedAdmin             0 
-ldapExpertUUIDGroupAttr
-ldapExpertUUIDUserAttr
-ldapExpertUsernameAttr                                                                            ldapGroupDisplayName             `cn`
-ldapGroupFilter                                                                                  ldapGroupFilterGroups
-ldapGroupFilterMode              0
-ldapGroupFilterObjectclass
-ldapGroupMemberAssocAttr         `uniqueMember`
-ldapHost                         `ldap://host`
-ldapIgnoreNamingRules
-ldapLoginFilter                  `(&((objectclass=inetOrgPerson))(uid=%uid))`
-ldapLoginFilterAttributes
-ldapLoginFilterEmail             0
-ldapLoginFilterMode              0
-ldapLoginFilterUsername          1
-ldapNestedGroups                 0
-ldapOverrideMainServer
-ldapPagingSize                   500
-ldapPort                         389
-ldapQuotaAttribute
-ldapQuotaDefault
-ldapTLS                          0
-ldapUserDisplayName              `displayName`
-ldapUserDisplayName2
-ldapUserFilter                   `((objectclass=inetOrgPerson))`
-ldapUserFilterGroups
-ldapUserFilterMode               0
-ldapUserFilterObjectclass        `inetOrgPerson`
-ldapUuidGroupAttribute           `auto`
-ldapUuidUserAttribute            `auto`
-turnOffCertCheck                 0
-useMemberOfToDetectMembership    1
-================================ ==============================================
-
-``ldap:test-config`` tests whether your configuration is correct and can bind to the server.
-
-::
-
- sudo -u www-data php occ ldap:test-config s01
- The configuration is valid and the connection could be established!
-
-``ldap:update-group`` updates the specified group membership information stored locally.
-
-The command takes the following format:
-
-::
-
-  ldap:update-group <groupID> <groupID <groupID> ...>
-
-The command allows for running a manual group sync on one or more groups, instead of having to wait for group syncing to occur.
-If users have been added or removed from these groups in LDAP, ownCloud will update its details.
-If a group was deleted in LDAP, ownCloud will also delete the local mapping info about this group.
-
-.. note::
-   New groups in LDAP won't be synced with this command.
-   The LDAP TTL configuration (by default 10 minutes) still applies. This means
-   that recently deleted groups from LDAP might be considered as "active" and
-   might not be deleted in ownCloud immediately.
-
-**Configuring the LDAP Refresh Attribute Interval**
-
-You can configure the LDAP refresh attribute interval, but not with the ``ldap`` commands. 
-Instead, you need to use the ``config:app:set`` command, as in the following example, which takes a number of seconds to the ``--value`` switch.
-
-::
-   
-  sudo -u www-data php occ config:app:set user_ldap updateAttributesInterval --value=7200
-   
-In the example above, the interval is being set to 7200 seconds.
-Assuming the above example was used, the command would output the following:
-
-.. code-block:: console
-   
-  Config value updateAttributesInterval for app user_ldap set to 7200
-
-If you want to reset (or unset) the setting, then you can use the following command:
-
-::
-   
-  sudo -u www-data php occ config:app:delete user_ldap updateAttributesInterval
 
 .. _logging_commands_label:
 
@@ -1391,133 +1562,12 @@ After the command completes, users will be prompted to resolve any conflicts bet
 The ``maintenance:repair`` command runs automatically during upgrades to clean up the database, so while you can run it manually there usually isn't a need to.
 
 ::
-  
+
  sudo -u www-data php occ maintenance:repair
- 
-``maintenance:mimetype:update-db`` updates the ownCloud database and file cache with changed mimetypes found in ``config/mimetypemapping.json``. 
-Run this command after modifying ``config/mimetypemapping.json``. 
+
+``maintenance:mimetype:update-db`` updates the ownCloud database and file cache with changed mimetypes found in ``config/mimetypemapping.json``.
+Run this command after modifying ``config/mimetypemapping.json``.
 If you change a mimetype, run ``maintenance:mimetype:update-db --repair-filecache`` to apply the change to existing files.
-
-.. _market_commands_label:
-   
-Market
-------
-
-The ``market`` commands *install*, *list*, and *upgrade* applications from `the ownCloud Marketplace`_.
-
-.. code-block:: console
-   
-  market
-    market:install    Install apps from the marketplace. If already installed and 
-                      an update is available the update will be installed.
-    market:list       Lists apps as available on the marketplace.
-    market:upgrade    Installs new app versions if available on the marketplace
-
-.. note::
-   The user running the update command, which will likely be your webserver user, needs write permission for the ``/apps`` folder. 
-   If they don't have write permission, the command may report that the update was successful, but it may silently fail.
-
-.. note::
-   These commands are not available in :ref:`single-user (maintenance) mode <maintenance_commands_label>`.
-
-Install an Application
-^^^^^^^^^^^^^^^^^^^^^^
-
-Applications can be installed both from `the ownCloud Marketplace`_ and from a local file archive. 
-
-Install Apps From The Marketplace
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To install an application from the Marketplace, you need to supply the app’s id, which can be found in the app’s Marketplace URL. 
-For example, the URL for *Two factor backup codes* is https://marketplace.owncloud.com/apps/twofactor_backup_codes.
-So its app id is ``twofactor_backup_codes``.
-
-Install Apps From a File Archive
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To install an application from a local file archive, you need to supply the path to the archive, and that you pass the ``-l`` switch. 
-Only ``zip``, ``gzip``, and ``bzip2`` archives are supported.
-
-Usage Example
-~~~~~~~~~~~~~
-
-::
-
-  # Install an app from the marketplace.
-  sudo -u www-data occ market:install twofactor_backup_codes
-
-  # Install an app from a local archive.
-  sudo -u www-data occ market:install -l /mnt/data/richdocuments-2.0.0.tar.gz
-
-.. _notifications_commands_label:
-
-Notifications
--------------
-
-If you want to send notifications to users or groups use the following command.
-
-.. code-block:: console
-   
-  notifications
-    notifications:generate   Generates a notification.
-
-Options and Arguments:
-
-::
-   
-  notifications:generate [-u|--user USER] [-g|--group GROUP] [-l|--link <linktext>] [--] <subject> [<message>]
-
-  Options:
-    -u --user              User id to whom the notification shall be sent
-    -g --group             Group id to whom the notification shall be sent
-    -l --link              A link associated with the notification
-
-  Arguments:
-    subject                The notification subject - maximum 255 characters
-    message                A longer message - maximum 4000 characters
-    linktext               A link to an HTML page
-
-At least one user or group must be set.
-
-A link can be useful for notifications shown in client apps.
-
-Example:
-
-::
-
- sudo -u www-data php occ notifications:generate -g Office "Emergeny Alert" "Rebooting in 5min"
-
-.. _reports_commands_label:
-
-Reports
--------
-
-If you're working with ownCloud support and need to send them a configuration summary, you can generate it using the ``configreport:generate`` command. 
-This command generates the same JSON-based report as the Admin Config Report, which you can access under ``admin -> Settings -> Admin -> Help & Tips -> Download ownCloud config report``.
-
-From the command-line in the root directory of your ownCloud installation, run it as your webserver user as follows, (assuming your webserver user is ``www-data``):
-
-::
-
-  sudo -u www-data occ configreport:generate
-
-This will generate the report and send it to ``STDOUT``. 
-You can optionally pipe the output to a file and then attach it to an email to ownCloud support, by running the following command:
-
-::
-
-  sudo -u www-data occ configreport:generate > generated-config-report.txt
-
-Alternatively, you could generate the report and email it all in one command, by running:
-
-::
-
-  sudo -u www-data occ configreport:generate | mail -s "configuration report" \ 
-      -r <the email address to send from> \
-      support@owncloud.com
-
-.. note::
-  These commands are not available in :ref:`single-user (maintenance) mode <maintenance_commands_label>`.
 
 .. _security_commands_label:
 
@@ -1619,25 +1669,6 @@ Remove a certificate:
 
  sudo -u www-data php occ security:certificates:remove [certificate name]
 
-.. _ransomware_commands_label:
-
-Ransomware Protection
----------------------
-
-Use these commands to help users recover from a Ransomware attack.
-You can find more information about the application :doc:`in the documentation <../../enterprise/ransomware-protection/index>`.
-
-.. note::
-  Ransomware Protection (which is an Enterprise app) needs to be installed and enabled to be able to use these commands.
-
-::
-
-  occ ransomguard:scan <timestamp> <user>     Report all changes in a user's account, starting from timestamp.
-  occ ransomguard:restore <timestamp> <user>  Revert all operations in a user account after a point in time.
-  occ ransomguard:lock <user>                 Set a user account as read-only for ownCloud and other WebDAV 
-                                              clients when malicious activity is suspected.
-  occ ransomguard:unlock <user>               Unlock a user account after ransomware issues have been resolved.
-
 .. _sharing_commands_label:
 
 Sharing
@@ -1666,23 +1697,7 @@ You can also set it up to run as :ref:`a background job <background-jobs-header>
 .. note::
   These commands are not available in :ref:`single-user (maintenance) mode <maintenance_commands_label>`.
 
-.. _shibboleth_label:
-
-Shibboleth Modes (Enterprise Edition only)
-------------------------------------------
-
-``shibboleth:mode`` sets your Shibboleth mode to ``notactive``, 
-``autoprovision``, or ``ssoonly``
-
-.. code-block:: console
-
- shibboleth:mode [mode]
-
-.. note::
-  These commands are only available when the "Shibboleth user backend" app
-  (``user_shibboleth``) is enabled.
-
-.. _trashbin_label: 
+.. _trashbin_label:
 
 Trashbin
 --------
@@ -1752,7 +1767,7 @@ The full list, of commands is:
   user:sync                           Sync local users with an external backend service
 
 Creating Users
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 You can create a new user with the ``user:add`` command.
 This command lets you set the following attributes:
@@ -1788,7 +1803,7 @@ Any groups that do not exist are created.
 After the command completes, go to your Users page, and you will see your new user. 
 
 Setting a User's Password
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``password-from-env`` allows you to set the user's password from an environment variable. 
 This prevents the password from being exposed to all users via the process list, and will only be visible in the history of the user (root) running the command. 
@@ -1824,17 +1839,69 @@ You may also use ``password-from-env`` to reset passwords:
    Successfully reset password for layla
    
 Deleting A User
-^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~
 
 To delete a user, you use the ``user:delete`` command, as in the example below:
 
 ::
 
  sudo -u www-data php occ user:delete fred
-   
-   
+
+.. _user-expire-password_label:
+
+Expiring a User's Password
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note:: This command is only available when `the Password Policy app`_ is installed.
+
+::
+
+  sudo -u www-data php user:expire-password <uid> [<expiredate>]
+
+To expire a user's password at a specific date and time, use the ``user:expire-password`` command.
+The command accepts two arguments, the user's uid and an expiry date.
+The expiry date can be provided using any of `PHP's supported date and time formats`_.
+
+If an expiry date is not supplied, the password will expire with immediate effect.
+This is because the password will be set as being expired 24 hours before the command was run.
+For example, if the command was run at "2018-07-**12** 13:15:28 UTC", then the password's expiry date will be set to "2018-07-**11** 13:15:28 UTC".
+
+After the command completes, console output, similar to that below, confirms when the user's password is set to expire.
+
+::
+
+  The password for frank is set to expire on 2018-07-12 13:15:28 UTC.
+
+Command Examples
+^^^^^^^^^^^^^^^^
+
+::
+
+  # The password for user "frank" will be set as being expired 24 hours before the command was run.
+  sudo -u www-data php occ user:expire-password frank
+
+  # Expire the user "frank"'s password in 2 days time.
+  sudo -u www-data php occ user:expire-password frank '+2 days'
+
+  # Expire the user "frank"'s password on the 15th of August 2005, at 15:52:01 in the local timezone.
+  sudo -u www-data php occ user:expire-password frank '2005-08-15T15:52:01+00:00'
+
+  # Expire the user "frank"'s password on the 15th of August 2005, at 15:52:01 UTC.
+  sudo -u www-data php occ user:expire-password frank '15-Aug-05 15:52:01 UTC'
+
+Caveats
+^^^^^^^
+
+Please be aware of the following implications of enabling or changing the password policy's "*days until user password expires*" option.
+
+- Administrators need to run the ``occ user:expire-password`` command to initiate expiry for new users.
+- Passwords will never expire for users who have *not* changed their initial password, because they do not have a password history. To force password expiration use the ``occ user:expire-password`` command.
+- A password expiration date will be set after users change their password for the first time. To force password expiration use the ``occ user:expire-password`` command.
+- Passwords changed for the first time, will expire based on the *active* password policy. If the policy is later changed, it will not update the password's expiry date to reflect the new setting.
+- Password expiration dates of users where the administrator has run the ``occ user:expire-password`` command *won't* automatically update to reflect the policy change. In these cases, Administrators need to run the ``occ user:expire-password`` command again and supply a new expiry date.
+
 Listing Users
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 You can list existing users with the ``user:list`` command.
 The syntax is
@@ -1889,7 +1956,7 @@ This example lists all users including the attribute "enabled".
 
 
 Listing Group Membership of a User
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can list the group membership of a user with the ``user:list-groups`` command.
 The syntax is
@@ -1913,7 +1980,7 @@ The output can be formatted in JSON with the output option ``json`` or ``json_pr
   ]
 
 Finding The User's Last Login
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To view a user's most recent login, use the ``user:lastseen`` command, as in the example below:
 
@@ -1923,7 +1990,7 @@ To view a user's most recent login, use the ``user:lastseen`` command, as in the
    layla's last login: 09.01.2015 18:46
 
 User Application Settings
-^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To manage application settings for a user, use the ``user:setting`` command. 
 This command provides the ability to:
@@ -2448,24 +2515,6 @@ If there is an error it throws an exception, and the error is detailed in your o
  Update failed
  Turned off maintenance mode
 
-.. _two_factor_auth_label:
-
-Two-factor Authentication
--------------------------
-
-If a two-factor provider app is enabled, it is enabled for all users by default (though the provider can decide whether or not the user has to pass the challenge).
-In the case of an user losing access to the second factor (e.g., a lost phone with two-factor SMS verification), the admin can temporarily disable the two-factor check for that user via the occ command:
-
-::
-
- sudo -u www-data php occ twofactor:disable <username>
-
-To re-enable two-factor authentication again, use the following commmand:
-
-::
-
- sudo -u www-data php occ twofactor:enable <username>
-
 .. _disable_user_label:
 
 Disable Users
@@ -2487,7 +2536,7 @@ Use the following command to enable the user again:
    Once users are disabled, their connected browsers will be disconnected.
 
 Finding Inactive Users
-^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~
 
 To view a list of users who've not logged in for a given number of days, use the ``user:inactive`` command
 The example below searches for users inactive for five days, or more.
@@ -2534,6 +2583,6 @@ Using the output option ``json_pretty`` will render the output formatted as foll
    ]
 
 .. Links
-   
-.. _the ownCloud Marketplace: https://marketplace.owncloud.com/
+
 .. _creating translation files: https://doc.owncloud.org/server/latest/developer_manual/app/advanced/l10n.html#creating-translatable-files-label
+.. _PHP's supported date and time formats: https://secure.php.net/manual/en/datetime.formats.php

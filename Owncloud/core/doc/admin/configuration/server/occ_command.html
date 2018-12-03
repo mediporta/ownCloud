@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Using the occ Command &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Using occ core commands &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Configuring the Activity App" href="activity_configuration.html" />
+    <link rel="next" title="Using occ apps commands" href="occ_apps_command.html" />
     <link rel="prev" title="Importing System-wide and Personal SSL Certificates" href="import_ssl_cert.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -76,12 +76,13 @@
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Server Configuration</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="security_setup_warnings.html">Warnings on Admin Page</a></li>
 <li class="toctree-l3"><a class="reference internal" href="import_ssl_cert.html">Importing System-wide and Personal SSL Certificates</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Using the occ Command</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Using occ core commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ_apps_command.html">Using occ apps commands</a></li>
 <li class="toctree-l3"><a class="reference internal" href="activity_configuration.html">Configuring the Activity App</a></li>
 <li class="toctree-l3"><a class="reference internal" href="antivirus_configuration.html">Virus Scanner Support</a></li>
 <li class="toctree-l3"><a class="reference internal" href="caching_configuration.html">Memory Caching</a></li>
 <li class="toctree-l3"><a class="reference internal" href="background_jobs_configuration.html">Background Jobs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="config_sample_php_parameters.html">Config.php Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="config_sample_php_parameters.html">Core Config.php Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="email_configuration.html">Email Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="excluded_blacklisted_files.html">Excluding Directories and Blacklisting Files</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_sites.html">Linking External Sites</a></li>
@@ -91,7 +92,8 @@
 <li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="logging_configuration.html">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
-<li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="security/password_policy.html">Password Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="security/oauth2.html">OAuth2</a></li>
 <li class="toctree-l3"><a class="reference internal" href="reverse_proxy_configuration.html">Reverse Proxy Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="thirdparty_php_configuration.html">Using Third Party PHP Components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="automatic_configuration.html">Automatic Configuration Setup</a></li>
@@ -124,22 +126,24 @@
     </a>
   </li>
   <li class="next">
-    <a href="activity_configuration.html" title="Next Chapter: Configuring the Activity App"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Configuring t... &raquo;</span>
+    <a href="occ_apps_command.html" title="Next Chapter: Using occ apps commands"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Using occ app... &raquo;</span>
     </a>
   </li>
 </ul>
 						
-  <div class="section" id="using-the-occ-command">
-<h1>Using the occ Command<a class="headerlink" href="#using-the-occ-command" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="using-occ-core-commands">
+<h1>Using occ core commands<a class="headerlink" href="#using-occ-core-commands" title="Permalink to this headline">¶</a></h1>
+<p>This command description references to ownCloud core commands only.</p>
 <p>ownCloud’s <code class="docutils literal"><span class="pre">occ</span></code> command (ownCloud console) is ownCloud’s command-line interface.
 You can perform many common server operations with <code class="docutils literal"><span class="pre">occ</span></code>, such as installing and upgrading ownCloud, managing users and groups, encryption, passwords, LDAP setting, and more.</p>
-<p><code class="docutils literal"><span class="pre">occ</span></code> is in the <code class="file docutils literal"><span class="pre">owncloud/</span></code> directory; for example <code class="file docutils literal"><span class="pre">/var/www/owncloud</span></code> on Ubuntu Linux. <code class="docutils literal"><span class="pre">occ</span></code> is a PHP script.
+<p><code class="docutils literal"><span class="pre">occ</span></code> is in the <code class="file docutils literal"><span class="pre">owncloud/</span></code> directory; for example <code class="file docutils literal"><span class="pre">/var/www/owncloud</span></code> on Ubuntu Linux.
+<code class="docutils literal"><span class="pre">occ</span></code> is a PHP script.
 <strong>You must run it as your HTTP user</strong> to ensure that the correct permissions are maintained on your ownCloud files and directories.</p>
 <div class="section" id="occ-command-directory">
 <h2>occ Command Directory<a class="headerlink" href="#occ-command-directory" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><a class="reference internal" href="#http-user-label"><span class="std std-ref">Run occ As Your HTTP User</span></a></li>
-<li><a class="reference internal" href="#apps-commands-label"><span class="std std-ref">Apps Commands</span></a></li>
+<li><a class="reference internal" href="#apps-commands-label"><span class="std std-ref">Commands managing Apps</span></a></li>
 <li><a class="reference internal" href="#background-jobs-selector-label"><span class="std std-ref">Background Jobs Selector</span></a></li>
 <li><a class="reference internal" href="#config-commands-label"><span class="std std-ref">Config Commands</span></a></li>
 <li><a class="reference internal" href="#dav-label"><span class="std std-ref">Dav Commands</span></a></li>
@@ -151,20 +155,14 @@ You can perform many common server operations with <code class="docutils literal
 <li><a class="reference internal" href="#group-commands-label"><span class="std std-ref">Group Commands</span></a></li>
 <li><a class="reference internal" href="#integrity-check-label"><span class="std std-ref">Integrity Check</span></a></li>
 <li><a class="reference internal" href="#create-javascript-translation-files-label"><span class="std std-ref">l10n, Create Javascript Translation Files for Apps</span></a></li>
-<li><a class="reference internal" href="#ldap-commands-label"><span class="std std-ref">LDAP Commands</span></a></li>
 <li><a class="reference internal" href="#logging-commands-label"><span class="std std-ref">Logging Commands</span></a></li>
 <li><a class="reference internal" href="#maintenance-commands-label"><span class="std std-ref">Maintenance Commands</span></a></li>
-<li><a class="reference internal" href="#market-commands-label"><span class="std std-ref">Market</span></a></li>
-<li><a class="reference internal" href="#reports-commands-label"><span class="std std-ref">Reports</span></a></li>
 <li><a class="reference internal" href="#security-commands-label"><span class="std std-ref">Security</span></a></li>
-<li><a class="reference internal" href="#ransomware-commands-label"><span class="std std-ref">Ransomware Protection</span></a></li>
-<li><a class="reference internal" href="#shibboleth-label"><span class="std std-ref">Shibboleth Modes (Enterprise Edition only)</span></a></li>
 <li><a class="reference internal" href="#trashbin-label"><span class="std std-ref">Trashbin</span></a></li>
 <li><a class="reference internal" href="#user-commands-label"><span class="std std-ref">User Commands</span></a></li>
 <li><a class="reference internal" href="#versions-label"><span class="std std-ref">Versions</span></a></li>
 <li><a class="reference internal" href="#command-line-installation-label"><span class="std std-ref">Command Line Installation</span></a></li>
 <li><a class="reference internal" href="#command-line-upgrade-label"><span class="std std-ref">Command Line Upgrade</span></a></li>
-<li><a class="reference internal" href="#two-factor-auth-label"><span class="std std-ref">Two-factor Authentication</span></a></li>
 <li><a class="reference internal" href="#disable-user-label"><span class="std std-ref">Disable Users</span></a></li>
 </ul>
 </div>
@@ -183,7 +181,8 @@ For example, in CentOS 6.5 with SCL-PHP54 installed, the command looks like this
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">apache</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">rh</span><span class="o">/</span><span class="n">php54</span><span class="o">/</span><span class="n">root</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">html</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">occ</span>
 </pre></div>
 </div>
-<p>Running <code class="docutils literal"><span class="pre">occ</span></code> with no options lists all commands and options, like this example on Ubuntu:</p>
+<p>The following examples are based on Ubuntu.</p>
+<p>Running <code class="docutils literal"><span class="pre">occ</span></code> with no options lists all commands and options</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span>
 <span class="n">ownCloud</span> <span class="n">version</span> <span class="mf">10.0</span><span class="o">.</span><span class="mi">8</span>
 
@@ -210,17 +209,23 @@ For example, in CentOS 6.5 with SCL-PHP54 installed, the command looks like this
                        <span class="n">a</span> <span class="n">new</span> <span class="n">release</span><span class="o">.</span> <span class="n">The</span> <span class="n">release</span> <span class="n">has</span> <span class="n">to</span> <span class="n">be</span> <span class="n">installed</span> <span class="n">before</span>
 </pre></div>
 </div>
-<p>This is the same as <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">-u</span> <span class="pre">www-data</span> <span class="pre">php</span> <span class="pre">occ</span> <span class="pre">list</span></code>.
-Run it with the <code class="docutils literal"><span class="pre">-h</span></code> option for syntax help:</p>
+<p>This is the same as <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">-u</span> <span class="pre">www-data</span> <span class="pre">php</span> <span class="pre">occ</span> <span class="pre">list</span></code>.</p>
+<div class="section" id="general-syntax-help">
+<h3>General syntax help<a class="headerlink" href="#general-syntax-help" title="Permalink to this headline">¶</a></h3>
+<p>Run occ with the <code class="docutils literal"><span class="pre">-h</span></code> option for syntax help</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="o">-</span><span class="n">h</span>
 </pre></div>
 </div>
-<p>Display your ownCloud version:</p>
+</div>
+<div class="section" id="display-your-owncloud-version">
+<h3>Display your ownCloud version<a class="headerlink" href="#display-your-owncloud-version" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="o">-</span><span class="n">V</span>
   <span class="n">ownCloud</span> <span class="n">version</span> <span class="mf">10.0</span><span class="o">.</span><span class="mi">8</span>
 </pre></div>
 </div>
-<p>Query your ownCloud server status:</p>
+</div>
+<div class="section" id="query-your-owncloud-server-status">
+<h3>Query your ownCloud server status<a class="headerlink" href="#query-your-owncloud-server-status" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">status</span>
   <span class="o">-</span> <span class="n">installed</span><span class="p">:</span> <span class="n">true</span>
   <span class="o">-</span> <span class="n">version</span><span class="p">:</span> <span class="mf">10.0</span><span class="o">.</span><span class="mf">8.5</span>
@@ -228,16 +233,11 @@ Run it with the <code class="docutils literal"><span class="pre">-h</span></code
   <span class="o">-</span> <span class="n">edition</span><span class="p">:</span> <span class="n">Community</span>
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">occ</span></code> has <em>options</em>, <em>commands</em>, and <em>arguments</em>.
-Commands are required.
-Options are optional.
-Arguments can be required <em>or</em> optional.
-The, generic, syntax is</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">occ</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="n">command</span> <span class="p">[</span><span class="n">arguments</span><span class="p">]</span>
-</pre></div>
 </div>
+<div class="section" id="command-syntax-help">
+<h3>Command syntax help<a class="headerlink" href="#command-syntax-help" title="Permalink to this headline">¶</a></h3>
 <p>Get detailed information on individual commands with the <code class="docutils literal"><span class="pre">help</span></code> command, like this example for the <code class="docutils literal"><span class="pre">maintenance:mode</span></code> command</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">help</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="o">--</span><span class="n">help</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span>
 <span class="n">Usage</span><span class="p">:</span>
  <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
 
@@ -256,8 +256,19 @@ The, generic, syntax is</p>
                        <span class="mi">2</span> <span class="k">for</span> <span class="n">more</span> <span class="n">verbose</span> <span class="n">output</span> <span class="ow">and</span> <span class="mi">3</span> <span class="k">for</span> <span class="n">debug</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">status</span></code> command from above has an option to define the output format.
-The default is plain text, but it can also be <code class="docutils literal"><span class="pre">json</span></code></p>
+</div>
+<div class="section" id="options-and-arguments">
+<h3>Options and Arguments<a class="headerlink" href="#options-and-arguments" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">occ</span></code> has <em>options</em>, <em>commands</em>, and <em>arguments</em>.
+Commands are required.
+Options are optional.
+Arguments can be required <em>or</em> optional.
+The, generic, syntax is</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">occ</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="n">command</span> <span class="p">[</span><span class="n">arguments</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">status</span></code> command from above has an option to define the output format.</p>
+<p>The default is plain text, but it can also be <code class="docutils literal"><span class="pre">json</span></code></p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">status</span> <span class="o">--</span><span class="n">output</span><span class="o">=</span><span class="n">json</span>
 <span class="p">{</span><span class="s2">&quot;installed&quot;</span><span class="p">:</span><span class="n">true</span><span class="p">,</span><span class="s2">&quot;version&quot;</span><span class="p">:</span><span class="s2">&quot;9.0.0.19&quot;</span><span class="p">,</span><span class="s2">&quot;versionstring&quot;</span><span class="p">:</span><span class="s2">&quot;9.0.0&quot;</span><span class="p">,</span><span class="s2">&quot;edition&quot;</span><span class="p">:</span><span class="s2">&quot;&quot;</span><span class="p">}</span>
 </pre></div>
@@ -274,8 +285,23 @@ The default is plain text, but it can also be <code class="docutils literal"><sp
 </div>
 <p>This output option is available on all list and list-like commands, which include <code class="docutils literal"><span class="pre">status</span></code>, <code class="docutils literal"><span class="pre">check</span></code>, <code class="docutils literal"><span class="pre">app:list</span></code>, <code class="docutils literal"><span class="pre">config:list</span></code>, <code class="docutils literal"><span class="pre">encryption:status</span></code> and <code class="docutils literal"><span class="pre">encryption:list-modules</span></code>.</p>
 </div>
-<div class="section" id="apps-commands">
-<span id="apps-commands-label"></span><h2>Apps Commands<a class="headerlink" href="#apps-commands" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="usage-of-parameters-in-options">
+<h3>Usage of parameters in Options<a class="headerlink" href="#usage-of-parameters-in-options" title="Permalink to this headline">¶</a></h3>
+<p>In case an option requires parameters, following format should be used for short or long Options forms</p>
+<p>The following example command has an option in <code class="docutils literal"><span class="pre">-p</span></code> (short) form and <code class="docutils literal"><span class="pre">--path</span></code> (long) form.</p>
+<p>Parameters for long form options will be written after a blank or equal sign</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">files</span><span class="p">:</span><span class="n">scan</span> <span class="o">--</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;user_x/files/folder&quot;</span>
+</pre></div>
+</div>
+<p>Parameters for short form options will be written either directly after the option or after a blank.
+Do not use the equal sign as this could be interpreted as part of the parameter.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">files</span><span class="p">:</span><span class="n">scan</span> <span class="o">-</span><span class="n">p</span> <span class="s2">&quot;user_x/files/folder&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="commands-managing-apps">
+<span id="apps-commands-label"></span><h2>Commands managing Apps<a class="headerlink" href="#commands-managing-apps" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="docutils literal"><span class="pre">app</span></code> commands list, enable, and disable apps</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">app</span>
  <span class="n">app</span><span class="p">:</span><span class="n">check</span><span class="o">-</span><span class="n">code</span>   <span class="n">check</span> <span class="n">code</span> <span class="n">to</span> <span class="n">be</span> <span class="n">compliant</span>
@@ -328,6 +354,10 @@ App is compliant - awesome job!
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">app</span><span class="p">:</span><span class="n">getpath</span> <span class="n">notifications</span>
 <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">apps</span><span class="o">/</span><span class="n">notifications</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please see the command set <code class="docutils literal"><span class="pre">market</span></code> for managing apps (install, uninstall ect) from the marketplace</p>
 </div>
 </div>
 <div class="section" id="background-jobs-selector">
@@ -711,8 +741,9 @@ The command also offers an option to repair incorrect checksum values (<code cla
 <p class="first admonition-title">Note</p>
 <p class="last">If not using <code class="docutils literal"><span class="pre">--quiet</span></code>, statistics will be shown at the end of the scan.</p>
 </div>
+</div>
 <div class="section" id="the-path-option">
-<h4>The <code class="docutils literal"><span class="pre">--path</span></code> Option<a class="headerlink" href="#the-path-option" title="Permalink to this headline">¶</a></h4>
+<h3>The <code class="docutils literal"><span class="pre">--path</span></code> Option<a class="headerlink" href="#the-path-option" title="Permalink to this headline">¶</a></h3>
 <p>When using the <code class="docutils literal"><span class="pre">--path</span></code> option, the path must be in one of the following formats:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;user_id/files/path&quot;</span>
 <span class="s2">&quot;user_id/files/mount_name&quot;</span>
@@ -724,6 +755,10 @@ The command also offers an option to repair incorrect checksum values (<code cla
 </pre></div>
 </div>
 <p>In the example above, the user_id <code class="docutils literal"><span class="pre">alice</span></code> is determined implicitly from the path component given.</p>
+<p>To get a list of scannable mounts for a given user, use following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">files_external</span><span class="p">:</span><span class="nb">list</span> <span class="n">user_id</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Mounts are only scannable at the point of origin. Scanning of shares including federated shares
@@ -732,7 +767,7 @@ is not necessary on the receiver side and therefore not possible.</p>
 <p>The <code class="docutils literal"><span class="pre">--path</span></code>, <code class="docutils literal"><span class="pre">--all</span></code>, <code class="docutils literal"><span class="pre">--groups</span></code> and <code class="docutils literal"><span class="pre">[user_id]</span></code> parameters are exclusive - only one must be specified.</p>
 </div>
 <div class="section" id="the-repair-option">
-<h4>The <code class="docutils literal"><span class="pre">--repair</span></code> Option<a class="headerlink" href="#the-repair-option" title="Permalink to this headline">¶</a></h4>
+<h3>The <code class="docutils literal"><span class="pre">--repair</span></code> Option<a class="headerlink" href="#the-repair-option" title="Permalink to this headline">¶</a></h3>
 <p>As noted above, repairs can be performed for individual users, groups of users, and for all users in an ownCloud installation.
 What’s more, repair scans can be run even if no files are known to need repairing and if one or more files are known to be in need of repair.
 Two examples of when files need repairing are:</p>
@@ -751,10 +786,8 @@ The following commands show how to enable single user mode, run a repair file sc
 <p class="first admonition-title">Note</p>
 <p class="last">We strongly suggest that you backup the database before running this command.</p>
 </div>
-</div>
-</div>
 <div class="section" id="the-files-transfer-ownership-command">
-<h3>The files:transfer-ownership command<a class="headerlink" href="#the-files-transfer-ownership-command" title="Permalink to this headline">¶</a></h3>
+<h4>The files:transfer-ownership command<a class="headerlink" href="#the-files-transfer-ownership-command" title="Permalink to this headline">¶</a></h4>
 <p>You may transfer all files and shares from one user to another.
 This is useful before removing a user.
 For example, to move all files from <code class="docutils literal"><span class="pre">&lt;source-user&gt;</span></code> to <code class="docutils literal"><span class="pre">&lt;destination-user&gt;</span></code>, use the following command:</p>
@@ -772,6 +805,7 @@ In it, <code class="docutils literal"><span class="pre">folder/to/move</span></c
 <li>The directory (and its contents) won’t be moved as is between the users. It’ll be moved inside the destination user’s <code class="docutils literal"><span class="pre">files</span></code> directory, and placed in a directory which follows the format: <code class="docutils literal"><span class="pre">transferred</span> <span class="pre">from</span> <span class="pre">&lt;source-user&gt;</span> <span class="pre">on</span> <span class="pre">&lt;timestamp&gt;</span></code>. Using the example above, it will be stored under: <code class="docutils literal"><span class="pre">data/&lt;destination-user&gt;/files/transferred</span> <span class="pre">from</span> <span class="pre">&lt;source-user&gt;</span> <span class="pre">on</span> <span class="pre">20170426_124510/</span></code></li>
 <li>Currently file versions can’t be transferred. Only the latest version of moved files will appear in the destination user’s account.</li>
 </ol>
+</div>
 </div>
 </div>
 <div class="section" id="files-external">
@@ -799,6 +833,538 @@ ownCloud releases before 9.0.</p>
 <p class="last">These commands are only available when the “External storage support” app
 (<code class="docutils literal"><span class="pre">files_external</span></code>) is enabled.
 It is not available in <a class="reference internal" href="#maintenance-commands-label"><span class="std std-ref">single-user (maintenance) mode</span></a>.</p>
+</div>
+<div class="section" id="files-external-list">
+<h3>files_external:list<a class="headerlink" href="#files-external-list" title="Permalink to this headline">¶</a></h3>
+<p>List configured mounts.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="nb">list</span> <span class="p">[</span><span class="o">--</span><span class="n">show</span><span class="o">-</span><span class="n">password</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">full</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="o">|--</span><span class="nb">all</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">user_id</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">user_id</span></code></td>
+<td>User ID to list the personal mounts for, if no user is provided admin mounts will be listed.</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">files_external</span><span class="p">:</span><span class="nb">list</span> <span class="o">--</span> <span class="n">user1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="files-external-applicable">
+<h3>files_external:applicable<a class="headerlink" href="#files-external-applicable" title="Permalink to this headline">¶</a></h3>
+<p>Manage applicable users and groups for a mount.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">applicable</span>
+<span class="p">[</span><span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">user</span>     <span class="n">ADD</span><span class="o">-</span><span class="n">USER</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="n">remove</span><span class="o">-</span><span class="n">user</span>  <span class="n">REMOVE</span><span class="o">-</span><span class="n">USER</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="n">add</span><span class="o">-</span><span class="n">group</span>    <span class="n">ADD</span><span class="o">-</span><span class="n">GROUP</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="n">remove</span><span class="o">-</span><span class="n">group</span> <span class="n">REMOVE</span><span class="o">-</span><span class="n">GROUP</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="n">remove</span><span class="o">-</span><span class="nb">all</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="n">output</span>       <span class="p">[</span><span class="n">OUTPUT</span><span class="p">]]</span>
+<span class="p">[</span><span class="o">--</span><span class="p">]</span>
+<span class="o">&lt;</span><span class="n">mount_id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_id</span></code></td>
+<td>The ID of the mount to edit</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--add-user</span></code></td>
+<td>user to add as applicable (multiple values allowed)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--remove-user</span></code></td>
+<td>user to remove as applicable (multiple values allowed)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--add-group</span></code></td>
+<td>group to add as applicable (multiple values allowed)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--remove-group</span></code></td>
+<td>group to remove as applicable (multiple values allowed)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--remove-all</span></code></td>
+<td>Set the mount to be globally applicable</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-backends">
+<h3>files_external:backends<a class="headerlink" href="#files-external-backends" title="Permalink to this headline">¶</a></h3>
+<p>Show available authentication and storage backends.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">backends</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&lt;</span><span class="nb">type</span><span class="o">&gt;</span><span class="p">]</span>
+<span class="p">[</span><span class="o">&lt;</span><span class="n">backend</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">type</span></code></td>
+<td>Only show backends of a certain type. Possible values are <code class="docutils literal"><span class="pre">authentication</span></code> or <code class="docutils literal"><span class="pre">storage</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">backend</span></code></td>
+<td>Only show information of a specific backend.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-config">
+<h3>files_external:config<a class="headerlink" href="#files-external-config" title="Permalink to this headline">¶</a></h3>
+<p>Manage backend configuration for a mount.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">config</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="p">]</span>
+<span class="o">&lt;</span><span class="n">mount_id</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">key</span><span class="o">&gt;</span>
+<span class="p">[</span><span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_id</span></code></td>
+<td>The ID of the mount to edit.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">key</span></code></td>
+<td>Key of the config option to set/get.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">value</span></code></td>
+<td>Value to set the config option to, when no value is provided the existing value will be printed.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-create">
+<h3>files_external:create<a class="headerlink" href="#files-external-create" title="Permalink to this headline">¶</a></h3>
+<p>Create a new mount configuration.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">create</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
+<span class="p">[</span><span class="o">--</span><span class="p">]</span>
+<span class="o">&lt;</span><span class="n">mount_point</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">storage_backend</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="n">authentication_backend</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="arguments">
+<h4>Arguments<a class="headerlink" href="#arguments" title="Permalink to this headline">¶</a></h4>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_point</span></code></td>
+<td>Mount point for the new mount.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">storage_backend</span></code></td>
+<td>Storage backend identifier for the new mount, see <cite>occ files_external:backends</cite> for possible values.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">authentication_backend</span></code></td>
+<td>Authentication backend identifier for the new mount, see <cite>occ files_external:backends</cite> for possible values.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="options">
+<h4>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h4>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--user[=USER]</span></code></td>
+<td>User to add the mount configurations for, if not set the mount will be added as system mount.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">-c,</span> <span class="pre">--config=CONFIG</span></code></td>
+<td>Mount configuration option in <code class="docutils literal"><span class="pre">key=value</span></code> format (multiple values allowed).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--dry</span></code></td>
+<td>Don’t save the imported mounts, only list the new mounts.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="storage-backend-details">
+<h4>Storage Backend Details<a class="headerlink" href="#storage-backend-details" title="Permalink to this headline">¶</a></h4>
+<table border="1" class="docutils">
+<colgroup>
+<col width="51%" />
+<col width="49%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Storage Backend</th>
+<th class="head">Identifier</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Windows Network Drive</td>
+<td>windows_network_drive</td>
+</tr>
+<tr class="row-odd"><td>WebDav</td>
+<td>dav</td>
+</tr>
+<tr class="row-even"><td>Local</td>
+<td>local</td>
+</tr>
+<tr class="row-odd"><td>ownCloud</td>
+<td>owncloud</td>
+</tr>
+<tr class="row-even"><td>SFTP</td>
+<td>sftp</td>
+</tr>
+<tr class="row-odd"><td>Amazon S3</td>
+<td>amazons3</td>
+</tr>
+<tr class="row-even"><td>Dropbox</td>
+<td>dropbox</td>
+</tr>
+<tr class="row-odd"><td>Google Drive</td>
+<td>googledrive</td>
+</tr>
+<tr class="row-even"><td>OpenStack Object Storage</td>
+<td>swift</td>
+</tr>
+<tr class="row-odd"><td>SMB / CIFS</td>
+<td>smb</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="authentication-details">
+<h4>Authentication Details<a class="headerlink" href="#authentication-details" title="Permalink to this headline">¶</a></h4>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Authentication method</th>
+<th class="head">Identifier, name, configuration</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Log-in credentials, save in session</td>
+<td>password::sessioncredentials</td>
+</tr>
+<tr class="row-odd"><td>Log-in credentials, save in database</td>
+<td>password::logincredentials</td>
+</tr>
+<tr class="row-even"><td>User entered, store in database</td>
+<td>password::userprovided (*)</td>
+</tr>
+<tr class="row-odd"><td>Global Credentials</td>
+<td>password::global</td>
+</tr>
+<tr class="row-even"><td>None</td>
+<td>null::null</td>
+</tr>
+<tr class="row-odd"><td>Builtin</td>
+<td>builtin::builtin</td>
+</tr>
+<tr class="row-even"><td>Username and password</td>
+<td>password::password</td>
+</tr>
+<tr class="row-odd"><td>OAuth1</td>
+<td>oauth1::oauth1 (*)</td>
+</tr>
+<tr class="row-even"><td>OAuth2</td>
+<td>oauth2::oauth2 (*)</td>
+</tr>
+<tr class="row-odd"><td>RSA public key</td>
+<td>publickey::rsa (*)</td>
+</tr>
+<tr class="row-even"><td>OpenStack</td>
+<td>openstack::openstack (*)</td>
+</tr>
+<tr class="row-odd"><td>Rackspace</td>
+<td>openstack::rackspace (*)</td>
+</tr>
+<tr class="row-even"><td>Access key (Amazon S3)</td>
+<td>amazons3::accesskey (*)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<div>(*) - Authentication methods require additional configuration.</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Each Storage Backend needs its corresponding authentication methods.</p>
+</div>
+</div>
+</div>
+<div class="section" id="files-external-delete">
+<h3>files_external:delete<a class="headerlink" href="#files-external-delete" title="Permalink to this headline">¶</a></h3>
+<p>Delete an external mount.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">delete</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">mount_id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="32%" />
+<col width="68%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_id</span></code></td>
+<td>The ID of the mount to edit.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-y,</span> <span class="pre">--yes</span></code></td>
+<td>Skip confirmation.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-export">
+<h3>files_external:export<a class="headerlink" href="#files-external-export" title="Permalink to this headline">¶</a></h3>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">export</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">user_id</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">user_id</span></code></td>
+<td>User ID to export the personal mounts for, if no user is provided admin mounts will be exported.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-a,</span> <span class="pre">--all</span></code></td>
+<td>Show both system wide mounts and all personal mounts.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-import">
+<h3>files_external:import<a class="headerlink" href="#files-external-import" title="Permalink to this headline">¶</a></h3>
+<p>Import mount configurations.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="kn">import</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="11%" />
+<col width="89%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">path</span></code></td>
+<td>Path to a json file containing the mounts to import, use <code class="docutils literal"><span class="pre">-</span></code> to read from stdin.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="17%" />
+<col width="83%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--user[=USER]</span></code></td>
+<td>User to add the mount configurations for, if not set the mount will be added as system mount.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--dry</span></code></td>
+<td>Don’t save the imported mounts, only list the new mounts.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id1">
+<h3>files_external:list<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>List configured mounts.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="nb">list</span> <span class="p">[</span><span class="o">--</span><span class="n">show</span><span class="o">-</span><span class="n">password</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">full</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="o">|--</span><span class="nb">all</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">user_id</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="88%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">user_id</span></code></td>
+<td>User ID to list the personal mounts for, if no user is provided admin mounts will be listed.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="82%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">--show-password</span></code></td>
+<td>User to add the mount configurations for, if not set the mount will be added as system mount.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--full</span></code></td>
+<td>Don’t save the imported mounts, only list the new mounts.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-a,</span> <span class="pre">--all</span></code></td>
+<td>Show both system wide mounts and all personal mounts.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">files_external</span><span class="p">:</span><span class="nb">list</span> <span class="o">--</span> <span class="n">user1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="files-external-option">
+<h3>files_external:option<a class="headerlink" href="#files-external-option" title="Permalink to this headline">¶</a></h3>
+<p>Manage mount options for a mount.</p>
+<dl class="docutils">
+<dt>Usage::</dt>
+<dd>files_external:option &lt;mount_id&gt; &lt;key&gt; [&lt;value&gt;]</dd>
+</dl>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="13%" />
+<col width="87%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_id</span></code></td>
+<td>The ID of the mount to edit.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">key</span></code></td>
+<td>Key of the mount option to set/get.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">value</span></code></td>
+<td>Value to set the mount option to, when no value is provided the existing value will be printed.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="files-external-verify">
+<h3>files_external:verify<a class="headerlink" href="#files-external-verify" title="Permalink to this headline">¶</a></h3>
+<p>Verify mount configuration.</p>
+<p>Usage:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">files_external</span><span class="p">:</span><span class="n">verify</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">mount_id</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Arguments:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mount_id</span></code></td>
+<td>The ID of the mount to check.</td>
+</tr>
+</tbody>
+</table>
+<p>Options:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-c,</span> <span class="pre">--config=CONFIG</span></code></td>
+<td>Additional config option to set before checking in <code class="docutils literal"><span class="pre">key=value</span></code>
+pairs, required for certain auth backends such as login credentails (multiple values allowed).</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">--output</span></code></td>
+<td>The output format to use (plain, json or json_pretty, default is plain).</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="section" id="group-commands">
@@ -1008,294 +1574,13 @@ Refer to the developer documentation on <a class="reference external" href="http
 </pre></div>
 </div>
 <p>This will generate two translation files, <code class="docutils literal"><span class="pre">de_AT.js</span></code> and <code class="docutils literal"><span class="pre">de_AT.json</span></code>, in <code class="docutils literal"><span class="pre">/var/www/owncloud/apps/gallery/l10n</span></code>.</p>
+</div>
 <div class="section" id="create-translations-in-multiple-languages">
-<h4>Create Translations in Multiple Languages<a class="headerlink" href="#create-translations-in-multiple-languages" title="Permalink to this headline">¶</a></h4>
+<h3>Create Translations in Multiple Languages<a class="headerlink" href="#create-translations-in-multiple-languages" title="Permalink to this headline">¶</a></h3>
 <p>To create translations in multiple languages simultaneously, supply multiple languages to the command, as in the following example:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">l10n</span><span class="p">:</span><span class="n">createjs</span> <span class="n">gallery</span> <span class="n">de_AT</span> <span class="n">de_DE</span> <span class="n">hu_HU</span> <span class="n">es</span> <span class="n">fr</span>
 </pre></div>
 </div>
-</div>
-</div>
-</div>
-<div class="section" id="ldap-commands">
-<span id="ldap-commands-label"></span><h2>LDAP Commands<a class="headerlink" href="#ldap-commands" title="Permalink to this headline">¶</a></h2>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These commands are only available when the “LDAP user and group backend” app
-(<code class="docutils literal"><span class="pre">user_ldap</span></code>) is enabled.</p>
-</div>
-<p>These LDAP commands appear only when you have enabled the LDAP app.
-Then you can run the following LDAP commands with <code class="docutils literal"><span class="pre">occ</span></code>:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">ldap</span>
-<span class="go"> ldap:check-user               Checks whether a user exists on LDAP.</span>
-<span class="go"> ldap:create-empty-config      Creates an empty LDAP configuration</span>
-<span class="go"> ldap:delete-config            Deletes an existing LDAP configuration</span>
-<span class="go"> ldap:search                   Executes a user or group search</span>
-<span class="go"> ldap:set-config               Modifies an LDAP configuration</span>
-<span class="go"> ldap:show-config              Shows the LDAP configuration</span>
-<span class="go"> ldap:test-config              Tests an LDAP configuration</span>
-<span class="go"> ldap:update-group             Update the specified group membership</span>
-<span class="go">                               Information stored locally</span>
-</pre></div>
-</div>
-<p>Search for an LDAP user, using this syntax:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">search</span> <span class="p">[</span><span class="o">--</span><span class="n">group</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">offset</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">]</span>
-<span class="p">[</span><span class="o">--</span><span class="n">limit</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">]</span> <span class="n">search</span>
-</pre></div>
-</div>
-<p>Searches will match at the beginning of the attribute value only.
-This example searches for <code class="docutils literal"><span class="pre">givenNames</span></code> that start with “rob”:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">search</span> <span class="s2">&quot;rob&quot;</span>
-</pre></div>
-</div>
-<p>This will find robbie, roberta, and robin. Broaden the search to find, for example, <code class="docutils literal"><span class="pre">jeroboam</span></code> with the asterisk wildcard:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">search</span> <span class="s2">&quot;*rob&quot;</span>
-</pre></div>
-</div>
-<p>User search attributes are set with <code class="docutils literal"><span class="pre">ldap:set-config</span></code> (below).
-For example, if your search attributes are <code class="docutils literal"><span class="pre">givenName</span></code> and <code class="docutils literal"><span class="pre">sn</span></code> you can find users by first name + last name very quickly.
-For example, you’ll find Terri Hanson by searching for <code class="docutils literal"><span class="pre">te</span> <span class="pre">ha</span></code>.
-Trailing whitespace is ignored.</p>
-<p>Check if an LDAP user exists.
-This works only if the ownCloud server is connected to an LDAP server.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">check</span><span class="o">-</span><span class="n">user</span> <span class="n">robert</span>
-</pre></div>
-</div>
-<p><code class="docutils literal"><span class="pre">ldap:check-user</span></code> will not run a check when it finds a disabled LDAP connection.
-This prevents users that exist on disabled LDAP connections from being marked as deleted.
-If you know for certain that the user you are searching for is not in one of the disabled connections, and exists on an active connection, use the <code class="docutils literal"><span class="pre">--force</span></code> option to force it to check all active LDAP connections.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">check</span><span class="o">-</span><span class="n">user</span> <span class="o">--</span><span class="n">force</span> <span class="n">robert</span>
-</pre></div>
-</div>
-<p><code class="docutils literal"><span class="pre">ldap:create-empty-config</span></code> creates an empty LDAP configuration.
-The first one you create has no <code class="docutils literal"><span class="pre">configID</span></code>, like this example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">create</span><span class="o">-</span><span class="n">empty</span><span class="o">-</span><span class="n">config</span>
-  <span class="n">Created</span> <span class="n">new</span> <span class="n">configuration</span> <span class="k">with</span> <span class="n">configID</span> <span class="s1">&#39;&#39;</span>
-</pre></div>
-</div>
-<p>This is a holdover from the early days, when there was no option to create additional configurations.
-The second, and all subsequent, configurations that you create are automatically assigned IDs.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">create</span><span class="o">-</span><span class="n">empty</span><span class="o">-</span><span class="n">config</span>
-   <span class="n">Created</span> <span class="n">new</span> <span class="n">configuration</span> <span class="k">with</span> <span class="n">configID</span> <span class="s1">&#39;s01&#39;</span>
-</pre></div>
-</div>
-<p>Then you can list and view your configurations:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">show</span><span class="o">-</span><span class="n">config</span>
-</pre></div>
-</div>
-<p>And view the configuration for a single <code class="docutils literal"><span class="pre">configID</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">show</span><span class="o">-</span><span class="n">config</span> <span class="n">s01</span>
-</pre></div>
-</div>
-<p><code class="docutils literal"><span class="pre">ldap:delete-config</span> <span class="pre">[configID]</span></code> deletes an existing LDAP configuration.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="n">delete</span>  <span class="n">s01</span>
-<span class="n">Deleted</span> <span class="n">configuration</span> <span class="k">with</span> <span class="n">configID</span> <span class="s1">&#39;s01&#39;</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal"><span class="pre">ldap:set-config</span></code> command is for manipulating configurations, like this example that sets search attributes:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">ldap</span><span class="p">:</span><span class="nb">set</span><span class="o">-</span><span class="n">config</span> <span class="n">s01</span> <span class="n">ldapAttributesForUserSearch</span>
-<span class="s2">&quot;cn;givenname;sn;displayname;mail&quot;</span>
-</pre></div>
-</div>
-<p>The command takes the following format:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ldap</span><span class="p">:</span><span class="nb">set</span><span class="o">-</span><span class="n">config</span> <span class="o">&lt;</span><span class="n">configID</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">configKey</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">configValue</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-<p>All of the available keys, along with default values for <cite>configValue</cite>, are listed in the table below.</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="24%" />
-<col width="76%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Configuration</th>
-<th class="head">Setting</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td>hasMemberOfFilterSupport</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>hasPagedResultSupport</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>homeFolderNamingRule</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>lastJpegPhotoLookup</td>
-<td>0</td>
-</tr>
-<tr class="row-even"><td>ldapAgentName</td>
-<td><cite>cn=admin,dc=owncloudqa,dc=com</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapAgentPassword</td>
-<td><em>*</em></td>
-</tr>
-<tr class="row-even"><td>ldapAttributesForGroupSearch</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapAttributesForUserSearch</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapBackupHost</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapBackupPort</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapBase</td>
-<td><cite>dc=owncloudqa,dc=com</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapBaseGroups</td>
-<td><cite>dc=owncloudqa,dc=com</cite></td>
-</tr>
-<tr class="row-even"><td>ldapBaseUsers</td>
-<td><cite>dc=owncloudqa,dc=com</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapCacheTTL</td>
-<td>600</td>
-</tr>
-<tr class="row-even"><td>ldapConfigurationActive</td>
-<td>1</td>
-</tr>
-<tr class="row-odd"><td>ldapDynamicGroupMemberURL</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapEmailAttribute</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapExperiencedAdmin</td>
-<td>0</td>
-</tr>
-<tr class="row-even"><td>ldapExpertUUIDGroupAttr</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapExpertUUIDUserAttr</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapExpertUsernameAttr</td>
-<td>ldapGroupDisplayName             <cite>cn</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapGroupFilter</td>
-<td>ldapGroupFilterGroups</td>
-</tr>
-<tr class="row-even"><td>ldapGroupFilterMode</td>
-<td>0</td>
-</tr>
-<tr class="row-odd"><td>ldapGroupFilterObjectclass</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapGroupMemberAssocAttr</td>
-<td><cite>uniqueMember</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapHost</td>
-<td><cite>ldap://host</cite></td>
-</tr>
-<tr class="row-even"><td>ldapIgnoreNamingRules</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapLoginFilter</td>
-<td><cite>(&amp;((objectclass=inetOrgPerson))(uid=%uid))</cite></td>
-</tr>
-<tr class="row-even"><td>ldapLoginFilterAttributes</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapLoginFilterEmail</td>
-<td>0</td>
-</tr>
-<tr class="row-even"><td>ldapLoginFilterMode</td>
-<td>0</td>
-</tr>
-<tr class="row-odd"><td>ldapLoginFilterUsername</td>
-<td>1</td>
-</tr>
-<tr class="row-even"><td>ldapNestedGroups</td>
-<td>0</td>
-</tr>
-<tr class="row-odd"><td>ldapOverrideMainServer</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapPagingSize</td>
-<td>500</td>
-</tr>
-<tr class="row-odd"><td>ldapPort</td>
-<td>389</td>
-</tr>
-<tr class="row-even"><td>ldapQuotaAttribute</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapQuotaDefault</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-even"><td>ldapTLS</td>
-<td>0</td>
-</tr>
-<tr class="row-odd"><td>ldapUserDisplayName</td>
-<td><cite>displayName</cite></td>
-</tr>
-<tr class="row-even"><td>ldapUserDisplayName2</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapUserFilter</td>
-<td><cite>((objectclass=inetOrgPerson))</cite></td>
-</tr>
-<tr class="row-even"><td>ldapUserFilterGroups</td>
-<td>&#160;</td>
-</tr>
-<tr class="row-odd"><td>ldapUserFilterMode</td>
-<td>0</td>
-</tr>
-<tr class="row-even"><td>ldapUserFilterObjectclass</td>
-<td><cite>inetOrgPerson</cite></td>
-</tr>
-<tr class="row-odd"><td>ldapUuidGroupAttribute</td>
-<td><cite>auto</cite></td>
-</tr>
-<tr class="row-even"><td>ldapUuidUserAttribute</td>
-<td><cite>auto</cite></td>
-</tr>
-<tr class="row-odd"><td>turnOffCertCheck</td>
-<td>0</td>
-</tr>
-<tr class="row-even"><td>useMemberOfToDetectMembership</td>
-<td>1</td>
-</tr>
-</tbody>
-</table>
-<p><code class="docutils literal"><span class="pre">ldap:test-config</span></code> tests whether your configuration is correct and can bind to the server.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>sudo -u www-data php occ ldap:test-config s01
-The configuration is valid and the connection could be established!
-</pre></div>
-</div>
-<p><code class="docutils literal"><span class="pre">ldap:update-group</span></code> updates the specified group membership information stored locally.</p>
-<p>The command takes the following format:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ldap</span><span class="p">:</span><span class="n">update</span><span class="o">-</span><span class="n">group</span> <span class="o">&lt;</span><span class="n">groupID</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">groupID</span> <span class="o">&lt;</span><span class="n">groupID</span><span class="o">&gt;</span> <span class="o">...&gt;</span>
-</pre></div>
-</div>
-<p>The command allows for running a manual group sync on one or more groups, instead of having to wait for group syncing to occur.
-If users have been added or removed from these groups in LDAP, ownCloud will update its details.
-If a group was deleted in LDAP, ownCloud will also delete the local mapping info about this group.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">New groups in LDAP won’t be synced with this command.
-The LDAP TTL configuration (by default 10 minutes) still applies. This means
-that recently deleted groups from LDAP might be considered as “active” and
-might not be deleted in ownCloud immediately.</p>
-</div>
-<p><strong>Configuring the LDAP Refresh Attribute Interval</strong></p>
-<p>You can configure the LDAP refresh attribute interval, but not with the <code class="docutils literal"><span class="pre">ldap</span></code> commands.
-Instead, you need to use the <code class="docutils literal"><span class="pre">config:app:set</span></code> command, as in the following example, which takes a number of seconds to the <code class="docutils literal"><span class="pre">--value</span></code> switch.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">config</span><span class="p">:</span><span class="n">app</span><span class="p">:</span><span class="nb">set</span> <span class="n">user_ldap</span> <span class="n">updateAttributesInterval</span> <span class="o">--</span><span class="n">value</span><span class="o">=</span><span class="mi">7200</span>
-</pre></div>
-</div>
-<p>In the example above, the interval is being set to 7200 seconds.
-Assuming the above example was used, the command would output the following:</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">Config value updateAttributesInterval for app user_ldap set to 7200</span>
-</pre></div>
-</div>
-<p>If you want to reset (or unset) the setting, then you can use the following command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">config</span><span class="p">:</span><span class="n">app</span><span class="p">:</span><span class="n">delete</span> <span class="n">user_ldap</span> <span class="n">updateAttributesInterval</span>
-</pre></div>
 </div>
 </div>
 <div class="section" id="logging-commands">
@@ -1383,103 +1668,6 @@ After the command completes, users will be prompted to resolve any conflicts bet
 Run this command after modifying <code class="docutils literal"><span class="pre">config/mimetypemapping.json</span></code>.
 If you change a mimetype, run <code class="docutils literal"><span class="pre">maintenance:mimetype:update-db</span> <span class="pre">--repair-filecache</span></code> to apply the change to existing files.</p>
 </div>
-<div class="section" id="market">
-<span id="market-commands-label"></span><h2>Market<a class="headerlink" href="#market" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal"><span class="pre">market</span></code> commands <em>install</em>, <em>list</em>, and <em>upgrade</em> applications from <a class="reference external" href="https://marketplace.owncloud.com/">the ownCloud Marketplace</a>.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">market</span>
-<span class="go">  market:install    Install apps from the marketplace. If already installed and</span>
-<span class="go">                    an update is available the update will be installed.</span>
-<span class="go">  market:list       Lists apps as available on the marketplace.</span>
-<span class="go">  market:upgrade    Installs new app versions if available on the marketplace</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The user running the update command, which will likely be your webserver user, needs write permission for the <code class="docutils literal"><span class="pre">/apps</span></code> folder.
-If they don’t have write permission, the command may report that the update was successful, but it may silently fail.</p>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These commands are not available in <a class="reference internal" href="#maintenance-commands-label"><span class="std std-ref">single-user (maintenance) mode</span></a>.</p>
-</div>
-<div class="section" id="install-an-application">
-<h3>Install an Application<a class="headerlink" href="#install-an-application" title="Permalink to this headline">¶</a></h3>
-<p>Applications can be installed both from <a class="reference external" href="https://marketplace.owncloud.com/">the ownCloud Marketplace</a> and from a local file archive.</p>
-<div class="section" id="install-apps-from-the-marketplace">
-<h4>Install Apps From The Marketplace<a class="headerlink" href="#install-apps-from-the-marketplace" title="Permalink to this headline">¶</a></h4>
-<p>To install an application from the Marketplace, you need to supply the app’s id, which can be found in the app’s Marketplace URL.
-For example, the URL for <em>Two factor backup codes</em> is <a class="reference external" href="https://marketplace.owncloud.com/apps/twofactor_backup_codes">https://marketplace.owncloud.com/apps/twofactor_backup_codes</a>.
-So its app id is <code class="docutils literal"><span class="pre">twofactor_backup_codes</span></code>.</p>
-</div>
-<div class="section" id="install-apps-from-a-file-archive">
-<h4>Install Apps From a File Archive<a class="headerlink" href="#install-apps-from-a-file-archive" title="Permalink to this headline">¶</a></h4>
-<p>To install an application from a local file archive, you need to supply the path to the archive, and that you pass the <code class="docutils literal"><span class="pre">-l</span></code> switch.
-Only <code class="docutils literal"><span class="pre">zip</span></code>, <code class="docutils literal"><span class="pre">gzip</span></code>, and <code class="docutils literal"><span class="pre">bzip2</span></code> archives are supported.</p>
-</div>
-<div class="section" id="usage-example">
-<h4>Usage Example<a class="headerlink" href="#usage-example" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Install an app from the marketplace.</span>
-<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">occ</span> <span class="n">market</span><span class="p">:</span><span class="n">install</span> <span class="n">twofactor_backup_codes</span>
-
-<span class="c1"># Install an app from a local archive.</span>
-<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">occ</span> <span class="n">market</span><span class="p">:</span><span class="n">install</span> <span class="o">-</span><span class="n">l</span> <span class="o">/</span><span class="n">mnt</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">richdocuments</span><span class="o">-</span><span class="mf">2.0</span><span class="o">.</span><span class="mf">0.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="section" id="notifications">
-<span id="notifications-commands-label"></span><h2>Notifications<a class="headerlink" href="#notifications" title="Permalink to this headline">¶</a></h2>
-<p>If you want to send notifications to users or groups use the following command.</p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">notifications</span>
-<span class="go">  notifications:generate   Generates a notification.</span>
-</pre></div>
-</div>
-<p>Options and Arguments:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">notifications</span><span class="p">:</span><span class="n">generate</span> <span class="p">[</span><span class="o">-</span><span class="n">u</span><span class="o">|--</span><span class="n">user</span> <span class="n">USER</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span><span class="o">|--</span><span class="n">group</span> <span class="n">GROUP</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">l</span><span class="o">|--</span><span class="n">link</span> <span class="o">&lt;</span><span class="n">linktext</span><span class="o">&gt;</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="p">]</span> <span class="o">&lt;</span><span class="n">subject</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">message</span><span class="o">&gt;</span><span class="p">]</span>
-
-<span class="n">Options</span><span class="p">:</span>
-  <span class="o">-</span><span class="n">u</span> <span class="o">--</span><span class="n">user</span>              <span class="n">User</span> <span class="nb">id</span> <span class="n">to</span> <span class="n">whom</span> <span class="n">the</span> <span class="n">notification</span> <span class="n">shall</span> <span class="n">be</span> <span class="n">sent</span>
-  <span class="o">-</span><span class="n">g</span> <span class="o">--</span><span class="n">group</span>             <span class="n">Group</span> <span class="nb">id</span> <span class="n">to</span> <span class="n">whom</span> <span class="n">the</span> <span class="n">notification</span> <span class="n">shall</span> <span class="n">be</span> <span class="n">sent</span>
-  <span class="o">-</span><span class="n">l</span> <span class="o">--</span><span class="n">link</span>              <span class="n">A</span> <span class="n">link</span> <span class="n">associated</span> <span class="k">with</span> <span class="n">the</span> <span class="n">notification</span>
-
-<span class="n">Arguments</span><span class="p">:</span>
-  <span class="n">subject</span>                <span class="n">The</span> <span class="n">notification</span> <span class="n">subject</span> <span class="o">-</span> <span class="n">maximum</span> <span class="mi">255</span> <span class="n">characters</span>
-  <span class="n">message</span>                <span class="n">A</span> <span class="n">longer</span> <span class="n">message</span> <span class="o">-</span> <span class="n">maximum</span> <span class="mi">4000</span> <span class="n">characters</span>
-  <span class="n">linktext</span>               <span class="n">A</span> <span class="n">link</span> <span class="n">to</span> <span class="n">an</span> <span class="n">HTML</span> <span class="n">page</span>
-</pre></div>
-</div>
-<p>At least one user or group must be set.</p>
-<p>A link can be useful for notifications shown in client apps.</p>
-<p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">notifications</span><span class="p">:</span><span class="n">generate</span> <span class="o">-</span><span class="n">g</span> <span class="n">Office</span> <span class="s2">&quot;Emergeny Alert&quot;</span> <span class="s2">&quot;Rebooting in 5min&quot;</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="reports">
-<span id="reports-commands-label"></span><h2>Reports<a class="headerlink" href="#reports" title="Permalink to this headline">¶</a></h2>
-<p>If you’re working with ownCloud support and need to send them a configuration summary, you can generate it using the <code class="docutils literal"><span class="pre">configreport:generate</span></code> command.
-This command generates the same JSON-based report as the Admin Config Report, which you can access under <code class="docutils literal"><span class="pre">admin</span> <span class="pre">-&gt;</span> <span class="pre">Settings</span> <span class="pre">-&gt;</span> <span class="pre">Admin</span> <span class="pre">-&gt;</span> <span class="pre">Help</span> <span class="pre">&amp;</span> <span class="pre">Tips</span> <span class="pre">-&gt;</span> <span class="pre">Download</span> <span class="pre">ownCloud</span> <span class="pre">config</span> <span class="pre">report</span></code>.</p>
-<p>From the command-line in the root directory of your ownCloud installation, run it as your webserver user as follows, (assuming your webserver user is <code class="docutils literal"><span class="pre">www-data</span></code>):</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">occ</span> <span class="n">configreport</span><span class="p">:</span><span class="n">generate</span>
-</pre></div>
-</div>
-<p>This will generate the report and send it to <code class="docutils literal"><span class="pre">STDOUT</span></code>.
-You can optionally pipe the output to a file and then attach it to an email to ownCloud support, by running the following command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">occ</span> <span class="n">configreport</span><span class="p">:</span><span class="n">generate</span> <span class="o">&gt;</span> <span class="n">generated</span><span class="o">-</span><span class="n">config</span><span class="o">-</span><span class="n">report</span><span class="o">.</span><span class="n">txt</span>
-</pre></div>
-</div>
-<p>Alternatively, you could generate the report and email it all in one command, by running:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">occ</span> <span class="n">configreport</span><span class="p">:</span><span class="n">generate</span> <span class="o">|</span> <span class="n">mail</span> <span class="o">-</span><span class="n">s</span> <span class="s2">&quot;configuration report&quot;</span> \
-    <span class="o">-</span><span class="n">r</span> <span class="o">&lt;</span><span class="n">the</span> <span class="n">email</span> <span class="n">address</span> <span class="n">to</span> <span class="n">send</span> <span class="n">from</span><span class="o">&gt;</span> \
-    <span class="n">support</span><span class="nd">@owncloud</span><span class="o">.</span><span class="n">com</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These commands are not available in <a class="reference internal" href="#maintenance-commands-label"><span class="std std-ref">single-user (maintenance) mode</span></a>.</p>
-</div>
-</div>
 <div class="section" id="security">
 <span id="security-commands-label"></span><h2>Security<a class="headerlink" href="#security" title="Permalink to this headline">¶</a></h2>
 <p>Use these commands when you manage security related tasks</p>
@@ -1556,22 +1744,6 @@ These are useful when you create federation shares with other ownCloud servers t
 </pre></div>
 </div>
 </div>
-<div class="section" id="ransomware-protection">
-<span id="ransomware-commands-label"></span><h2>Ransomware Protection<a class="headerlink" href="#ransomware-protection" title="Permalink to this headline">¶</a></h2>
-<p>Use these commands to help users recover from a Ransomware attack.
-You can find more information about the application <a class="reference internal" href="../../enterprise/ransomware-protection/index.html"><span class="doc">in the documentation</span></a>.</p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Ransomware Protection (which is an Enterprise app) needs to be installed and enabled to be able to use these commands.</p>
-</div>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">occ</span> <span class="n">ransomguard</span><span class="p">:</span><span class="n">scan</span> <span class="o">&lt;</span><span class="n">timestamp</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span>     <span class="n">Report</span> <span class="nb">all</span> <span class="n">changes</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">user</span><span class="s1">&#39;s account, starting from timestamp.</span>
-<span class="n">occ</span> <span class="n">ransomguard</span><span class="p">:</span><span class="n">restore</span> <span class="o">&lt;</span><span class="n">timestamp</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span>  <span class="n">Revert</span> <span class="nb">all</span> <span class="n">operations</span> <span class="ow">in</span> <span class="n">a</span> <span class="n">user</span> <span class="n">account</span> <span class="n">after</span> <span class="n">a</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">time</span><span class="o">.</span>
-<span class="n">occ</span> <span class="n">ransomguard</span><span class="p">:</span><span class="n">lock</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span>                 <span class="n">Set</span> <span class="n">a</span> <span class="n">user</span> <span class="n">account</span> <span class="k">as</span> <span class="n">read</span><span class="o">-</span><span class="n">only</span> <span class="k">for</span> <span class="n">ownCloud</span> <span class="ow">and</span> <span class="n">other</span> <span class="n">WebDAV</span>
-                                            <span class="n">clients</span> <span class="n">when</span> <span class="n">malicious</span> <span class="n">activity</span> <span class="ow">is</span> <span class="n">suspected</span><span class="o">.</span>
-<span class="n">occ</span> <span class="n">ransomguard</span><span class="p">:</span><span class="n">unlock</span> <span class="o">&lt;</span><span class="n">user</span><span class="o">&gt;</span>               <span class="n">Unlock</span> <span class="n">a</span> <span class="n">user</span> <span class="n">account</span> <span class="n">after</span> <span class="n">ransomware</span> <span class="n">issues</span> <span class="n">have</span> <span class="n">been</span> <span class="n">resolved</span><span class="o">.</span>
-</pre></div>
-</div>
-</div>
 <div class="section" id="sharing">
 <span id="sharing-commands-label"></span><h2>Sharing<a class="headerlink" href="#sharing" title="Permalink to this headline">¶</a></h2>
 <p>This is an occ command to cleanup orphaned remote storages.
@@ -1591,19 +1763,6 @@ That’s why the command is available.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">These commands are not available in <a class="reference internal" href="#maintenance-commands-label"><span class="std std-ref">single-user (maintenance) mode</span></a>.</p>
-</div>
-</div>
-<div class="section" id="shibboleth-modes-enterprise-edition-only">
-<span id="shibboleth-label"></span><h2>Shibboleth Modes (Enterprise Edition only)<a class="headerlink" href="#shibboleth-modes-enterprise-edition-only" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">shibboleth:mode</span></code> sets your Shibboleth mode to <code class="docutils literal"><span class="pre">notactive</span></code>,
-<code class="docutils literal"><span class="pre">autoprovision</span></code>, or <code class="docutils literal"><span class="pre">ssoonly</span></code></p>
-<div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">shibboleth:mode [mode]</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">These commands are only available when the “Shibboleth user backend” app
-(<code class="docutils literal"><span class="pre">user_shibboleth</span></code>) is enabled.</p>
 </div>
 </div>
 <div class="section" id="trashbin">
@@ -1637,7 +1796,7 @@ This example removes all the deleted files of all users:</p>
 <span class="n">Remove</span> <span class="n">deleted</span> <span class="n">files</span> <span class="n">of</span>   <span class="n">freda</span>
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">trashbin:expire</span></code> deletes only expired files according to the <code class="docutils literal"><span class="pre">trashbin_retention_obligation</span></code> setting in <code class="docutils literal"><span class="pre">config.php</span></code> (see the Deleted Files section in <a class="reference internal" href="config_sample_php_parameters.html"><span class="doc">Config.php Parameters</span></a>).
+<p><code class="docutils literal"><span class="pre">trashbin:expire</span></code> deletes only expired files according to the <code class="docutils literal"><span class="pre">trashbin_retention_obligation</span></code> setting in <code class="docutils literal"><span class="pre">config.php</span></code> (see the Deleted Files section in <a class="reference internal" href="config_sample_php_parameters.html"><span class="doc">Core Config.php Parameters</span></a>).
 The default is to delete expired files for all users, or you may list users in a space-delimited list.</p>
 </div>
 <div class="section" id="user-commands">
@@ -1727,6 +1886,53 @@ This example adds new user Fred Jones:</p>
 <p>To delete a user, you use the <code class="docutils literal"><span class="pre">user:delete</span></code> command, as in the example below:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">delete</span> <span class="n">fred</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="expiring-a-user-s-password">
+<span id="user-expire-password-label"></span><h3>Expiring a User’s Password<a class="headerlink" href="#expiring-a-user-s-password" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This command is only available when <a href="#id2"><span class="problematic" id="id3">`the Password Policy app`_</span></a> is installed.</p>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">user</span><span class="p">:</span><span class="n">expire</span><span class="o">-</span><span class="n">password</span> <span class="o">&lt;</span><span class="n">uid</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">&lt;</span><span class="n">expiredate</span><span class="o">&gt;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To expire a user’s password at a specific date and time, use the <code class="docutils literal"><span class="pre">user:expire-password</span></code> command.
+The command accepts two arguments, the user’s uid and an expiry date.
+The expiry date can be provided using any of <a class="reference external" href="https://secure.php.net/manual/en/datetime.formats.php">PHP’s supported date and time formats</a>.</p>
+<p>If an expiry date is not supplied, the password will expire with immediate effect.
+This is because the password will be set as being expired 24 hours before the command was run.
+For example, if the command was run at “2018-07-<strong>12</strong> 13:15:28 UTC”, then the password’s expiry date will be set to “2018-07-<strong>11</strong> 13:15:28 UTC”.</p>
+<p>After the command completes, console output, similar to that below, confirms when the user’s password is set to expire.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">password</span> <span class="k">for</span> <span class="n">frank</span> <span class="ow">is</span> <span class="nb">set</span> <span class="n">to</span> <span class="n">expire</span> <span class="n">on</span> <span class="mi">2018</span><span class="o">-</span><span class="mi">07</span><span class="o">-</span><span class="mi">12</span> <span class="mi">13</span><span class="p">:</span><span class="mi">15</span><span class="p">:</span><span class="mi">28</span> <span class="n">UTC</span><span class="o">.</span>
+</pre></div>
+</div>
+<div class="section" id="command-examples">
+<h4>Command Examples<a class="headerlink" href="#command-examples" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># The password for user &quot;frank&quot; will be set as being expired 24 hours before the command was run.</span>
+<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">expire</span><span class="o">-</span><span class="n">password</span> <span class="n">frank</span>
+
+<span class="c1"># Expire the user &quot;frank&quot;&#39;s password in 2 days time.</span>
+<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">expire</span><span class="o">-</span><span class="n">password</span> <span class="n">frank</span> <span class="s1">&#39;+2 days&#39;</span>
+
+<span class="c1"># Expire the user &quot;frank&quot;&#39;s password on the 15th of August 2005, at 15:52:01 in the local timezone.</span>
+<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">expire</span><span class="o">-</span><span class="n">password</span> <span class="n">frank</span> <span class="s1">&#39;2005-08-15T15:52:01+00:00&#39;</span>
+
+<span class="c1"># Expire the user &quot;frank&quot;&#39;s password on the 15th of August 2005, at 15:52:01 UTC.</span>
+<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">expire</span><span class="o">-</span><span class="n">password</span> <span class="n">frank</span> <span class="s1">&#39;15-Aug-05 15:52:01 UTC&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="caveats">
+<h4>Caveats<a class="headerlink" href="#caveats" title="Permalink to this headline">¶</a></h4>
+<p>Please be aware of the following implications of enabling or changing the password policy’s “<em>days until user password expires</em>” option.</p>
+<ul class="simple">
+<li>Administrators need to run the <code class="docutils literal"><span class="pre">occ</span> <span class="pre">user:expire-password</span></code> command to initiate expiry for new users.</li>
+<li>Passwords will never expire for users who have <em>not</em> changed their initial password, because they do not have a password history. To force password expiration use the <code class="docutils literal"><span class="pre">occ</span> <span class="pre">user:expire-password</span></code> command.</li>
+<li>A password expiration date will be set after users change their password for the first time. To force password expiration use the <code class="docutils literal"><span class="pre">occ</span> <span class="pre">user:expire-password</span></code> command.</li>
+<li>Passwords changed for the first time, will expire based on the <em>active</em> password policy. If the policy is later changed, it will not update the password’s expiry date to reflect the new setting.</li>
+<li>Password expiration dates of users where the administrator has run the <code class="docutils literal"><span class="pre">occ</span> <span class="pre">user:expire-password</span></code> command <em>won’t</em> automatically update to reflect the policy change. In these cases, Administrators need to run the <code class="docutils literal"><span class="pre">occ</span> <span class="pre">user:expire-password</span></code> command again and supply a new expiry date.</li>
+</ul>
 </div>
 </div>
 <div class="section" id="listing-users">
@@ -1851,8 +2057,9 @@ retrieved, or deleted) by the <code class="docutils literal"><span class="pre">u
 </tr>
 </tbody>
 </table>
+</div>
 <div class="section" id="retrieving-user-settings">
-<h4>Retrieving User Settings<a class="headerlink" href="#retrieving-user-settings" title="Permalink to this headline">¶</a></h4>
+<h3>Retrieving User Settings<a class="headerlink" href="#retrieving-user-settings" title="Permalink to this headline">¶</a></h3>
 <p>To retrieve all settings for a user, you need to call the <code class="docutils literal"><span class="pre">user:setting</span></code> command and supply the user’s username, as in the example below.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">setting</span> <span class="n">layla</span>
   <span class="o">-</span> <span class="n">core</span><span class="p">:</span>
@@ -1878,7 +2085,7 @@ To retrieve the value of a single application for a user, use the <code class="d
 <p>This will display the value for that setting, such as <code class="docutils literal"><span class="pre">en</span></code>.</p>
 </div>
 <div class="section" id="setting-a-setting">
-<h4>Setting a Setting<a class="headerlink" href="#setting-a-setting" title="Permalink to this headline">¶</a></h4>
+<h3>Setting a Setting<a class="headerlink" href="#setting-a-setting" title="Permalink to this headline">¶</a></h3>
 <p>To set a setting, you need to supply four things; these are:</p>
 <ul class="simple">
 <li>the username</li>
@@ -1892,17 +2099,15 @@ To retrieve the value of a single application for a user, use the <code class="d
 </div>
 </div>
 <div class="section" id="deleting-a-setting">
-<h4>Deleting a Setting<a class="headerlink" href="#deleting-a-setting" title="Permalink to this headline">¶</a></h4>
+<h3>Deleting a Setting<a class="headerlink" href="#deleting-a-setting" title="Permalink to this headline">¶</a></h3>
 <p>Deleting a setting is quite similar to setting a setting.
 In this case, you supply the username, application (or setting category) and key as above.
 Then, in addition, you supply the <code class="docutils literal"><span class="pre">--delete</span></code> flag.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">setting</span> <span class="n">layla</span> <span class="n">settings</span> <span class="n">email</span> <span class="o">--</span><span class="n">delete</span>
 </pre></div>
 </div>
-</div>
-</div>
 <div class="section" id="modify-user-details">
-<h3>Modify user details<a class="headerlink" href="#modify-user-details" title="Permalink to this headline">¶</a></h3>
+<h4>Modify user details<a class="headerlink" href="#modify-user-details" title="Permalink to this headline">¶</a></h4>
 <div class="versionadded">
 <p><span class="versionmodified">New in version 10.0.8.</span></p>
 </div>
@@ -1923,7 +2128,7 @@ Then, in addition, you supply the <code class="docutils literal"><span class="pr
 <p>The email address of <code class="docutils literal"><span class="pre">carla</span></code> is updated to <code class="docutils literal"><span class="pre">foobar&#64;foo.com</span></code></p>
 </div>
 <div class="section" id="generating-a-user-count-report">
-<h3>Generating a User Count Report<a class="headerlink" href="#generating-a-user-count-report" title="Permalink to this headline">¶</a></h3>
+<h4>Generating a User Count Report<a class="headerlink" href="#generating-a-user-count-report" title="Permalink to this headline">¶</a></h4>
 <p>Generate a simple report that counts all users, including users on external user authentication servers such as LDAP.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">report</span>
 <span class="o">+------------------+----+</span>
@@ -1940,7 +2145,7 @@ Then, in addition, you supply the <code class="docutils literal"><span class="pr
 </div>
 </div>
 <div class="section" id="syncing-user-accounts">
-<span id="syncing-user-accounts-label"></span><h3>Syncing User Accounts<a class="headerlink" href="#syncing-user-accounts" title="Permalink to this headline">¶</a></h3>
+<span id="syncing-user-accounts-label"></span><h4>Syncing User Accounts<a class="headerlink" href="#syncing-user-accounts" title="Permalink to this headline">¶</a></h4>
 <p>This command syncs users stored in external backend services, such as <em>LDAP</em>, <em>Shibboleth</em>, and <em>Samba</em>, with ownCloud’s, internal, user database.
 However, it’s not essential to run it regularly, unless you have a large number of users whose account properties have changed in a backend outside of ownCloud.
 When run, it will pick up changes from alternative user backends, such as LDAP where properties like <code class="docutils literal"><span class="pre">cn</span></code> or <code class="docutils literal"><span class="pre">display</span> <span class="pre">name</span></code> have changed, and sync them with ownCloud’s user database.
@@ -1983,20 +2188,22 @@ If accounts are found that no longer exist in the external backend, you are give
 </pre></div>
 </div>
 <p>Below are examples of how to use the command with different backends:</p>
+</div>
+</div>
 <div class="section" id="ldap">
-<h4>LDAP<a class="headerlink" href="#ldap" title="Permalink to this headline">¶</a></h4>
+<h3>LDAP<a class="headerlink" href="#ldap" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">sync</span> <span class="s2">&quot;OCA\User_LDAP\User_Proxy&quot;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="samba">
-<h4>Samba<a class="headerlink" href="#samba" title="Permalink to this headline">¶</a></h4>
+<h3>Samba<a class="headerlink" href="#samba" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">sync</span> <span class="s2">&quot;OCA\User\SMB&quot;</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="shibboleth">
-<h4>Shibboleth<a class="headerlink" href="#shibboleth" title="Permalink to this headline">¶</a></h4>
+<h3>Shibboleth<a class="headerlink" href="#shibboleth" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">sync</span> <span class="s2">&quot;OCA\User_Shibboleth\UserBackend&quot;</span>
 </pre></div>
 </div>
@@ -2067,13 +2274,12 @@ If accounts are found that no longer exist in the external backend, you are give
 </div>
 </div>
 <div class="section" id="syncing-via-cron-job">
-<h4>Syncing via cron job<a class="headerlink" href="#syncing-via-cron-job" title="Permalink to this headline">¶</a></h4>
+<h3>Syncing via cron job<a class="headerlink" href="#syncing-via-cron-job" title="Permalink to this headline">¶</a></h3>
 <p>Here is an example for syncing with LDAP four times a day on Ubuntu:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">crontab</span> <span class="o">-</span><span class="n">e</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span>
 
 <span class="o">*</span> <span class="o">*/</span><span class="mi">6</span> <span class="o">*</span> <span class="o">*</span> <span class="o">*</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">php</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">occ</span> <span class="n">user</span><span class="p">:</span><span class="n">sync</span> <span class="o">-</span><span class="n">vvv</span> <span class="o">--</span><span class="n">missing</span><span class="o">-</span><span class="n">account</span><span class="o">-</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;disable&quot;</span> <span class="o">-</span><span class="n">n</span> <span class="s2">&quot;OCA\User_LDAP\User_Proxy&quot;</span>
 </pre></div>
-</div>
 </div>
 </div>
 </div>
@@ -2102,7 +2308,7 @@ The example below deletes all versioned files for all users:</p>
 <span class="n">Delete</span> <span class="n">versions</span> <span class="n">of</span>   <span class="n">molly</span>
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">versions:expire</span></code> deletes only expired files according to the <code class="docutils literal"><span class="pre">versions_retention_obligation</span></code> setting in <code class="docutils literal"><span class="pre">config.php</span></code> (see the File versions section in <a class="reference internal" href="config_sample_php_parameters.html"><span class="doc">Config.php Parameters</span></a>).
+<p><code class="docutils literal"><span class="pre">versions:expire</span></code> deletes only expired files according to the <code class="docutils literal"><span class="pre">versions_retention_obligation</span></code> setting in <code class="docutils literal"><span class="pre">config.php</span></code> (see the File versions section in <a class="reference internal" href="config_sample_php_parameters.html"><span class="doc">Core Config.php Parameters</span></a>).
 The default is to delete expired files for all users, or you may list users in a space-delimited list.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
@@ -2271,18 +2477,6 @@ Enabling verbosity displays timestamps:</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="two-factor-authentication">
-<span id="two-factor-auth-label"></span><h2>Two-factor Authentication<a class="headerlink" href="#two-factor-authentication" title="Permalink to this headline">¶</a></h2>
-<p>If a two-factor provider app is enabled, it is enabled for all users by default (though the provider can decide whether or not the user has to pass the challenge).
-In the case of an user losing access to the second factor (e.g., a lost phone with two-factor SMS verification), the admin can temporarily disable the two-factor check for that user via the occ command:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">twofactor</span><span class="p">:</span><span class="n">disable</span> <span class="o">&lt;</span><span class="n">username</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-<p>To re-enable two-factor authentication again, use the following commmand:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">twofactor</span><span class="p">:</span><span class="n">enable</span> <span class="o">&lt;</span><span class="n">username</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-</div>
 <div class="section" id="disable-users">
 <span id="disable-user-label"></span><h2>Disable Users<a class="headerlink" href="#disable-users" title="Permalink to this headline">¶</a></h2>
 <p>Admins can disable users via the occ command too:</p>
@@ -2343,7 +2537,7 @@ If you’re passing or piping this information to another application for furthe
     </a>
   </li>
   <li class="next">
-    <a href="activity_configuration.html" title="Next Chapter: Configuring the Activity App"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Configuring t... &raquo;</span>
+    <a href="occ_apps_command.html" title="Next Chapter: Using occ apps commands"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Using occ app... &raquo;</span>
     </a>
   </li>
 </ul>

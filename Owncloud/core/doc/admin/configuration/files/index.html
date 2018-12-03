@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>File Sharing and Management &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>File Sharing and Management &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -78,6 +78,7 @@
 <li class="toctree-l3"><a class="reference internal" href="external_storage_configuration_gui.html">Configuring External Storage (GUI)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage_configuration.html">Configuring External Storage (Configuration File)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/auth_mechanisms.html">External Storage Authentication mechanisms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="encryption_configuration_quick_guide.html">Encryption Configuration Quick Guide</a></li>
 <li class="toctree-l3"><a class="reference internal" href="encryption_configuration.html">Encryption Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="files_locking_transactional.html">Transactional File Locking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="previews_configuration.html">Previews Configuration</a></li>
@@ -123,8 +124,11 @@
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="file_sharing_configuration.html">File Sharing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="file_sharing_configuration.html#settings-explained">Settings Explained</a></li>
+<li class="toctree-l2"><a class="reference internal" href="file_sharing_configuration.html#blacklist-groups-from-receiving-shares">Blacklist Groups From Receiving Shares</a></li>
 <li class="toctree-l2"><a class="reference internal" href="file_sharing_configuration.html#transferring-files-to-another-user">Transferring Files to Another User</a></li>
 <li class="toctree-l2"><a class="reference internal" href="file_sharing_configuration.html#creating-persistent-file-shares">Creating Persistent File Shares</a></li>
+<li class="toctree-l2"><a class="reference internal" href="file_sharing_configuration.html#create-shares-programmatically">Create Shares Programmatically</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="federated_cloud_sharing_configuration.html">Configuring Federation Sharing</a><ul>
@@ -156,6 +160,7 @@
 <li class="toctree-l2"><a class="reference internal" href="external_storage_configuration_gui.html#available-storage-backends">Available storage backends</a></li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage_configuration_gui.html#allow-users-to-mount-external-storage">Allow Users to Mount External Storage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage_configuration_gui.html#detecting-files-added-to-external-storages">Detecting Files Added to External Storages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="external_storage_configuration_gui.html#ftp">FTP</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="external_storage_configuration.html">Configuring External Storage (Configuration File)</a></li>
@@ -164,6 +169,10 @@
 <li class="toctree-l2"><a class="reference internal" href="external_storage/auth_mechanisms.html#password-based-mechanisms">Password-based Mechanisms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage/auth_mechanisms.html#public-key-mechanisms">Public-key Mechanisms</a></li>
 <li class="toctree-l2"><a class="reference internal" href="external_storage/auth_mechanisms.html#oauth">OAuth</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="encryption_configuration_quick_guide.html">Encryption Configuration Quick Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="encryption_configuration_quick_guide.html#encryption-types">Encryption Types</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="encryption_configuration.html">Encryption Configuration</a><ul>

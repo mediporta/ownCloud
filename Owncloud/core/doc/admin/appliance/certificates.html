@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>How to add certificates &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>How To Add Certificates &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,8 +27,8 @@
     <script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="ownCloud Appliance Login Information" href="login_information.html" />
-    <link rel="prev" title="How to Install the Appliance" href="installation.html" />
+    <link rel="next" title="Active Directory Integration" href="Active_Directory.html" />
+    <link rel="prev" title="Install Antivirus Software in the ownCloud Appliance" href="Clamav.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -75,14 +75,19 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">The ownCloud X Appliance</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="what-is-it.html">What is the Appliance?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">How to Install the Appliance</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">How to add certificates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enterprise-trial.html">The ownCloud X Appliance Enterprise Trial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="login_information.html">ownCloud Appliance Login Information</a></li>
 <li class="toctree-l2"><a class="reference internal" href="howto-update-owncloud.html">How to Update ownCloud</a></li>
 <li class="toctree-l2"><a class="reference internal" href="managing-ucs.html">Managing UCS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Clamav.html">Install Antivirus Software in the ownCloud Appliance</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">How To Add Certificates</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#let-s-encrypt-app">Let’s Encrypt App</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#import-your-own-certificates">Import your own certificates</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="Active_Directory.html">Active Directory Integration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Backup.html">Backup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Collabora.html">How to use Collabora with the appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Office.html">Working on Documents in the ownCloud Appliance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firewall.html">Firewall protected environment</a></li>
 </ul>
 </li>
@@ -100,17 +105,35 @@
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="installation.html" title="Previous Chapter: How to Install the Appliance"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; How to Instal...</span>
+    <a href="Clamav.html" title="Previous Chapter: Install Antivirus Software in the ownCloud Appliance"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Install Antiv...</span>
     </a>
   </li>
   <li class="next">
-    <a href="login_information.html" title="Next Chapter: ownCloud Appliance Login Information"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">ownCloud Appl... &raquo;</span>
+    <a href="Active_Directory.html" title="Next Chapter: Active Directory Integration"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Active Direct... &raquo;</span>
     </a>
   </li>
 </ul>
 						
   <div class="section" id="how-to-add-certificates">
-<h1>How to add certificates<a class="headerlink" href="#how-to-add-certificates" title="Permalink to this headline">¶</a></h1>
+<h1>How To Add Certificates<a class="headerlink" href="#how-to-add-certificates" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="let-s-encrypt-app">
+<h2>Let’s Encrypt App<a class="headerlink" href="#let-s-encrypt-app" title="Permalink to this headline">¶</a></h2>
+<p>Univention offers an easy way to get secure certificates with their Let’s Encrypt app.
+To install it:</p>
+<ul class="simple">
+<li>In the <strong>Univention Appcenter</strong>, click on <strong>Software</strong> and search for <strong>Let’s Encrypt</strong>.</li>
+<li>Go to the <strong>App Settings</strong> and generate an certificate by entering your <strong>domain name(s)</strong>.</li>
+<li>After the certificate is generated, restart the web server (or the appliance).</li>
+</ul>
+<div class="figure">
+<img alt="Let's Encrypt" src="../_images/letsencrypt.png" />
+</div>
+<div class="figure">
+<img alt="App Settings" src="../_images/letsencrypt-settings.png" />
+</div>
+</div>
+<div class="section" id="import-your-own-certificates">
+<h2>Import your own certificates<a class="headerlink" href="#import-your-own-certificates" title="Permalink to this headline">¶</a></h2>
 <p>If you want to use your own SSL certificates for the appliance, you have to follow these three steps:</p>
 <ol class="arabic simple">
 <li>Create the certificates and deposit them on your appliance.</li>
@@ -131,17 +154,22 @@ or via ssh connection to your appliance.</li>
 </pre></div>
 </div>
 <p>Now your certificates will be used to access your appliance.</p>
+<p>If you want to limit the access to your server exclusively to HTTPS, use this command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ucr</span> <span class="nb">set</span> <span class="n">apache2</span><span class="o">/</span><span class="n">force_https</span><span class="o">=</span><span class="n">yes</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
             
 <ul class="prevnext-title list-unstyled list-inline">
   <li class="prev">
-    <a href="installation.html" title="Previous Chapter: How to Install the Appliance"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; How to Instal...</span>
+    <a href="Clamav.html" title="Previous Chapter: Install Antivirus Software in the ownCloud Appliance"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Install Antiv...</span>
     </a>
   </li>
   <li class="next">
-    <a href="login_information.html" title="Next Chapter: ownCloud Appliance Login Information"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">ownCloud Appl... &raquo;</span>
+    <a href="Active_Directory.html" title="Next Chapter: Active Directory Integration"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Active Direct... &raquo;</span>
     </a>
   </li>
 </ul>

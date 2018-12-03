@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Manual ownCloud Upgrade &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Manual ownCloud Upgrade &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -77,11 +77,18 @@
 <li class="toctree-l2"><a class="reference internal" href="update.html">Upgrading ownCloud with the Updater App</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Manual ownCloud Upgrade</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#backup-your-existing-installation">Backup Your Existing Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#review-third-party-apps">Review Third-Party Apps</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#check-owncloud-s-mandatory-requirements">Check ownCloud’s Mandatory Requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#enable-maintenance-mode">Enable Maintenance Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stop-the-webserver">Stop the Webserver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#download-the-latest-installation">Download the Latest Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#setup-the-new-installation">Setup the New Installation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#upgrade-the-installation">Upgrade the Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#disable-core-apps">Disable Core Apps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#market-and-marketplace-app-upgrades">Market and Marketplace App Upgrades</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start-the-upgrade">Start the Upgrade</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#copy-old-apps">Copy Old Apps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#disable-maintenance-mode">Disable Maintenance Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#restart-the-webserver">Restart the Webserver</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#finalize-the-installation">Finalize the Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#test-the-upgrade">Test the Upgrade</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#reverse-upgrade">Reverse Upgrade</a></li>
@@ -121,9 +128,11 @@
 						
   <div class="section" id="manual-owncloud-upgrade">
 <h1>Manual ownCloud Upgrade<a class="headerlink" href="#manual-owncloud-upgrade" title="Permalink to this headline">¶</a></h1>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">When upgrading from oC 9.0 to 9.1 with existing Calendars or Addressbooks, please have a look at the <a class="reference internal" href="../release_notes.html"><span class="doc">Release Notes</span></a> of ownCloud 9.0 for important info about the needed migration steps during that upgrade.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you’re not comfortable performing a manual upgrade, you can also use your
+Linux distribution’s <a class="reference internal" href="package_upgrade.html"><span class="doc">package manager</span></a>, or use
+<a class="reference internal" href="update.html"><span class="doc">the Updater App</span></a>.</p>
 </div>
 <div class="section" id="backup-your-existing-installation">
 <h2>Backup Your Existing Installation<a class="headerlink" href="#backup-your-existing-installation" title="Permalink to this headline">¶</a></h2>
@@ -135,10 +144,18 @@
 <li>The ownCloud server database</li>
 </ul>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># This example assumes Ubuntu Linux and MariaDB</span>
-
-<span class="n">cp</span> <span class="o">-</span><span class="n">rv</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">backup</span><span class="o">/</span><span class="n">owncloud</span>
-<span class="n">mysqldump</span> <span class="o">&lt;</span><span class="n">db_name</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">backup</span><span class="o">/</span><span class="n">backup</span><span class="o">-</span><span class="n">file</span><span class="o">.</span><span class="n">sql</span>
+<span class="n">cp</span> <span class="o">-</span><span class="n">rv</span> <span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">backup</span><span class="o">/</span><span class="n">owncloud</span> <span class="o">&amp;&amp;</span> <span class="n">mysqldump</span> <span class="o">&lt;</span><span class="n">db_name</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">backup</span><span class="o">/</span><span class="n">backup</span><span class="o">-</span><span class="n">file</span><span class="o">.</span><span class="n">sql</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="review-third-party-apps">
+<h2>Review Third-Party Apps<a class="headerlink" href="#review-third-party-apps" title="Permalink to this headline">¶</a></h2>
+<p>Review any installed third-party apps for compatibility with the new ownCloud release.
+Ensure that they are all disabled before beginning the upgrade.
+After the upgrade is complete re-enable any which are compatible with the new release.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Install unsupported apps at your own risk.</p>
 </div>
 </div>
 <div class="section" id="check-owncloud-s-mandatory-requirements">
@@ -148,8 +165,8 @@ Ensure that you review them and update your server(s), if required, before upgra
 </div>
 <div class="section" id="enable-maintenance-mode">
 <h2>Enable Maintenance Mode<a class="headerlink" href="#enable-maintenance-mode" title="Permalink to this headline">¶</a></h2>
-<p>Then, put your server in <a class="reference internal" href="enable_maintenance.html"><span class="doc">maintenance mode</span></a>, and disable <a class="reference internal" href="../configuration/server/background_jobs_configuration.html#cron-job-label"><span class="std std-ref">Cron jobs</span></a>.
-Doing so prevents new logins, locks the sessions of logged-in users, and displays a status screen so that users know what is happening.</p>
+<p>Put your server in <a class="reference internal" href="enable_maintenance.html"><span class="doc">maintenance mode</span></a> and disable <a class="reference internal" href="../configuration/server/background_jobs_configuration.html#cron-job-label"><span class="std std-ref">Cron jobs</span></a>.</p>
+<p>Doing so prevents new logins, locks the sessions of logged-in users, and displays a status screen so that users know what is happening.</p>
 <p>There are two ways to enable maintenance mode.
 The preferred method is to use the <a class="reference internal" href="../configuration/server/occ_command.html"><span class="doc">occ command</span></a> — which you must run as your webserver user.
 The other way is by entering your <code class="docutils literal"><span class="pre">config.php</span></code> file and changing <code class="docutils literal"><span class="pre">'maintenance'</span> <span class="pre">=&gt;</span> <span class="pre">false,</span></code> to <code class="docutils literal"><span class="pre">'maintenance'</span> <span class="pre">=&gt;</span> <span class="pre">true,</span></code>.</p>
@@ -160,7 +177,10 @@ The other way is by entering your <code class="docutils literal"><span class="pr
 <span class="n">sudo</span> <span class="n">service</span> <span class="n">cron</span> <span class="n">stop</span>
 </pre></div>
 </div>
-<p>Irrespective of the approach that you take, with those steps completed, next stop your webserver.</p>
+</div>
+<div class="section" id="stop-the-webserver">
+<h2>Stop the Webserver<a class="headerlink" href="#stop-the-webserver" title="Permalink to this headline">¶</a></h2>
+<p>With those steps completed, stop your webserver.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">service</span> <span class="n">apache2</span> <span class="n">stop</span>
 </pre></div>
 </div>
@@ -176,7 +196,7 @@ The other way is by entering your <code class="docutils literal"><span class="pr
 <div class="section" id="setup-the-new-installation">
 <h2>Setup the New Installation<a class="headerlink" href="#setup-the-new-installation" title="Permalink to this headline">¶</a></h2>
 <p>Not all installations are the same, so we encourage you to take one of two paths to upgrade your ownCloud installation.
-These are the standard upgrade and the power user upgrade.</p>
+These are <a class="reference internal" href="#the-standard-upgrade">the standard upgrade</a> and <a class="reference internal" href="#the-power-user-upgrade">the power user upgrade</a>.</p>
 <p>If you’re reasonably new to ownCloud, or not too familiar with upgrading an ownCloud installation, please follow the standard upgrade.
 Otherwise, take the approach that you’re most comfortable with, likely the power
 user upgrade.</p>
@@ -216,14 +236,8 @@ Extract the unpacked ownCloud server directory and its contents to the location 
 If you keep it <em>outside</em> of your <code class="docutils literal"><span class="pre">owncloud/</span></code> directory, then you don’t have to do anything with it, because its location is configured in your original <code class="docutils literal"><span class="pre">config.php</span></code>, and none of the upgrade steps touch it.</p>
 </div>
 </div>
-<div class="section" id="upgrade-the-installation">
-<h2>Upgrade the Installation<a class="headerlink" href="#upgrade-the-installation" title="Permalink to this headline">¶</a></h2>
-<p>With all that done, restart your web server.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">service</span> <span class="n">apache2</span> <span class="n">start</span>
-</pre></div>
-</div>
 <div class="section" id="disable-core-apps">
-<h3>Disable Core Apps<a class="headerlink" href="#disable-core-apps" title="Permalink to this headline">¶</a></h3>
+<h2>Disable Core Apps<a class="headerlink" href="#disable-core-apps" title="Permalink to this headline">¶</a></h2>
 <p>Before the upgrade can run, several apps need to be disabled, if they’re enabled, before the upgrade can succeed.
 These are: <em>activity</em>, <em>files_pdfviewer</em>, <em>files_texteditor</em>, and <em>gallery</em>.
 The following command provides an example of how to do so.</p>
@@ -235,7 +249,7 @@ The following command provides an example of how to do so.</p>
 </div>
 </div>
 <div class="section" id="market-and-marketplace-app-upgrades">
-<h3>Market and Marketplace App Upgrades<a class="headerlink" href="#market-and-marketplace-app-upgrades" title="Permalink to this headline">¶</a></h3>
+<h2>Market and Marketplace App Upgrades<a class="headerlink" href="#market-and-marketplace-app-upgrades" title="Permalink to this headline">¶</a></h2>
 <p>Before getting too far into the upgrade process, please be aware of how the Market app and its configuration options affect the upgrade process.</p>
 <ul class="simple">
 <li>The Market app is not upgraded if it is either disabled (because <code class="docutils literal"><span class="pre">appstoreenabled</span></code> is set to <code class="docutils literal"><span class="pre">false</span></code>) or it is not available.</li>
@@ -244,33 +258,39 @@ The following command provides an example of how to do so.</p>
 <p>In addition to these two points, if there are installed apps (whether compatible or incompatible with the next version, or missing source code) and the Market app is enabled, but there is no available internet connection, then these apps will need to be manually updated once the upgrade is finished.</p>
 </div>
 <div class="section" id="start-the-upgrade">
-<h3>Start the Upgrade<a class="headerlink" href="#start-the-upgrade" title="Permalink to this headline">¶</a></h3>
+<h2>Start the Upgrade<a class="headerlink" href="#start-the-upgrade" title="Permalink to this headline">¶</a></h2>
 <p>With the apps disabled and the webserver started, launch the upgrade process from the command line.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Here is an example on CentOS Linux</span>
-<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">apache</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">upgrade</span>
+<span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">upgrade</span>
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">The optional parameter to skip migration tests during this step was removed in oC 10.0.
-See <a class="reference internal" href="upgrade.html#migration-test-label"><span class="std std-ref">Testing a Migration</span></a> for background information.
-See <a class="reference internal" href="../configuration/server/occ_command.html"><span class="doc">Using the occ Command</span></a> to learn more about the occ command.</p>
+See <a class="reference internal" href="#migration-test-label"><span class="std std-ref">Test the Upgrade</span></a> for background information.
+See <a class="reference internal" href="../configuration/server/occ_command.html"><span class="doc">Using occ core commands</span></a> to learn more about the occ command.</p>
 </div>
 <p>The upgrade operation can take anywhere from a few minutes to a few hours, depending on the size of your installation.
 When it is finished you will see either a success message, or an error message which indicates why the process did not complete successfully.</p>
 </div>
+<div class="section" id="copy-old-apps">
+<h2>Copy Old Apps<a class="headerlink" href="#copy-old-apps" title="Permalink to this headline">¶</a></h2>
+<p>If you are using 3rd party applications, look in your new <code class="docutils literal"><span class="pre">/var/www/owncloud/apps/</span></code> directory to see if they are there.
+If not, copy them from your old <code class="docutils literal"><span class="pre">apps/</span></code> directory to your new one, and make sure that the directory permissions are the same as for the other ones.</p>
+</div>
 <div class="section" id="disable-maintenance-mode">
-<h3>Disable Maintenance Mode<a class="headerlink" href="#disable-maintenance-mode" title="Permalink to this headline">¶</a></h3>
+<h2>Disable Maintenance Mode<a class="headerlink" href="#disable-maintenance-mode" title="Permalink to this headline">¶</a></h2>
 <p>Assuming your upgrade succeeded, next disable maintenance mode.
 The simplest way is by using occ from the command line.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">u</span> <span class="n">www</span><span class="o">-</span><span class="n">data</span> <span class="n">php</span> <span class="n">occ</span> <span class="n">maintenance</span><span class="p">:</span><span class="n">mode</span> <span class="o">--</span><span class="n">off</span>
 </pre></div>
 </div>
 </div>
-<div class="section" id="copy-old-apps">
-<h3>Copy Old Apps<a class="headerlink" href="#copy-old-apps" title="Permalink to this headline">¶</a></h3>
-<p>If you are using 3rd party applications, look in your new <code class="docutils literal"><span class="pre">/var/www/owncloud/apps/</span></code> directory to see if they are there.
-If not, copy them from your old <code class="docutils literal"><span class="pre">apps/</span></code> directory to your new one, and make sure that the directory permissions are the same as for the other ones.</p>
+<div class="section" id="restart-the-webserver">
+<h2>Restart the Webserver<a class="headerlink" href="#restart-the-webserver" title="Permalink to this headline">¶</a></h2>
+<p>With all that done, restart your web server.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">service</span> <span class="n">apache2</span> <span class="n">start</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="finalize-the-installation">

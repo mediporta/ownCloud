@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Shibboleth Integration &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Shibboleth Integration &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,7 +27,7 @@
     <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Creating Branded ownCloud Clients" href="../clients/index.html" />
+    <link rel="next" title="SAML 2.0 Based SSO with Active Directory Federation Services (ADFS) and mod_shib" href="saml_2.0_sso.html" />
     <link rel="prev" title="User Management" href="index.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../configuration/index.html">Configuration</a></li>
@@ -79,6 +79,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../external_storage/index.html">External Storage</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">User Management</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Shibboleth Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saml_2.0_sso.html">SAML 2.0 Based SSO with Active Directory Federation Services (ADFS) and mod_shib</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../clients/index.html">Creating Branded ownCloud Clients</a></li>
@@ -105,7 +106,7 @@
     </a>
   </li>
   <li class="next">
-    <a href="../clients/index.html" title="Next Chapter: Creating Branded ownCloud Clients"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Creating Bran... &raquo;</span>
+    <a href="saml_2.0_sso.html" title="Next Chapter: SAML 2.0 Based SSO with Active Directory Federation Services (ADFS) and mod_shib"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">SAML 2.0 Base... &raquo;</span>
     </a>
   </li>
 </ul>
@@ -304,8 +305,8 @@ have a session length longer than the length controlled by the IdP. In extreme
 cases this could result in re-login on mobile clients and desktop clients every
 hour.</p>
 </div>
-<div class="section" id="uid-considerations-and-windows-network-drive-compatability">
-<h3>UID Considerations and Windows Network Drive compatability<a class="headerlink" href="#uid-considerations-and-windows-network-drive-compatability" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="uid-considerations-and-windows-network-drive-compatibility">
+<h3>UID Considerations and Windows Network Drive compatibility<a class="headerlink" href="#uid-considerations-and-windows-network-drive-compatibility" title="Permalink to this headline">¶</a></h3>
 <p>To log in LDAP users via SAML for Single Sign On the user in LDAP must
 be uniquely resolvable by searching for the username that was sent in the SAML token.
 For this to work the ldap attribute containing the username needs to be added to the
@@ -327,7 +328,7 @@ user details such as <code class="docutils literal"><span class="pre">email</spa
     </a>
   </li>
   <li class="next">
-    <a href="../clients/index.html" title="Next Chapter: Creating Branded ownCloud Clients"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Creating Bran... &raquo;</span>
+    <a href="saml_2.0_sso.html" title="Next Chapter: SAML 2.0 Based SSO with Active Directory Federation Services (ADFS) and mod_shib"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">SAML 2.0 Base... &raquo;</span>
     </a>
   </li>
 </ul>

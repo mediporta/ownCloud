@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Configuring External Storage (GUI) &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Configuring External Storage (GUI) &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -78,6 +78,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Configuring External Storage (GUI)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage_configuration.html">Configuring External Storage (Configuration File)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/auth_mechanisms.html">External Storage Authentication mechanisms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="encryption_configuration_quick_guide.html">Encryption Configuration Quick Guide</a></li>
 <li class="toctree-l3"><a class="reference internal" href="encryption_configuration.html">Encryption Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="files_locking_transactional.html">Transactional File Locking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="previews_configuration.html">Previews Configuration</a></li>
@@ -130,13 +131,9 @@ on individual external mountpoints (see
 disabled by default.</p>
 <div class="section" id="enabling-external-storage-support">
 <h2>Enabling External Storage Support<a class="headerlink" href="#enabling-external-storage-support" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Enabling this app will disable the <strong>Stay logged in</strong> checkbox on the login page.</p>
-</div>
-<p>The External storage support application is enabled on your Apps page.</p>
+<p>Tick the check box under Settings &gt; Storage &gt; “Enable External Storage”.</p>
 <div class="figure">
-<img alt="Enable external storage on your Apps page." src="../../_images/enable-app.png" />
+<img alt="Enable external storage on your Settings &gt; Storage page." src="../../_images/external_storage.png" />
 </div>
 </div>
 <div class="section" id="storage-configuration">
@@ -145,7 +142,7 @@ disabled by default.</p>
 dropdown <strong>Add storage</strong>. Each backend has different required options, which
 are configured in the configuration fields.</p>
 <div class="figure">
-<img alt="../../_images/add_storage.png" src="../../_images/add_storage.png" />
+<img alt="../../_images/external_storage_types.png" src="../../_images/external_storage_types.png" />
 </div>
 <p>Each backend may also accept multiple authentication methods. These are selected
 with the dropdown under <strong>Authentication</strong>. Different backends support different
@@ -267,9 +264,16 @@ for more information.</p>
 changed remotely (files changed without going through ownCloud), especially
 when it’s very deep in the folder hierarchy of the external storage.</p>
 <p>You might need to setup a cron job that runs <code class="docutils literal"><span class="pre">sudo</span> <span class="pre">-u</span> <span class="pre">www-data</span> <span class="pre">php</span> <span class="pre">occ</span> <span class="pre">files:scan</span> <span class="pre">--all</span></code>
-(or replace “–all” with the user name, see also <a class="reference internal" href="../server/occ_command.html"><span class="doc">Using the occ Command</span></a>)
+(or replace “–all” with the user name, see also <a class="reference internal" href="../server/occ_command.html"><span class="doc">Using occ core commands</span></a>)
 to trigger a rescan of the user’s files periodically (for example every 15 minutes), which includes
 the mounted external storage.</p>
+</div>
+<div class="section" id="ftp">
+<h2>FTP<a class="headerlink" href="#ftp" title="Permalink to this headline">¶</a></h2>
+<p>If you want to mount a FTP Storage, please install the app <code class="docutils literal"><span class="pre">FTP</span> <span class="pre">Storage</span> <span class="pre">Support</span></code> from ownCloud market.</p>
+<div class="figure">
+<img alt="FTP Storage Support App" src="../../_images/ftp_storage_support1.png" />
+</div>
 </div>
 </div>
 

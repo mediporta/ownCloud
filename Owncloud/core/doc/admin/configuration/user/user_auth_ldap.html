@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>User Authentication with LDAP &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>User Authentication with LDAP &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -404,8 +404,10 @@ If no port is given, but only a host, then the main port (as specified above) wi
 </ul>
 </dd>
 <dt>Disable Main Server:</dt>
-<dd>You can manually override the main server and make ownCloud only connect to the backup server.
-This is useful for planned downtimes.</dd>
+<dd>You can manually override the main server and make ownCloud only connect to the <strong>backup server</strong>.
+This is useful for planned downtimes for example <strong>Upgrades or Updates of the Main Server</strong>.
+<strong>Backup Server Handling</strong>
+When ownCloud is not able to contact the main LDAP server, ownCloud assumes it is offline and will not try to connect again for the time specified in” <strong>Cache Time-To-Live</strong>”.</dd>
 <dt>Turn off SSL certificate validation:</dt>
 <dd>Turns off SSL certificate checking. Use it for testing only!</dd>
 <dt>Cache Time-To-Live:</dt>

@@ -8,7 +8,7 @@ such as shared hosting, for installations with a smaller number of users
 and data, and it automates updating 
 :doc:`manual installations <../installation/source_installation>`.
 
-.. warning:: When upgrading from oC 9.0 to 9.1 with existing Calendars or Adressbooks
+.. warning:: When upgrading from oC 9.0 to 9.1 with existing Calendars or Addressbooks
    please have a look at the :doc:`../release_notes` of oC 9.0 for important info
    about this migration.
 
@@ -46,6 +46,8 @@ The Updater app performs these operations:
 * Moves all directories from ``updater_backup/packageVersion`` to the current 
   version
 * Copies your old ``config.php`` to the new ``config/`` directory
+
+.. note:: Backups created by the updater app can use up significant disc space, if kept across multiple updates. We recommend that you save storage space by only keeping the ones that are crucial to your instance and removing any others.
 
 Using the Updater app to update your ownCloud installation is just a few 
 steps:

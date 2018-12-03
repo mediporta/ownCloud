@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>OAuth2 &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>OAuth2 &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -27,6 +27,8 @@
     <script type="text/javascript" src="../../../_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Reverse Proxy Configuration" href="../reverse_proxy_configuration.html" />
+    <link rel="prev" title="Password Policy" href="password_policy.html" />
 <meta charset='utf-8'>
 <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
 <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
@@ -60,13 +62,48 @@
 										
 <li><a href="../../../contents.html">Table of Contents</a></li>
 									</ul>
-                  <ul>
+                  <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../upgrading/index.html">Upgrading</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../index.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">Configuration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../database/index.html">Database Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../files/index.html">File Sharing and Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../ldap/ldap_proxy_cache_server_setup.html">How To Install and Configure an LDAP Proxy-Cache Server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mimetypes/index.html">Mimetypes Management</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html">Server Configuration</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../security_setup_warnings.html">Warnings on Admin Page</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../import_ssl_cert.html">Importing System-wide and Personal SSL Certificates</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ_command.html">Using occ core commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../occ_apps_command.html">Using occ apps commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../activity_configuration.html">Configuring the Activity App</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../antivirus_configuration.html">Virus Scanner Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../caching_configuration.html">Memory Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../background_jobs_configuration.html">Background Jobs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../config_sample_php_parameters.html">Core Config.php Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../email_configuration.html">Email Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../excluded_blacklisted_files.html">Excluding Directories and Blacklisting Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../external_sites.html">Linking External Sites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../custom_client_repos.html">Custom Client Download Repositories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../knowledgebase_configuration.html">Knowledge Base Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../language_configuration.html">Language Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../legal_settings_configuration.html">Legal Settings Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../logging_configuration.html">Logging Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../harden_server.html">Hardening and Security Guidance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="password_policy.html">Password Policy</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">OAuth2</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../reverse_proxy_configuration.html">Reverse Proxy Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../thirdparty_php_configuration.html">Using Third Party PHP Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../automatic_configuration.html">Automatic Configuration Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../oc_server_tuning.html">ownCloud Server Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../index_php_less_urls.html">Enable index.php-less URLs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../user/index.html">User Management</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../../../maintenance/index.html">Maintenance</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../issues/index.html">Issues and Troubleshooting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../enterprise/index.html">Enterprise Features</a></li>
@@ -83,6 +120,16 @@
 				<div class="col-md-9">
 					<div class="page-content">
             
+<ul class="prevnext-title list-unstyled list-inline">
+  <li class="prev">
+    <a href="password_policy.html" title="Previous Chapter: Password Policy"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Password Policy</span>
+    </a>
+  </li>
+  <li class="next">
+    <a href="../reverse_proxy_configuration.html" title="Next Chapter: Reverse Proxy Configuration"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Reverse Proxy... &raquo;</span>
+    </a>
+  </li>
+</ul>
 						
   <div class="section" id="oauth2">
 <h1>OAuth2<a class="headerlink" href="#oauth2" title="Permalink to this headline">¶</a></h1>
@@ -302,6 +349,16 @@ An access token is valid for 1 hour and can be refreshed with a refresh token.</
 
 
             
+<ul class="prevnext-title list-unstyled list-inline">
+  <li class="prev">
+    <a href="password_policy.html" title="Previous Chapter: Password Policy"><span class="glyphicon glyphicon-chevron-left visible-sm"></span><span class="hidden-sm">&laquo; Password Policy</span>
+    </a>
+  </li>
+  <li class="next">
+    <a href="../reverse_proxy_configuration.html" title="Next Chapter: Reverse Proxy Configuration"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm">Reverse Proxy... &raquo;</span>
+    </a>
+  </li>
+</ul>
 					</div>
 				</div>
 			</div>

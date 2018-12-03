@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>User Management &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>User Management &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -235,6 +235,23 @@ have access to file shares that belong to their new groups.</p>
 </div>
 <div class="section" id="setting-storage-quotas">
 <h2>Setting Storage Quotas<a class="headerlink" href="#setting-storage-quotas" title="Permalink to this headline">¶</a></h2>
+<p>There are 4 Types of Quota Settings in ownCloud when dealing with LDAP users.</p>
+<div class="section" id="quota-field">
+<h3>Quota Field<a class="headerlink" href="#quota-field" title="Permalink to this headline">¶</a></h3>
+<p>Found in “<em>User Authentication -&gt; the Advanced Tab -&gt; Special Attributes</em>”, this setting overwrites the rest. If set, this is what will be set for an LDAP user’s quota in ownCloud.</p>
+</div>
+<div class="section" id="quota-default">
+<h3>Quota Default<a class="headerlink" href="#quota-default" title="Permalink to this headline">¶</a></h3>
+<p>Found in “<em>User Authentication -&gt; the Advanced Tab -&gt; Special Attributes</em>”, this is the fallback option if no quota field is defined.</p>
+</div>
+<div class="section" id="user-quota">
+<h3>User Quota<a class="headerlink" href="#user-quota" title="Permalink to this headline">¶</a></h3>
+<p>This is what you set in the web UI drop down menu, and is how you set user quota.</p>
+</div>
+<div class="section" id="default-quota">
+<h3>Default Quota<a class="headerlink" href="#default-quota" title="Permalink to this headline">¶</a></h3>
+<p>This will be set if no quota is set, and is found in “<em>Users Tab -&gt; Gear Wheel, Default Quota</em>”.
+If Quota Field is not set, but Quota Default is, and a systems administrator tries to set a quota for an LDAP user with User Quota, it will not work, since it is overridden by Quota Default.</p>
 <p>Click the gear on the lower left pane to set a default storage quota. This is
 automatically applied to new users. You may assign a different quota to any user
 by selecting from the <strong>Quota</strong> dropdown, selecting either a preset value or
@@ -267,6 +284,7 @@ against quotas.</p>
 <p>When a user creates a public share via URL, and allows uploads, any uploaded
 files count against that user’s quota.</p>
 </div>
+</div>
 <div class="section" id="deleting-users">
 <h2>Deleting users<a class="headerlink" href="#deleting-users" title="Permalink to this headline">¶</a></h2>
 <p>Deleting a user is easy: hover your cursor over their name on the <strong>Users</strong> page
@@ -297,6 +315,16 @@ From ownCloud 10.0, users can create groups on-the-fly, through a feature called
 </ol>
 <img alt="Install the Custom Groups application from the ownCloud Market" src="../../_images/owncloud-market-custom-groups-install.png" />
 <p>With this done, Custom Group functionality will be available in your ownCloud installation.</p>
+</div>
+<div class="section" id="custom-groups-settings">
+<h2>Custom Groups Settings<a class="headerlink" href="#custom-groups-settings" title="Permalink to this headline">¶</a></h2>
+<img alt="Configuration for ownCloud admins" src="../../_images/customgroup.png" />
+<p>As an ownCloud admin, you can enable/disable these 2 options for custom groups.</p>
+<ul class="simple">
+<li>The first one limits the creation of custom groups to group admins.</li>
+<li>The second option allows the creation of custom groups with the same name.</li>
+</ul>
+<p>ownCloud admins can see all custom groups of an instance and have group admin privileges for those.</p>
 </div>
 </div>
 

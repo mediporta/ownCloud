@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Upgrading ownCloud with the Updater App &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Upgrading ownCloud with the Updater App &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -121,7 +121,7 @@ and data, and it automates updating
 <a class="reference internal" href="../installation/source_installation.html"><span class="doc">manual installations</span></a>.</p>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
-<p class="last">When upgrading from oC 9.0 to 9.1 with existing Calendars or Adressbooks
+<p class="last">When upgrading from oC 9.0 to 9.1 with existing Calendars or Addressbooks
 please have a look at the <a class="reference internal" href="../release_notes.html"><span class="doc">Release Notes</span></a> of oC 9.0 for important info
 about this migration.</p>
 </div>
@@ -156,6 +156,10 @@ current instance to <code class="docutils literal"><span class="pre">updater_bac
 version</li>
 <li>Copies your old <code class="docutils literal"><span class="pre">config.php</span></code> to the new <code class="docutils literal"><span class="pre">config/</span></code> directory</li>
 </ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Backups created by the updater app can use up significant disc space, if kept across multiple updates. We recommend that you save storage space by only keeping the ones that are crucial to your instance and removing any others.</p>
+</div>
 <p>Using the Updater app to update your ownCloud installation is just a few
 steps:</p>
 <ol class="arabic simple">
@@ -194,7 +198,7 @@ timeouts.</p>
 </pre></div>
 </div>
 <p>The optional parameter to skip migration tests during this step was removed in oC 9.2.
-See <a class="reference internal" href="upgrade.html#migration-test-label"><span class="std std-ref">Testing a Migration</span></a> for more information.</p>
+See <a class="reference internal" href="manual_upgrade.html#migration-test-label"><span class="std std-ref">Test the Upgrade</span></a> for more information.</p>
 <ol class="arabic simple" start="8">
 <li>It runs for a few minutes, and when it is finished displays a success
 message, which disappears after a short time.</li>

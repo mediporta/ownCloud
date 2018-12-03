@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Logging Configuration &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Logging Configuration &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -76,12 +76,13 @@
 <li class="toctree-l2 current"><a class="reference internal" href="index.html">Server Configuration</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="security_setup_warnings.html">Warnings on Admin Page</a></li>
 <li class="toctree-l3"><a class="reference internal" href="import_ssl_cert.html">Importing System-wide and Personal SSL Certificates</a></li>
-<li class="toctree-l3"><a class="reference internal" href="occ_command.html">Using the occ Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ_command.html">Using occ core commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="occ_apps_command.html">Using occ apps commands</a></li>
 <li class="toctree-l3"><a class="reference internal" href="activity_configuration.html">Configuring the Activity App</a></li>
 <li class="toctree-l3"><a class="reference internal" href="antivirus_configuration.html">Virus Scanner Support</a></li>
 <li class="toctree-l3"><a class="reference internal" href="caching_configuration.html">Memory Caching</a></li>
 <li class="toctree-l3"><a class="reference internal" href="background_jobs_configuration.html">Background Jobs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="config_sample_php_parameters.html">Config.php Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="config_sample_php_parameters.html">Core Config.php Parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="email_configuration.html">Email Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="excluded_blacklisted_files.html">Excluding Directories and Blacklisting Files</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_sites.html">Linking External Sites</a></li>
@@ -91,7 +92,8 @@
 <li class="toctree-l3"><a class="reference internal" href="legal_settings_configuration.html">Legal Settings Configuration</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Logging Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="harden_server.html">Hardening and Security Guidance</a></li>
-<li class="toctree-l3"><a class="reference internal" href="security/password-policy.html">Password Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="security/password_policy.html">Password Policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="security/oauth2.html">OAuth2</a></li>
 <li class="toctree-l3"><a class="reference internal" href="reverse_proxy_configuration.html">Reverse Proxy Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="thirdparty_php_configuration.html">Using Third Party PHP Components</a></li>
 <li class="toctree-l3"><a class="reference internal" href="automatic_configuration.html">Automatic Configuration Setup</a></li>
@@ -155,19 +157,57 @@ By default the <a class="reference external" href="http://www.php.net/manual/en/
 date/time is written in the format “<em>2013-01-10T15:20:25+02:00</em>”. By using the
 date format in the example below, the date/time format will be written in the format
 “<em>January 10, 2013 15:20:25</em>”.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;log_type&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;owncloud&quot;</span><span class="p">,</span>
-<span class="s2">&quot;logfile&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;owncloud.log&quot;</span><span class="p">,</span>
-<span class="s2">&quot;loglevel&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span>
-<span class="s2">&quot;logdateformat&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;F d, Y H:i:s&quot;</span><span class="p">,</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log_type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;owncloud&#39;</span><span class="p">,</span>
+<span class="s1">&#39;logfile&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;owncloud.log&#39;</span><span class="p">,</span>
+<span class="s1">&#39;loglevel&#39;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span>
+<span class="s1">&#39;logdateformat&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;F d, Y H:i:s&#39;</span><span class="p">,</span>
+</pre></div>
+</div>
+<p><strong>Log rotation:</strong></p>
+<p>To rotate this log file, use the following key:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log_rotate_size&#39;</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">,</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line">The default is 0 or false which disables log rotation.</div>
+<div class="line">Specify a size in bytes, for example 104857600</div>
+<div class="line">(100 megabytes = 100 * 1024 * 1024 bytes).</div>
+<div class="line">A new logfile is created with a new name when the old logfile reaches your limit.</div>
+<div class="line">If a rotated log file is already present, it will be overwritten.</div>
+<div class="line">If enabled, only the active log file and one rotation file are present.</div>
+</div>
+<p>The file name of the rotated logfile is defined by the key <code class="docutils literal"><span class="pre">logfile</span></code> and a number as extension.
+Example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">owncloud</span><span class="o">.</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>In case you want to implement more sophisticated log rotation, you can use the log rotation
+mechanism of your Linux operating system, see the following example. Please adopt or customize
+the configuration by your needs. The script assumes that the folder <code class="docutils literal"><span class="pre">/etc/logrotate.d/</span></code>
+is included in your Linux log rotate configuration. More information on Linux log rotation
+can be found in the <a class="reference external" href="https://linux.die.net/man/8/logrotate">logrotate</a> documentation.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Use an editor of your choice like vim</span>
+
+<span class="n">vim</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">logrotate</span><span class="o">.</span><span class="n">d</span><span class="o">/</span><span class="n">owncloud</span>
+
+<span class="c1"># Copy and paste the following into the file</span>
+
+<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">www</span><span class="o">/</span><span class="n">owncloud</span><span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">owncloud</span><span class="o">.</span><span class="n">log</span> <span class="p">{</span>
+<span class="n">size</span> <span class="mi">10</span><span class="n">M</span>                      <span class="c1"># Logfile Size Limit</span>
+<span class="n">rotate</span> <span class="mi">12</span>                     <span class="c1"># Amount of rotated logs to keeps</span>
+<span class="n">missingok</span>                     <span class="c1"># If it&#39;s not there, no error will occur</span>
+<span class="n">compress</span>                      <span class="c1"># after rotation, compress the copy of the log file</span>
+<span class="n">compresscmd</span> <span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">gzip</span>         <span class="c1"># use this compression command</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="syslog">
 <h3>syslog<a class="headerlink" href="#syslog" title="Permalink to this headline">¶</a></h3>
 <p>All log information will be sent to your default syslog daemon.</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;log_type&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;syslog&quot;</span><span class="p">,</span>
-<span class="s2">&quot;logfile&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="s2">&quot;loglevel&quot;</span> <span class="o">=&gt;</span> <span class="s2">&quot;3&quot;</span><span class="p">,</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;log_type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;syslog&#39;</span><span class="p">,</span>
+<span class="s1">&#39;logfile&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+<span class="s1">&#39;loglevel&#39;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>The syslog format can be changed to remove or add information.

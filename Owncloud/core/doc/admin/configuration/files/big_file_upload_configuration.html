@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Uploading big files &gt; 512MB &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Uploading big files &gt; 512MB &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -78,6 +78,7 @@
 <li class="toctree-l3"><a class="reference internal" href="external_storage_configuration_gui.html">Configuring External Storage (GUI)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage_configuration.html">Configuring External Storage (Configuration File)</a></li>
 <li class="toctree-l3"><a class="reference internal" href="external_storage/auth_mechanisms.html">External Storage Authentication mechanisms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="encryption_configuration_quick_guide.html">Encryption Configuration Quick Guide</a></li>
 <li class="toctree-l3"><a class="reference internal" href="encryption_configuration.html">Encryption Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="files_locking_transactional.html">Transactional File Locking</a></li>
 <li class="toctree-l3"><a class="reference internal" href="previews_configuration.html">Previews Configuration</a></li>
@@ -189,7 +190,7 @@ for how to configure those values correctly:</p>
 <p class="first admonition-title">Note</p>
 <p>If you are using Apache/2.4 with mod_fcgid, as of February/March 2016,
 <code class="docutils literal"><span class="pre">FcgidMaxRequestInMem</span></code> still needs to be significantly increased from its default value
-to avoid the occurence of segmentation faults when uploading big files. This is not a regular
+to avoid the occurrence of segmentation faults when uploading big files. This is not a regular
 setting but serves as a workaround for <a class="reference external" href="https://bz.apache.org/bugzilla/show_bug.cgi?id=51747">Apache with mod_fcgid bug #51747</a>.</p>
 <p class="last">Setting <code class="docutils literal"><span class="pre">FcgidMaxRequestInMem</span></code> significantly higher than normal may no longer be
 necessary, once bug #51747 is fixed.</p>
@@ -203,7 +204,7 @@ necessary, once bug #51747 is fixed.</p>
 <li><a class="reference external" href="http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_temp_path">client_body_temp_path</a></li>
 </ul>
 <p>Since NGINX 1.7.11 a new config option <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html#fastcgi_request_buffering">fastcgi_request_buffering</a>
-is availabe. Setting this option to <code class="docutils literal"><span class="pre">fastcgi_request_buffering</span> <span class="pre">off;</span></code> in your NGINX config
+is available. Setting this option to <code class="docutils literal"><span class="pre">fastcgi_request_buffering</span> <span class="pre">off;</span></code> in your NGINX config
 might help with timeouts during the upload. Furthermore it helps if you’re running out of
 disc space on the <code class="docutils literal"><span class="pre">/tmp</span></code> partition of your system.</p>
 <p>For more info how to configure NGINX to raise the upload limits see also <a class="reference external" href="https://github.com/owncloud/documentation/wiki/Uploading-files-up-to-16GB#configuring-nginx">this</a>
@@ -251,9 +252,9 @@ will return memory-related errors:</p>
 <h2>Configuring ownCloud<a class="headerlink" href="#configuring-owncloud" title="Permalink to this headline">¶</a></h2>
 <p>As an alternative to the <code class="docutils literal"><span class="pre">upload_tmp_dir</span></code> of PHP (e.g., if you don’t have access to your
 <code class="docutils literal"><span class="pre">php.ini</span></code>) you can also configure a temporary location for uploaded files by using the
-<code class="docutils literal"><span class="pre">tempdirectory</span></code> setting in your <code class="docutils literal"><span class="pre">config.php</span></code> (See <a class="reference internal" href="../server/config_sample_php_parameters.html"><span class="doc">Config.php Parameters</span></a>).</p>
+<code class="docutils literal"><span class="pre">tempdirectory</span></code> setting in your <code class="docutils literal"><span class="pre">config.php</span></code> (See <a class="reference internal" href="../server/config_sample_php_parameters.html"><span class="doc">Core Config.php Parameters</span></a>).</p>
 <p>If you have configured the <code class="docutils literal"><span class="pre">session_lifetime</span></code> setting in your <code class="docutils literal"><span class="pre">config.php</span></code>
-(See <a class="reference internal" href="../server/config_sample_php_parameters.html"><span class="doc">Config.php Parameters</span></a>) file then
+(See <a class="reference internal" href="../server/config_sample_php_parameters.html"><span class="doc">Core Config.php Parameters</span></a>) file then
 make sure it is not too
 low. This setting needs to be configured to at least the time (in seconds) that
 the longest upload will take. If unsure remove this completely from your

@@ -27,18 +27,16 @@
  *
  */
 
-require_once 'vendor/autoload.php';
-
 // Show warning if a PHP version below 5.6.0 is used, this has to happen here
 // because base.php will already use 5.6 syntax.
-if (version_compare(PHP_VERSION, '5.6.0') === -1) {
+if (\version_compare(PHP_VERSION, '5.6.0') === -1) {
 	echo 'This version of ownCloud requires at least PHP 5.6.0<br/>';
 	echo 'You are currently running PHP ' . PHP_VERSION . '. Please update your PHP version.';
 	return;
 }
 
 // Show warning if PHP 7.3 is used as ownCloud is not compatible with PHP 7.3
-if (version_compare(PHP_VERSION, '7.3.0alpha1') !== -1) {
+if (\version_compare(PHP_VERSION, '7.3.0alpha1') !== -1) {
 	echo 'This version of ownCloud is not compatible with PHP 7.3<br/>';
 	echo 'You are currently running PHP ' . PHP_VERSION . '.';
 	return;
@@ -46,64 +44,46 @@ if (version_compare(PHP_VERSION, '7.3.0alpha1') !== -1) {
 
 // running oC on Windows is unsupported since 8.1, this has to happen here because
 // is seems that the autoloader on Windows fails later and just throws an exception.
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+if (\strtoupper(\substr(PHP_OS, 0, 3)) === 'WIN') {
 	echo 'ownCloud Server does not support Microsoft Windows.';
 	return;
 }
 
 try {
 	require_once __DIR__ . '/lib/base.php';
-
-	require_once 'telemetry.php';
-	initializeTelemetry();
-	
 	OC::handleRequest();
-
-	executeTelemetry(null);
-
-} catch(\OC\ServiceUnavailableException $ex) {
-	\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
+} catch (\OC\ServiceUnavailableException $ex) {
+	\OC::$server->getLogger()->logException($ex, ['app' => 'index']);
 
 	//show the user a detailed error page
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printExceptionErrorPage($ex);
-	executeTelemetry($ex);
-
 } catch (\OC\HintException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printErrorPage($ex->getMessage(), $ex->getHint());
-	executeTelemetry($ex);
-
 } catch (\OC\User\LoginException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
-	executeTelemetry($ex);
-
 } catch (\OCP\Files\ForbiddenException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
-	executeTelemetry($ex);
-
 } catch (Exception $ex) {
 	try {
-		\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
+		\OC::$server->getLogger()->logException($ex, ['app' => 'index']);
 
 		//show the user a detailed error page
 		OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 		OC_Template::printExceptionErrorPage($ex);
-		executeTelemetry($ex);
-
 	} catch (\Exception $ex2) {
 		// with some env issues, it can happen that the logger couldn't log properly,
 		// so print out the exception directly
 		echo('<html><body>');
 		echo('Exception occurred while logging exception: ' . $ex->getMessage() . '<br/>');
-		echo(str_replace("\n", '<br/>', $ex->getTraceAsString()));
+		echo(\str_replace("\n", '<br/>', $ex->getTraceAsString()));
 		echo('</body></html>');
 	}
 } catch (Error $ex) {
-	\OC::$server->getLogger()->logException($ex, array('app' => 'index'));
+	\OC::$server->getLogger()->logException($ex, ['app' => 'index']);
 	OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 	OC_Template::printExceptionErrorPage($ex);
-	executeTelemetry($ex);
 }

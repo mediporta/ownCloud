@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>How to Update ownCloud &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>How to Update ownCloud &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../_static/" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../configuration/index.html">Configuration</a></li>
@@ -75,7 +75,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">The ownCloud X Appliance</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="what-is-it.html">What is the Appliance?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">How to Install the Appliance</a></li>
-<li class="toctree-l2"><a class="reference internal" href="certificates.html">How to add certificates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="enterprise-trial.html">The ownCloud X Appliance Enterprise Trial</a></li>
 <li class="toctree-l2"><a class="reference internal" href="login_information.html">ownCloud Appliance Login Information</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to Update ownCloud</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#use-the-univention-management-console">Use the Univention Management Console</a></li>
@@ -84,9 +84,10 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="managing-ucs.html">Managing UCS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Clamav.html">Install Antivirus Software in the ownCloud Appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="certificates.html">How To Add Certificates</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Active_Directory.html">Active Directory Integration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Backup.html">Backup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Collabora.html">How to use Collabora with the appliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Office.html">Working on Documents in the ownCloud Appliance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firewall.html">Firewall protected environment</a></li>
 </ul>
 </li>
@@ -120,15 +121,19 @@
 <li><a class="reference internal" href="#use-the-univention-management-console">Use the Univention Management Console</a></li>
 <li><a class="reference internal" href="#use-the-command-line">Use the Command Line</a></li>
 </ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Do not use the ownCloud built in web updater!</p>
+</div>
 <div class="section" id="use-the-univention-management-console">
 <h2>Use the Univention Management Console<a class="headerlink" href="#use-the-univention-management-console" title="Permalink to this headline">¶</a></h2>
 <p>Using the Univention Management Console, there are two paths to upgrade an existing ownCloud installation:</p>
 <ul class="simple">
-<li><a class="reference internal" href="#in-place-upgrade-for-10-1-users">In-place Upgrade (for 10.1 users)</a></li>
+<li><a class="reference internal" href="#in-place-upgrade-for-10-0-users">In-place Upgrade (for 10.0 users)</a></li>
 <li><a class="reference internal" href="#uninstall-the-existing-version-and-install-the-new-version-for-9-1-users">Uninstall the Existing Version and Install the New Version (for 9.1 users)</a></li>
 </ul>
-<div class="section" id="in-place-upgrade-for-10-1-users">
-<h3>In-place Upgrade (for 10.1 users)<a class="headerlink" href="#in-place-upgrade-for-10-1-users" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="in-place-upgrade-for-10-0-users">
+<h3>In-place Upgrade (for 10.0 users)<a class="headerlink" href="#in-place-upgrade-for-10-0-users" title="Permalink to this headline">¶</a></h3>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">Existing certificates and themes persist after an upgrade</p>
@@ -237,6 +242,12 @@ As in the example below, you should see that the installed version is now higher
 This is because the earlier versions of ownCloud are installed with a different application to the 10.x version.
 More specifically, the versions of the ownCloud app, prior to 10, have a version suffix in the name.
 For example the ownCloud 8.2 app is named <code class="docutils literal"><span class="pre">owncloud82</span></code>.</p>
+<p>For ownCloud 8.2 users: during the ownCloud App upgrade, user files will be moved to the new Docker data directory, <code class="docutils literal"><span class="pre">/var/lib/univention-appcenter/apps/owncloud/data/files</span></code>.  Essentially, the following the command will be executed:</p>
+<dl class="docutils">
+<dt>::</dt>
+<dd>mv /var/lib/owncloud/* /var/lib/univention-appcenter/apps/owncloud/data/files</dd>
+</dl>
+<p>Please check your filesystems and mountpoints and make sure enough space is available for the operation.</p>
 <p>Given that, you first have to uninstall the existing version and then install the 10.x version.
 To do so, run the following commands:</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Assumes that owncloud82 is the currently installed version</span>

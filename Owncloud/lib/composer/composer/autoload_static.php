@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
+class ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6
 {
     public static $files = array (
         '383eaff206634a77a1be54e64e6459c7' => __DIR__ . '/..' . '/sabre/uri/lib/functions.php',
@@ -1212,6 +1212,7 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
         'OCP\\IUserManager' => __DIR__ . '/../../..' . '/lib/public/IUserManager.php',
         'OCP\\IUserSession' => __DIR__ . '/../../..' . '/lib/public/IUserSession.php',
         'OCP\\Image' => __DIR__ . '/../../..' . '/lib/public/Image.php',
+        'OCP\\InvalidUserTokenException' => __DIR__ . '/../../..' . '/lib/public/InvalidUserTokenException.php',
         'OCP\\JSON' => __DIR__ . '/../../..' . '/lib/public/JSON.php',
         'OCP\\L10N\\IFactory' => __DIR__ . '/../../..' . '/lib/public/L10N/IFactory.php',
         'OCP\\Lock\\ILockingProvider' => __DIR__ . '/../../..' . '/lib/public/Lock/ILockingProvider.php',
@@ -1266,6 +1267,7 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
         'OCP\\Share_Backend' => __DIR__ . '/../../..' . '/lib/public/Share_Backend.php',
         'OCP\\Share_Backend_Collection' => __DIR__ . '/../../..' . '/lib/public/Share_Backend_Collection.php',
         'OCP\\Share_Backend_File_Dependent' => __DIR__ . '/../../..' . '/lib/public/Share_Backend_File_Dependent.php',
+        'OCP\\Shutdown\\IShutdownManager' => __DIR__ . '/../../..' . '/lib/public/Shutdown/IShutdownManager.php',
         'OCP\\SystemTag\\ISystemTag' => __DIR__ . '/../../..' . '/lib/public/SystemTag/ISystemTag.php',
         'OCP\\SystemTag\\ISystemTagManager' => __DIR__ . '/../../..' . '/lib/public/SystemTag/ISystemTagManager.php',
         'OCP\\SystemTag\\ISystemTagManagerFactory' => __DIR__ . '/../../..' . '/lib/public/SystemTag/ISystemTagManagerFactory.php',
@@ -1279,12 +1281,16 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
         'OCP\\Theme\\IThemeService' => __DIR__ . '/../../..' . '/lib/public/Theme/IThemeService.php',
         'OCP\\User' => __DIR__ . '/../../..' . '/lib/public/User.php',
         'OCP\\UserInterface' => __DIR__ . '/../../..' . '/lib/public/UserInterface.php',
+        'OCP\\UserTokenException' => __DIR__ . '/../../..' . '/lib/public/UserTokenException.php',
+        'OCP\\UserTokenExpiredException' => __DIR__ . '/../../..' . '/lib/public/UserTokenExpiredException.php',
+        'OCP\\UserTokenMismatchException' => __DIR__ . '/../../..' . '/lib/public/UserTokenMismatchException.php',
         'OCP\\User\\IChangePasswordBackend' => __DIR__ . '/../../..' . '/lib/public/User/IChangePasswordBackend.php',
         'OCP\\User\\IProvidesDisplayNameBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesDisplayNameBackend.php',
         'OCP\\User\\IProvidesEMailBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesEMailBackend.php',
         'OCP\\User\\IProvidesExtendedSearchBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesExtendedSearchBackend.php',
         'OCP\\User\\IProvidesHomeBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesHomeBackend.php',
         'OCP\\User\\IProvidesQuotaBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesQuotaBackend.php',
+        'OCP\\User\\IProvidesUserNameBackend' => __DIR__ . '/../../..' . '/lib/public/User/IProvidesUserNameBackend.php',
         'OCP\\Util' => __DIR__ . '/../../..' . '/lib/public/Util.php',
         'OCP\\Util\\UserSearch' => __DIR__ . '/../../..' . '/lib/public/Util/UserSearch.php',
         'OC\\Activity\\Event' => __DIR__ . '/../../..' . '/lib/private/Activity/Event.php',
@@ -1633,6 +1639,7 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
         'OC\\Group\\MetaData' => __DIR__ . '/../../..' . '/lib/private/Group/MetaData.php',
         'OC\\HTTPHelper' => __DIR__ . '/../../..' . '/lib/private/HTTPHelper.php',
         'OC\\Helper\\EnvironmentHelper' => __DIR__ . '/../../..' . '/lib/private/Helper/EnvironmentHelper.php',
+        'OC\\Helper\\LocaleHelper' => __DIR__ . '/../../..' . '/lib/private/Helper/LocaleHelper.php',
         'OC\\HintException' => __DIR__ . '/../../..' . '/lib/private/HintException.php',
         'OC\\Hooks\\BasicEmitter' => __DIR__ . '/../../..' . '/lib/private/Hooks/BasicEmitter.php',
         'OC\\Hooks\\Emitter' => __DIR__ . '/../../..' . '/lib/private/Hooks/Emitter.php',
@@ -1843,6 +1850,7 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
         'OC\\Share\\MailNotifications' => __DIR__ . '/../../..' . '/lib/private/Share/MailNotifications.php',
         'OC\\Share\\SearchResultSorter' => __DIR__ . '/../../..' . '/lib/private/Share/SearchResultSorter.php',
         'OC\\Share\\Share' => __DIR__ . '/../../..' . '/lib/private/Share/Share.php',
+        'OC\\Shutdown\\ShutDownManager' => __DIR__ . '/../../..' . '/lib/private/Shutdown/ShutDownManager.php',
         'OC\\Streamer' => __DIR__ . '/../../..' . '/lib/private/Streamer.php',
         'OC\\SubAdmin' => __DIR__ . '/../../..' . '/lib/private/SubAdmin.php',
         'OC\\SystemConfig' => __DIR__ . '/../../..' . '/lib/private/SystemConfig.php',
@@ -3265,11 +3273,11 @@ class ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc::$prefixesPsr0;
-            $loader->fallbackDirsPsr0 = ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc::$fallbackDirsPsr0;
-            $loader->classMap = ComposerStaticInitdcd51c2b98773f0cfb9343f1ba3d40dc::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6::$prefixesPsr0;
+            $loader->fallbackDirsPsr0 = ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6::$fallbackDirsPsr0;
+            $loader->classMap = ComposerStaticInit3d0c3bd5b48d0cf3e2fddca5347891b6::$classMap;
 
         }, null, ClassLoader::class);
     }

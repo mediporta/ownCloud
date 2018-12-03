@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Converting Database Type &#8212; ownCloud 10.0.9 Server Administration Manual 10.0.9 documentation</title>
+    <title>Converting Database Type &#8212; ownCloud 10.0.10 Server Administration Manual 10.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/main.min.css" type="text/css" />
@@ -11,7 +11,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '10.0.9',
+        VERSION:     '10.0.10',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -65,7 +65,7 @@
                   <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../../index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../release_notes.html">Release Notes</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.9</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../whats_new_admin.html">What’s New in ownCloud 10.0.10</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../installation/index.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../upgrading/index.html">Upgrading</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../index.html">Configuration</a><ul class="current">
@@ -117,10 +117,52 @@ If you have an existing ownCloud installation which uses SQLite, and you want to
 <p class="first admonition-title">Note</p>
 <p class="last">ownCloud Enterprise edition does not support SQLite.</p>
 </div>
+<div class="section" id="preparation">
+<h2>Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline">¶</a></h2>
+<p>Add the following to your ownCloud <code class="docutils literal"><span class="pre">config/config.php</span></code>.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s1">&#39;mysql.utf8mb4&#39;</span> <span class="o">=&gt;</span> <span class="n">true</span><span class="p">,</span>
+</pre></div>
+</div>
+<p>Add, or adjust, the following in <code class="docutils literal"><span class="pre">/etc/mysql/mariadb.conf.d/50-server.cnf</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can do the same for MySQL by replacing mariadb.conf.d/50-server.cnf with mysql.conf.d/mysqld.cnf</p>
+</div>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">key_buffer_size</span>         <span class="o">=</span> <span class="mi">32</span><span class="n">M</span>
+<span class="n">table_cache</span>             <span class="o">=</span> <span class="mi">400</span>
+<span class="n">query_cache_size</span>        <span class="o">=</span> <span class="mi">128</span><span class="n">M</span>
+
+<span class="c1">#in InnoDB:</span>
+<span class="n">innodb_flush_method</span><span class="o">=</span><span class="n">O_DIRECT</span>
+<span class="n">innodb_flush_log_at_trx_commit</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">innodb_log_file_size</span><span class="o">=</span><span class="mi">256</span><span class="n">M</span>
+<span class="n">innodb_log_buffer_size</span> <span class="o">=</span> <span class="mi">128</span><span class="n">M</span>
+<span class="n">innodb_buffer_pool_size</span><span class="o">=</span><span class="mi">2048</span><span class="n">M</span>
+<span class="n">innodb_buffer_pool_instances</span><span class="o">=</span><span class="mi">3</span>
+<span class="n">innodb_read_io_threads</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">innodb_write_io_threads</span><span class="o">=</span><span class="mi">4</span>
+<span class="n">innodb_io_capacity</span> <span class="o">=</span> <span class="mi">500</span>
+<span class="n">innodb_thread_concurrency</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">innodb_file_format</span><span class="o">=</span><span class="n">Barracuda</span>
+<span class="n">innodb_file_per_table</span><span class="o">=</span><span class="n">ON</span>
+<span class="n">innodb_large_prefix</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">character</span><span class="o">-</span><span class="nb">set</span><span class="o">-</span><span class="n">server</span>  <span class="o">=</span> <span class="n">utf8mb4</span>
+<span class="n">collation</span><span class="o">-</span><span class="n">server</span>      <span class="o">=</span> <span class="n">utf8mb4_general_ci</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="restart-the-database-server">
+<h2>Restart the Database Server<a class="headerlink" href="#restart-the-database-server" title="Permalink to this headline">¶</a></h2>
+<p>When you have changed the database parameters, restart your database by running following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">service</span> <span class="n">mysql</span> <span class="n">restart</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="run-the-conversion">
-<h2>Run the conversion<a class="headerlink" href="#run-the-conversion" title="Permalink to this headline">¶</a></h2>
-<p>After you have setup the new database, in <strong>the ownCloud root folder</strong> run the following command to convert the database to the new format:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">php</span> <span class="n">occ</span> <span class="n">db</span><span class="p">:</span><span class="n">convert</span><span class="o">-</span><span class="nb">type</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="nb">type</span> <span class="n">username</span> <span class="n">hostname</span> <span class="n">database</span>
+<h2>Run the Conversion<a class="headerlink" href="#run-the-conversion" title="Permalink to this headline">¶</a></h2>
+<p>After you have restarted the database, run the following occ command in your ownCloud root folder, to convert the database to the new format:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">uwww</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">db</span><span class="p">:</span><span class="n">convert</span><span class="o">-</span><span class="nb">type</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span> <span class="nb">type</span> <span class="n">username</span> <span class="n">hostname</span> <span class="n">database</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -130,7 +172,7 @@ schema definitions in the apps to create the new table. As a result, tables
 of removed apps will not be converted — even with option <code class="docutils literal"><span class="pre">--all-apps</span></code></p>
 </div>
 <p>For example</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">php</span> <span class="n">occ</span> <span class="n">db</span><span class="p">:</span><span class="n">convert</span><span class="o">-</span><span class="nb">type</span> <span class="o">--</span><span class="nb">all</span><span class="o">-</span><span class="n">apps</span> <span class="n">mysql</span> <span class="n">oc_mysql_user</span> <span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span> <span class="n">new_db_name</span>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">uwww</span><span class="o">-</span><span class="n">data</span> <span class="o">./</span><span class="n">occ</span> <span class="n">db</span><span class="p">:</span><span class="n">convert</span><span class="o">-</span><span class="nb">type</span> <span class="o">--</span><span class="nb">all</span><span class="o">-</span><span class="n">apps</span> <span class="n">mysql</span> <span class="n">oc_mysql_user</span> <span class="mf">127.0</span><span class="o">.</span><span class="mf">0.1</span> <span class="n">new_db_name</span>
 </pre></div>
 </div>
 <p>To successfully proceed with the conversion, you must type <code class="docutils literal"><span class="pre">yes</span></code> when prompted
@@ -143,8 +185,7 @@ ownCloud config <code class="docutils literal"><span class="pre">config.php</spa
 <p>If you updated your ownCloud installation then the old tables, which are not used anymore, might still exist.
 The converter will tell you which ones.</p>
 <div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">The</span> <span class="n">following</span> <span class="n">tables</span> <span class="n">will</span> <span class="ow">not</span> <span class="n">be</span> <span class="n">converted</span><span class="p">:</span>
-<span class="n">oc_permissions</span>
-<span class="o">...</span>
+  <span class="n">oc_permissions</span>
 </pre></div>
 </div>
 <p>You can ignore these tables.
