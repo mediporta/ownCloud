@@ -28,6 +28,9 @@
  *
  */
 
+require_once 'vendor/autoload.php';
+
+
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\Server;
@@ -70,7 +73,7 @@ function handleException($e) {
 		$server->exec();
 	} else {
 		$statusCode = OC_Response::STATUS_INTERNAL_SERVER_ERROR;
-		if ($e instanceof \OC\ServiceUnavailableException) {
+		if ($e instanceof \OC\ServiceUnavailableException ) {
 			$statusCode = OC_Response::STATUS_SERVICE_UNAVAILABLE;
 		}
 		if ($e instanceof RemoteException) {
@@ -108,6 +111,9 @@ function resolveService($service) {
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+
+	require_once 'telemetry.php';
+	initializeTelemetry();
 
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
@@ -163,8 +169,11 @@ try {
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
 	require_once $file;
+	executeTelemetry(null);
 } catch (Exception $ex) {
 	handleException($ex);
+	executeTelemetry($ex);
 } catch (Error $e) {
 	handleException($e);
+	executeTelemetry($e);
 }
