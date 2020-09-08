@@ -31,12 +31,17 @@ function executeTelemetry($exception) {
 	$client = new \ApplicationInsights\Telemetry_Client();
 	$client->getContext()->setInstrumentationKey($telemetry['key']);
 
-	if ($exception == null) {
-		$client->trackRequest($telemetry['self'], $telemetry['url'], time(), $time, 200, true);
-	} else {
-		$client->trackException($exception);
-		$client->trackRequest($telemetry['self'], $telemetry['url'], time(), $time, 500, false);
-	}
+	try {
+		if ($exception == null) {
+			$client->trackRequest($telemetry['self'], $telemetry['url'], time(), $time, 200, true);
+		} else {
+			$client->trackException($exception);
+			$client->trackRequest($telemetry['self'], $telemetry['url'], time(), $time, 500, false);
+		}
 
-	$client->flush();
+		$client->flush();
+
+	} catch (Exception $e) {
+		error_log($e->getMessage());
+	}
 }
