@@ -34,22 +34,23 @@ use OCP\UserInterface;
  * @method void setEmail(string $email)
  * @method int getLastLogin()
  * @method void setLastLogin(int $lastLogin)
+ * @method int getCreationTime()
+ * @method void setCreationTime(int $creationTime)
  * @method string getBackend()
  * @method void setBackend(string $backEnd)
  * @method int getState()
  * @method void setState(integer $state)
  * @method string getQuota()
  * @method void setQuota(string $quota)
- * @method string getHome()
  * @method void setHome(string $home)
  *
  * @package OC\User
  */
 class Account extends Entity {
-	const STATE_INITIAL = 0;
-	const STATE_ENABLED = 1;
-	const STATE_DISABLED = 2;
-	const STATE_DELETED = 3;
+	public const STATE_INITIAL = 0;
+	public const STATE_ENABLED = 1;
+	public const STATE_DISABLED = 2;
+	public const STATE_DELETED = 3;
 
 	protected $email;
 	protected $userId;
@@ -57,6 +58,7 @@ class Account extends Entity {
 	protected $displayName;
 	protected $quota;
 	protected $lastLogin;
+	protected $creationTime;
 	protected $backend;
 	protected $state;
 	protected $home;
@@ -67,6 +69,7 @@ class Account extends Entity {
 	public function __construct() {
 		$this->addType('state', 'integer');
 		$this->addType('lastLogin', 'integer');
+		$this->addType('creationTime', 'integer');
 	}
 
 	/**
@@ -103,7 +106,7 @@ class Account extends Entity {
 	 * @param string[] $terms
 	 */
 	public function setSearchTerms(array $terms) {
-		if (\array_diff($terms, $this->terms)) {
+		if (!empty(\array_diff($terms, $this->terms)) || !empty(\array_diff($this->terms, $terms))) {
 			$this->terms = $terms;
 			$this->_termsChanged = true;
 		}
@@ -114,5 +117,12 @@ class Account extends Entity {
 	 */
 	public function getSearchTerms() {
 		return $this->terms;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getHome() {
+		return (string) $this->getter('home');
 	}
 }

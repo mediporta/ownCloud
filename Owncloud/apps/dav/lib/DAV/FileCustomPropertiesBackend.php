@@ -24,8 +24,6 @@
 namespace OCA\DAV\DAV;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Platforms\OraclePlatform;
-use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\DAV\Connector\Sabre\Directory;
 use OCA\DAV\Connector\Sabre\Node;
 use OC\Cache\CappedMemoryCache;
@@ -40,13 +38,13 @@ use Sabre\DAV\INode;
  * @package OCA\DAV\DAV
  */
 class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
-	const SELECT_BY_ID_STMT = 'SELECT * FROM `*PREFIX*properties` WHERE `fileid` = ?';
-	const INSERT_BY_ID_STMT = 'INSERT INTO `*PREFIX*properties`'
-	. ' (`fileid`,`propertyname`,`propertyvalue`) VALUES(?,?,?)';
-	const UPDATE_BY_ID_AND_NAME_STMT = 'UPDATE `*PREFIX*properties`'
-	. ' SET `propertyvalue` = ? WHERE `fileid` = ? AND `propertyname` = ?';
-	const DELETE_BY_ID_STMT = 'DELETE FROM `*PREFIX*properties` WHERE `fileid` = ?';
-	const DELETE_BY_ID_AND_NAME_STMT = 'DELETE FROM `*PREFIX*properties`'
+	public const SELECT_BY_ID_STMT = 'SELECT * FROM `*PREFIX*properties` WHERE `fileid` = ?';
+	public const INSERT_BY_ID_STMT = 'INSERT INTO `*PREFIX*properties`'
+	. ' (`fileid`,`propertyname`,`propertyvalue`, `propertytype`) VALUES(?,?,?,?)';
+	public const UPDATE_BY_ID_AND_NAME_STMT = 'UPDATE `*PREFIX*properties`'
+	. ' SET `propertyvalue` = ?, `propertytype` = ? WHERE `fileid` = ? AND `propertyname` = ?';
+	public const DELETE_BY_ID_STMT = 'DELETE FROM `*PREFIX*properties` WHERE `fileid` = ?';
+	public const DELETE_BY_ID_AND_NAME_STMT = 'DELETE FROM `*PREFIX*properties`'
 	. ' WHERE `fileid` = ? AND `propertyname` = ?';
 
 	/**
@@ -68,9 +66,10 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 *
 	 * @return void
 	 */
-	public function beforeDelete($path) {
+	public function beforeDelete($path): void {
 		try {
 			$node = $this->getNodeForPath($path);
+			'@phan-var \OCA\DAV\Connector\Sabre\Node $node';
 			if ($node !== null && $node->getId()) {
 				if ($this->deletedItemsCache === null) {
 					$this->deletedItemsCache = new CappedMemoryCache();
@@ -88,6 +87,7 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 * @param string $path path of node for which to delete properties
 	 *
 	 * @return void
+	 * @throws \OCP\Files\NotFoundException
 	 */
 	public function delete($path) {
 		$moveSource = $this->moveSource;
@@ -105,6 +105,14 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 
 		$fileId = $this->deletedItemsCache->get($path);
 		if ($fileId !== null) {
+			$items = $this->rootFolder->getById($fileId);
+			/** @var \OCP\Files\Node $item */
+			foreach ($items as $item) {
+				if ($item->getStorage()->instanceOfStorage(\OCA\Files_Trashbin\Storage::class)) {
+					return;
+				}
+			}
+
 			$statement = $this->connection->prepare(self::DELETE_BY_ID_STMT);
 			$statement->execute([$fileId]);
 			$this->offsetUnset($fileId);
@@ -129,6 +137,7 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 * @inheritdoc
 	 */
 	protected function getProperties($path, INode $node, array $requestedProperties) {
+		'@phan-var \OCA\DAV\Connector\Sabre\Node $node';
 		$fileId = $node->getId();
 		if ($this->offsetGet($fileId) === null) {
 			// TODO: chunking if more than 1000 properties
@@ -154,10 +163,8 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 */
 	protected function updateProperties($path, INode $node, $changedProperties) {
 		$existingProperties = $this->getProperties($path, $node, []);
+		'@phan-var \OCA\DAV\Connector\Sabre\Node $node';
 		$fileId = $node->getId();
-		$deleteStatement = self::DELETE_BY_ID_AND_NAME_STMT;
-		$insertStatement = self::INSERT_BY_ID_STMT;
-		$updateStatement = self::UPDATE_BY_ID_AND_NAME_STMT;
 
 		// TODO: use "insert or update" strategy ?
 		$this->connection->beginTransaction();
@@ -166,7 +173,8 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 			// If it was null, we need to delete the property
 			if ($propertyValue === null) {
 				if ($propertyExists) {
-					$this->connection->executeUpdate($deleteStatement,
+					$this->connection->executeUpdate(
+						self::DELETE_BY_ID_AND_NAME_STMT,
 						[
 							$fileId,
 							$propertyName
@@ -174,18 +182,23 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 					);
 				}
 			} else {
+				$propertyData = $this->encodeValue($propertyValue);
 				if (!$propertyExists) {
-					$this->connection->executeUpdate($insertStatement,
+					$this->connection->executeUpdate(
+						self::INSERT_BY_ID_STMT,
 						[
 							$fileId,
 							$propertyName,
-							$propertyValue
+							$propertyData['value'],
+							$propertyData['type']
 						]
 					);
 				} else {
-					$this->connection->executeUpdate($updateStatement,
+					$this->connection->executeUpdate(
+						self::UPDATE_BY_ID_AND_NAME_STMT,
 						[
-							$propertyValue,
+							$propertyData['value'],
+							$propertyData['type'],
 							$fileId,
 							$propertyName
 						]
@@ -207,6 +220,8 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 * @param array $requestedProperties requested properties
 	 *
 	 * @return void
+	 * @throws \OCA\DAV\Connector\Sabre\Exception\Forbidden
+	 * @throws \Sabre\DAV\Exception\Locked
 	 */
 	protected function loadChildrenProperties(INode $node, $requestedProperties) {
 		// note: pre-fetching only supported for depth <= 1
@@ -224,6 +239,7 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 		$childrenIds = [];
 		// pre-fill cache
 		foreach ($childNodes as $childNode) {
+			'@phan-var \OCA\DAV\Connector\Sabre\Node $childNode';
 			$childId = $childNode->getId();
 			if ($childId) {
 				$childrenIds[] = $childId;
@@ -236,7 +252,6 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 		$sql .= ' AND `propertyname` in (?) ORDER BY `propertyname`';
 
 		$fileIdChunks = $this->getChunks($childrenIds, \count($requestedProperties));
-		$props = [];
 		foreach ($fileIdChunks as $chunk) {
 			$result = $this->connection->executeQuery(
 				$sql,
@@ -244,7 +259,8 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 				[Connection::PARAM_STR_ARRAY, Connection::PARAM_STR_ARRAY]
 			);
 			while ($row = $result->fetch()) {
-				$props[$row['propertyname']] = $row['propertyvalue'];
+				$props = $this->offsetGet($row['fileid']) ?? [];
+				$props[$row['propertyname']] = $this->decodeValue($row['propertyvalue'], (int) $row['propertytype']);
 				$this->offsetSet($row['fileid'], $props);
 			}
 			$result->closeCursor();
@@ -273,14 +289,8 @@ class FileCustomPropertiesBackend extends AbstractCustomPropertiesBackend {
 	 * @param int $otherPlaceholdersCount
 	 * @return array
 	 */
-	private function getChunks($toSlice, $otherPlaceholdersCount = 0) {
-		$databasePlatform = $this->connection->getDatabasePlatform();
-		if ($databasePlatform instanceof OraclePlatform || $databasePlatform instanceof SqlitePlatform) {
-			$slicer = 999 - $otherPlaceholdersCount;
-			$slices = \array_chunk($toSlice, $slicer);
-		} else {
-			$slices = \count($toSlice) ? [ 0 => $toSlice] : [];
-		}
-		return $slices;
+	private function getChunks($toSlice, $otherPlaceholdersCount = 0): array {
+		$slicer = 999 - $otherPlaceholdersCount;
+		return \array_chunk($toSlice, $slicer);
 	}
 }

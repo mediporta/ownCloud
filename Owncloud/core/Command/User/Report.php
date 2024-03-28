@@ -25,6 +25,9 @@
 
 namespace OC\Core\Command\User;
 
+use OC\Files\Filesystem;
+use OC\Helper\UserTypeHelper;
+use OCP\IUser;
 use OCP\IUserManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -35,11 +38,16 @@ class Report extends Command {
 	/** @var IUserManager */
 	protected $userManager;
 
+	/** @var UserTypeHelper */
+	protected $userTypeHelper;
+
 	/**
 	 * @param IUserManager $userManager
+	 * @param UserTypeHelper $userTypeHelper
 	 */
-	public function __construct(IUserManager $userManager) {
+	public function __construct(IUserManager $userManager, UserTypeHelper $userTypeHelper) {
 		$this->userManager = $userManager;
+		$this->userTypeHelper = $userTypeHelper;
 		parent::__construct();
 	}
 
@@ -49,10 +57,16 @@ class Report extends Command {
 			->setDescription('shows how many users have access');
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		if (Filesystem::isPrimaryObjectStorageEnabled() === true) {
+			$output->writeln('<info>We detected that the instance is running on a S3 primary object storage, user directories count might not be accurate</info>');
+		}
+
 		$table = new Table($output);
 		$table->setHeaders(['User Report', '']);
 		$userCountArray = $this->countUsers();
+		$guests = 0;
+
 		if (!empty($userCountArray)) {
 			$total = 0;
 			$rows = [];
@@ -61,18 +75,26 @@ class Report extends Command {
 				$rows[] = [$classname, $users];
 			}
 
+			$this->userManager->callForAllUsers(function (IUser $user) use (&$guests) {
+				if ($this->userTypeHelper->isGuestUser($user->getUID()) === true) {
+					$guests++;
+				}
+			});
+
+			$rows[] = [' '];
+			$rows[] = ['guest users', $guests];
 			$rows[] = [' '];
 			$rows[] = ['total users', $total];
 		} else {
 			$rows[] = ['No backend enabled that supports user counting', ''];
 		}
 
-		$userDirectoryCount = $this->countUserDirectories();
 		$rows[] = [' '];
-		$rows[] = ['user directories', $userDirectoryCount];
+		$rows[] = ['user directories', $this->countUserDirectories()];
 
 		$table->setRows($rows);
 		$table->render($output);
+		return 0;
 	}
 
 	private function countUsers() {
@@ -80,8 +102,16 @@ class Report extends Command {
 	}
 
 	private function countUserDirectories() {
-		$dataview = new \OC\Files\View('/');
-		$userDirectories = $dataview->getDirectoryContent('/', 'httpd/unix-directory');
-		return \count($userDirectories);
+		$userDirCount = 0;
+
+		$this->userManager->callForSeenUsers(function (IUser $user) use (&$userDirCount) {
+			$homePath = $user->getHome();
+
+			if (\is_dir($homePath)) {
+				$userDirCount++;
+			}
+		});
+
+		return $userDirCount;
 	}
 }

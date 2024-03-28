@@ -31,7 +31,6 @@
 namespace OC\AppFramework\DependencyInjection;
 
 use OC;
-use OC\AppFramework\Core\API;
 use OC\AppFramework\Http;
 use OC\AppFramework\Http\Dispatcher;
 use OC\AppFramework\Http\Output;
@@ -42,6 +41,7 @@ use OC\AppFramework\Middleware\SessionMiddleware;
 use OC\AppFramework\Utility\SimpleContainer;
 use OC\Core\Middleware\AccountModuleMiddleware;
 use OC\Core\Middleware\TwoFactorMiddleware;
+use OCP\API;
 use OCP\App\IServiceLoader;
 use OCP\AppFramework\IApi;
 use OCP\AppFramework\IAppContainer;
@@ -49,7 +49,6 @@ use OCP\Files\Mount\IMountManager;
 use OCP\IDateTimeFormatter;
 
 class DIContainer extends SimpleContainer implements IAppContainer {
-
 	/**
 	 * @var array
 	 */
@@ -66,6 +65,7 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 
 		/** @var \OC\ServerContainer $server */
 		$server = $this->getServer();
+		'@phan-var \OC\ServerContainer $server';
 		$server->registerAppContainer($appName, $this);
 
 		// aliases
@@ -82,6 +82,10 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 
 		$this->registerService('OCP\\App\\IAppManager', function ($c) {
 			return $this->getServer()->getAppManager();
+		});
+
+		$this->registerService('OCP\\License\\ILicenseManager', function ($c) {
+			return $this->getServer()->getLicenseManager();
 		});
 
 		$this->registerService('OCP\\AppFramework\\Http\\IOutput', function ($c) {
@@ -105,7 +109,9 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 		});
 
 		$this->registerService('OC\\CapabilitiesManager', function ($c) {
-			return $this->getServer()->getCapabilitiesManager();
+			$server = $this->getServer();
+			'@phan-var \OC\Server $server';
+			return $server->getCapabilitiesManager();
 		});
 
 		$this->registerService('OCP\Comments\ICommentsManager', function ($c) {
@@ -317,7 +323,7 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 				'Accessing the API class is deprecated! Use the appropriate ' .
 				'services instead!'
 			);
-			return new API($c['AppName']);
+			return new API();
 		});
 
 		$this->registerService('Protocol', function ($c) {
@@ -376,6 +382,8 @@ class DIContainer extends SimpleContainer implements IAppContainer {
 		});
 
 		$this->registerService('TwoFactorMiddleware', function (SimpleContainer $c) use ($app) {
+			// ToDo: DIServer is in DIContainer and not in SimpleContainer
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$twoFactorManager = $c->getServer()->getTwoFactorAuthManager();
 			$userSession = $app->getServer()->getUserSession();
 			$urlGenerator = $app->getServer()->getURLGenerator();

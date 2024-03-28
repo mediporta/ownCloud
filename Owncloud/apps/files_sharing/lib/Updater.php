@@ -25,7 +25,6 @@
 namespace OCA\Files_Sharing;
 
 class Updater {
-
 	/**
 	 * @param array $params
 	 */
@@ -58,6 +57,7 @@ class Updater {
 
 		$shares = $shareManager->getSharesBy($userFolder->getOwner()->getUID(), \OCP\Share::SHARE_TYPE_USER, $src, false, -1);
 		$shares = \array_merge($shares, $shareManager->getSharesBy($userFolder->getOwner()->getUID(), \OCP\Share::SHARE_TYPE_GROUP, $src, false, -1));
+		$shares = \array_merge($shares, $shareManager->getSharesBy($userFolder->getOwner()->getUID(), \OCP\Share::SHARE_TYPE_LINK, $src, false, -1));
 
 		// If the path we move is not a share we don't care
 		if (empty($shares)) {
@@ -102,6 +102,7 @@ class Updater {
 			if ($mount->getStorage()->instanceOfStorage('OCA\Files_Sharing\ISharedStorage')) {
 				$mountPoint = $mount->getMountPoint();
 				$target = \str_replace($absOldPath, $absNewPath, $mountPoint);
+				'@phan-var \OCA\Files_Sharing\SharedMount $mount';
 				$mount->moveMount($target);
 			}
 		}

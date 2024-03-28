@@ -24,13 +24,15 @@ namespace OC\Core\Command\User;
 
 use OC\User\Account;
 use OC\User\AccountMapper;
-use OC\User\Sync\AllUsersIterator;
+use OC\User\Backend;
+use OC\User\Sync\BackendUsersIterator;
 use OC\User\Sync\SeenUsersIterator;
 use OC\User\SyncService;
 use OCP\IConfig;
 use OCP\ILogger;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\User\NotPermittedActionException;
 use OCP\UserInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -41,16 +43,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 
 class SyncBackend extends Command {
-	const VALID_ACTIONS = ['disable', 'remove'];
+	public const VALID_ACTIONS = ['disable', 'remove'];
 
-	/** @var AccountMapper */
-	protected $accountMapper;
-	/** @var IConfig */
-	private $config;
-	/** @var IUserManager */
-	private $userManager;
-	/** @var ILogger */
-	private $logger;
+	protected AccountMapper $accountMapper;
+	private IConfig $config;
+	private IUserManager $userManager;
+	private ILogger $logger;
 
 	/**
 	 * @param AccountMapper $accountMapper
@@ -58,10 +56,12 @@ class SyncBackend extends Command {
 	 * @param IUserManager $userManager
 	 * @param ILogger $logger
 	 */
-	public function __construct(AccountMapper $accountMapper,
-								IConfig $config,
-								IUserManager $userManager,
-								ILogger $logger) {
+	public function __construct(
+		AccountMapper $accountMapper,
+		IConfig $config,
+		IUserManager $userManager,
+		ILogger $logger
+	) {
 		parent::__construct();
 		$this->accountMapper = $accountMapper;
 		$this->config = $config;
@@ -76,10 +76,11 @@ class SyncBackend extends Command {
 			->addArgument(
 				'backend-class',
 				InputArgument::OPTIONAL,
-				"The quoted PHP class name for the backend, eg\n"
-						." - LDAP:\t\t\"OCA\User_LDAP\User_Proxy\"\n"
-						." - Samba:\t\t\"OCA\User\SMB\"\n"
-						." - Shibboleth:\t\"OCA\User_Shibboleth\UserBackend\""
+				"The quoted PHP class name for the backend, eg" . PHP_EOL
+						." - LDAP:\t\t\"OCA\User_LDAP\User_Proxy\"" . PHP_EOL
+						." - Samba:\t\t\"OCA\User\SMB\"" . PHP_EOL
+						." - Shibboleth:\t\"OCA\User_Shibboleth\UserBackend\"" . PHP_EOL
+						."For easier usage of these three cases you can also use 'ldap', 'samba' or 'shibboleth"
 			)
 			->addOption(
 				'list',
@@ -122,9 +123,10 @@ class SyncBackend extends Command {
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
-	 * @return int|null
+	 * @return int
+	 * @throws NotPermittedActionException
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if ($input->getOption('list')) {
 			$backends = $this->userManager->getBackends();
 			foreach ($backends as $backend) {
@@ -139,7 +141,7 @@ class SyncBackend extends Command {
 		}
 		$backend = $this->getBackend($backendClassName);
 		if ($backend === null) {
-			$output->writeln("<error>The backend <$backendClassName> does not exist. Did you miss to enable the app?</error>");
+			$output->writeln("<error>The backend <$backendClassName> does not exist. Did you forget to enable the app?</error>");
 			return 1;
 		}
 		if (!$backend->hasUserListings()) {
@@ -157,9 +159,9 @@ class SyncBackend extends Command {
 			// ask (if possible) how to handle missing accounts. Disable the accounts by default.
 			$helper = $this->getHelper('question');
 			$question = new ChoiceQuestion(
-					'If unknown users are found, what do you want to do with their accounts? (removing the account will also remove its data)',
-					\array_merge(self::VALID_ACTIONS, ['ask later']),
-					0
+				'If unknown users are found, what do you want to do with their accounts? (removing the account will also remove its data)',
+				\array_merge(self::VALID_ACTIONS, ['ask later']),
+				0
 			);
 			$missingAccountsAction = $helper->ask($input, $output, $question);
 		}
@@ -169,19 +171,28 @@ class SyncBackend extends Command {
 		$uid = $input->getOption('uid');
 
 		if ($uid) {
-			$this->syncSingleUser($input, $output, $syncService, $backend, $uid, $missingAccountsAction);
+			$syncSuccess = $this->syncSingleUser($input, $output, $syncService, $backend, $uid, $missingAccountsAction);
 		} else {
-			$this->syncMultipleUsers($input, $output, $syncService, $backend, $missingAccountsAction);
+			$syncSuccess = $this->syncMultipleUsers($input, $output, $syncService, $backend, $missingAccountsAction);
+		}
+
+		if (!$syncSuccess) {
+			return 1;
 		}
 		return 0;
 	}
 
 	/**
+	 * Sync multiple users. Returns true if all users
+	 * were successfully synced, and returns false if at least 1 user had error
+	 *
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @param SyncService $syncService
 	 * @param UserInterface $backend
 	 * @param string $missingAccountsAction
+	 * @return bool
+	 * @throws NotPermittedActionException
 	 */
 	private function syncMultipleUsers(
 		InputInterface $input,
@@ -189,10 +200,10 @@ class SyncBackend extends Command {
 		SyncService $syncService,
 		UserInterface $backend,
 		$missingAccountsAction
-	) {
+	): bool {
 		$output->writeln('Analysing known accounts ...');
 		$p = new ProgressBar($output);
-		list($removedUsers, $reappearedUsers) = $syncService->analyzeExistingUsers($backend, function () use ($p) {
+		[$removedUsers, $reappearedUsers] = $syncService->analyzeExistingUsers($backend, function () use ($p) {
 			$p->advance();
 		});
 		$p->finish();
@@ -214,33 +225,52 @@ class SyncBackend extends Command {
 			$iterator = new SeenUsersIterator($this->accountMapper, $backendClass);
 		} else {
 			$output->writeln("Inserting new and updating all known users from $backendClass ...");
-			$iterator = new AllUsersIterator($backend);
+			$iterator = new BackendUsersIterator($backend);
 		}
 
-		$p = new ProgressBar($output);
+		$progress = new ProgressBar($output);
 		$max = null;
-		if ($backend->implementsActions(\OC_User_Backend::COUNT_USERS) && $input->getOption('showCount')) {
+		if ($backend->implementsActions(Backend::COUNT_USERS) && $input->getOption('showCount')) {
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$max = $backend->countUsers();
 		}
-		$p->start($max);
+		$progress->start($max);
 
-		$syncService->run($backend, $iterator, function () use ($p) {
-			$p->advance();
+		$syncErrors = [];
+		$syncService->run($backend, $iterator, function ($uid, $syncError) use ($progress, &$syncErrors) {
+			if ($syncError !== null) {
+				// NOTE: we cannot output here exception as this would break the progress bar
+				$syncErrors[] = "Sync error for $uid: {$syncError->getMessage()}";
+			}
+			$progress->advance();
 		});
+		$progress->finish();
+		$output->writeln('');
 
-		$p->finish();
+		foreach ($syncErrors as $syncError) {
+			$output->writeln("<error>$syncError</error>");
+		}
+
 		$output->writeln('');
 		$output->writeln('');
+
+		$syncErrorCount = \count($syncErrors);
+		$output->writeln("Sync of users finished, encountered $syncErrorCount errors.");
+		return $syncErrorCount === 0;
 	}
 
 	/**
+	 * Sync single user. Returns true if user
+	 * was successfully synced, and returns false if there was an error
+	 *
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @param SyncService $syncService
 	 * @param UserInterface $backend
 	 * @param string $uid
 	 * @param string $missingAccountsAction
-	 * @throws \LengthException
+	 * @return bool
+	 * @throws NotPermittedActionException
 	 */
 	private function syncSingleUser(
 		InputInterface $input,
@@ -249,20 +279,43 @@ class SyncBackend extends Command {
 		UserInterface $backend,
 		$uid,
 		$missingAccountsAction
-	) {
-		$output->writeln("Syncing $uid ...");
-		$users = $backend->getUsers($uid, 2);
-		if (\count($users) > 1) {
-			throw new \LengthException("Multiple users returned from backend for: $uid. Cancelling sync.");
+	): bool {
+		$output->writeln("Searching for $uid ...");
+
+		$iterator = new BackendUsersIterator($backend, $uid);
+		$userToSync = null;
+		foreach ($iterator as $userUid) {
+			if ($userUid === $uid) {
+				if ($userToSync === null) {
+					$userToSync = $userUid;
+				} else {
+					$output->writeln("<error>Multiple users returned from backend for: $uid. Cancelling sync.</error>");
+					return false;
+				}
+			}
 		}
 
 		$dummy = new Account(); // to prevent null pointer when writing messages
-		if (\count($users) === 1) {
+
+		if ($userToSync !== null) {
+			$syncSuccess = true;
 			// Run the sync using the internal username if mapped
-			$syncService->run($backend, new \ArrayIterator([$users[0]]), function () {
+			$output->writeln("Syncing $uid ...");
+			$syncService->run($backend, new \ArrayIterator([$userToSync]), function ($uid, $syncError) use ($output, &$syncSuccess) {
+				if ($syncError !== null) {
+					$syncSuccess = false;
+					$output->writeln("<error>Sync error for $uid : {$syncError->getMessage()}</error>");
+				}
 			});
+
+			if (!$syncSuccess) {
+				$output->writeln("Sync for $uid failed!");
+				return false;
+			}
+			$output->writeln("Synced $uid ");
 		} else {
 			// Not found
+			$output->writeln("Exact match for user $uid not found in the backend.");
 			$this->handleRemovedUsers([$uid => $dummy], $input, $output, $missingAccountsAction);
 		}
 
@@ -271,14 +324,27 @@ class SyncBackend extends Command {
 		if ($input->getOption('re-enable')) {
 			$this->reEnableUsers([$uid => $dummy], $output);
 		}
+
+		return true;
 	}
 	/**
 	 * @param $backend
 	 * @return null|UserInterface
 	 */
-	private function getBackend($backend) {
+	private function getBackend($backend): ?UserInterface {
+		switch ($backend) {
+			case 'ldap':
+				$backend = 'OCA\User_LDAP\User_Proxy';
+				break;
+			case 'samba':
+				$backend = 'OCA\User\SMB';
+				break;
+			case 'shibboleth':
+				$backend = 'OCA\User_Shibboleth\UserBackend';
+				break;
+		}
 		$backends = $this->userManager->getBackends();
-		$match = \array_filter($backends, function ($b) use ($backend) {
+		$match = \array_filter($backends, static function ($b) use ($backend) {
 			return \get_class($b) === $backend;
 		});
 		if (empty($match)) {
@@ -288,13 +354,13 @@ class SyncBackend extends Command {
 	}
 
 	/**
-	 * @param array $uidToAccountMap a list of uids to account objects
+	 * @param array $uidToAccountMap a list of user ids to account objects
 	 * @param callable $callbackExists the callback used if the account for the uid exists. The
 	 * uid and the specific account will be passed as parameter to the callback in that order
-	 * @param callable $callbackMissing the callback used if the account doesn't exists.
+	 * @param callable|null $callbackMissing the callback used if the account doesn't exist.
 	 * The uid and account are passed as parameters to the callback
 	 */
-	private function doActionForAccountUids(array $uidToAccountMap, callable $callbackExists, callable $callbackMissing = null) {
+	private function doActionForAccountUids(array $uidToAccountMap, callable $callbackExists, callable $callbackMissing = null): void {
 		foreach ($uidToAccountMap as $uid => $account) {
 			$user = $this->userManager->get($uid);
 			if ($user === null) {
@@ -306,16 +372,16 @@ class SyncBackend extends Command {
 	}
 
 	/**
-	 * @param string[] $removedUsers
+	 * @param array $removedUsers
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @param $missingAccountsAction
+	 * @throws NotPermittedActionException
 	 */
-	private function handleRemovedUsers(array $removedUsers, InputInterface $input, OutputInterface $output, $missingAccountsAction) {
+	private function handleRemovedUsers(array $removedUsers, InputInterface $input, OutputInterface $output, $missingAccountsAction): void {
 		if (empty($removedUsers)) {
 			$output->writeln('No removed users have been detected.');
 		} else {
-
 			// define some actions to be used
 			$disableAction = function ($uid, IUser $user) use ($output) {
 				if ($user->isEnabled()) {
@@ -393,16 +459,19 @@ class SyncBackend extends Command {
 
 	/**
 	 * Re-enable disabled accounts
-	 * @param array $reappearedUsers map of uids to account objects
+	 *
+	 * @param array $reappearedUsers map of user ids to account objects
 	 * @param OutputInterface $output
+	 * @throws NotPermittedActionException
 	 */
-	private function reEnableUsers(array $reappearedUsers, OutputInterface $output) {
+	private function reEnableUsers(array $reappearedUsers, OutputInterface $output): void {
 		if (empty($reappearedUsers)) {
 			$output->writeln('No existing accounts to re-enable.');
 		} else {
 			$output->writeln('Re-enabling accounts:');
 
-			$this->doActionForAccountUids($reappearedUsers,
+			$this->doActionForAccountUids(
+				$reappearedUsers,
 				function ($uid, IUser $user) use ($output) {
 					if ($user->isEnabled()) {
 						$output->writeln("$uid, {$user->getDisplayName()}, {$user->getEMailAddress()} skipped, already enabled");

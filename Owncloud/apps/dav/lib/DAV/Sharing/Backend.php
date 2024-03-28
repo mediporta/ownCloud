@@ -29,7 +29,6 @@ use OCA\DAV\DAV\GroupPrincipalBackend;
 use OCP\IDBConnection;
 
 class Backend {
-
 	/** @var IDBConnection */
 	private $db;
 	/** @var Principal */
@@ -39,9 +38,9 @@ class Backend {
 	/** @var string */
 	private $resourceType;
 
-	const ACCESS_OWNER = 1;
-	const ACCESS_READ_WRITE = 2;
-	const ACCESS_READ = 3;
+	public const ACCESS_OWNER = 1;
+	public const ACCESS_READ_WRITE = 2;
+	public const ACCESS_READ = 3;
 
 	/**
 	 * @param IDBConnection $db
@@ -186,7 +185,7 @@ class Backend {
 		while ($row = $result->fetch()) {
 			$p = $this->principalBackend->getPrincipalByPath($row['principaluri']);
 			$shares[]= [
-				'href' => "principal:${row['principaluri']}",
+				'href' => "principal:{$row['principaluri']}",
 				'commonName' => isset($p['{DAV:}displayname']) ? $p['{DAV:}displayname'] : '',
 				'status' => 1,
 				'readOnly' => $row['access'] == self::ACCESS_READ,

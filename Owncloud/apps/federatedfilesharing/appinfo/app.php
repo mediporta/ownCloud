@@ -21,12 +21,9 @@
  *
  */
 
-$app = new \OCA\FederatedFileSharing\AppInfo\Application('federatedfilesharing');
-
 use OCA\FederatedFileSharing\Notifier;
-use OCP\Share\Events\AcceptShare;
-use OCP\Share\Events\DeclineShare;
-use OCP\Defaults;
+
+$app = new \OCA\FederatedFileSharing\AppInfo\Application();
 
 $manager = \OC::$server->getNotificationManager();
 $manager->registerNotifier(function () {
@@ -41,35 +38,4 @@ $manager->registerNotifier(function () {
 	];
 });
 
-// add 'Add to your ownCloud' button to public pages
-// FIXME the OCA\Files::loadAdditionalScripts event is only fired by the ViewController of the files app ... but we are nowadays using webdav.
-// FIXME versions, comments, tags and sharing ui still uses it https://github.com/owncloud/core/search?utf8=%E2%9C%93&q=loadAdditionalScripts&type=
-OCP\Util::connectHook('OCP\Share', 'share_link_access', 'OCA\FederatedFileSharing\HookHandler', 'loadPublicJS');
-
-// react to accept and decline share events
-$eventDispatcher = \OC::$server->getEventDispatcher();
-$eventDispatcher->addListener(
-	AcceptShare::class,
-	function (AcceptShare $event) use ($app) {
-		/** @var \OCA\FederatedFileSharing\Notifications $notifications */
-		$notifications = $app->getContainer()->query('OCA\FederatedFileSharing\Notifications');
-		$notifications->sendAcceptShare(
-			$event->getRemote(),
-			$event->getRemoteId(),
-			$event->getShareToken()
-		);
-	}
-);
-
-$eventDispatcher->addListener(
-	DeclineShare::class,
-	function (DeclineShare $event) use ($app) {
-		/** @var \OCA\FederatedFileSharing\Notifications $notifications */
-		$notifications = $app->getContainer()->query('OCA\FederatedFileSharing\Notifications');
-		$notifications->sendDeclineShare(
-			$event->getRemote(),
-			$event->getRemoteId(),
-			$event->getShareToken()
-		);
-	}
-);
+$app->registerListeners();

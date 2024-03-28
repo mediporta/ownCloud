@@ -27,7 +27,6 @@ use OCP\IConfig;
 use OCP\Util;
 
 class VersionCheck {
-
 	/** @var IClientService */
 	private $clientService;
 	
@@ -38,8 +37,10 @@ class VersionCheck {
 	 * @param IClientService $clientService
 	 * @param IConfig $config
 	 */
-	public function __construct(IClientService $clientService,
-								IConfig $config) {
+	public function __construct(
+		IClientService $clientService,
+		IConfig $config
+	) {
 		$this->clientService = $clientService;
 		$this->config = $config;
 	}

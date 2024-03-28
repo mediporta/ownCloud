@@ -13,8 +13,8 @@ OC.L10N.register(
     "Save" : "Guardar",
     "Allowed characters {count} of {max}" : "{count} de {max} caracteres restantes",
     "Error occurred while retrieving comment with id {id}" : "Ocorreu um erro ao tentar obter o comentário com o id {id}",
-    "Error occurred while updating comment with id {id}" : "Ocorreu um erro ao tentar atualizar o comentário com o id {id}",
-    "Error occurred while posting comment" : "Ocorreu um erro ao tentar publicar o comentário",
+    "Error occurred while updating comment with id {id}" : "Ocorreu um erro ao tentar atualizar o comentário com a id. {id}",
+    "Error occurred while posting comment" : "Ocorreu um erro ao publicar o comentário",
     "{count} unread comments" : "{count} comentários não lidos",
     "Comment" : "Comentário",
     "<strong>Comments</strong> for files <em>(always listed in stream)</em>" : "<strong>Comentários</strong> aos ficheiros <em>(listados sempre na transmissão)</em>",
@@ -23,4 +23,4 @@ OC.L10N.register(
     "You commented on %2$s" : "Comentou %2$s",
     "%1$s commented on %2$s" : "%1$s comentou %2$s"
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

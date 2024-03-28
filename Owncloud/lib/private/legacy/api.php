@@ -67,38 +67,37 @@ use OCP\Authentication\Exceptions\AccountCheckException;
  */
 
 class OC_API {
-
 	/**
 	 * API authentication levels
 	 */
 
 	/** @deprecated Use \OCP\API::GUEST_AUTH instead */
-	const GUEST_AUTH = 0;
+	public const GUEST_AUTH = 0;
 
 	/** @deprecated Use \OCP\API::USER_AUTH instead */
-	const USER_AUTH = 1;
+	public const USER_AUTH = 1;
 
 	/** @deprecated Use \OCP\API::SUBADMIN_AUTH instead */
-	const SUBADMIN_AUTH = 2;
+	public const SUBADMIN_AUTH = 2;
 
 	/** @deprecated Use \OCP\API::ADMIN_AUTH instead */
-	const ADMIN_AUTH = 3;
+	public const ADMIN_AUTH = 3;
 
 	/**
 	 * API Response Codes
 	 */
 
 	/** @deprecated Use \OCP\API::RESPOND_UNAUTHORISED instead */
-	const RESPOND_UNAUTHORISED = 997;
+	public const RESPOND_UNAUTHORISED = 997;
 
 	/** @deprecated Use \OCP\API::RESPOND_SERVER_ERROR instead */
-	const RESPOND_SERVER_ERROR = 996;
+	public const RESPOND_SERVER_ERROR = 996;
 
 	/** @deprecated Use \OCP\API::RESPOND_NOT_FOUND instead */
-	const RESPOND_NOT_FOUND = 998;
+	public const RESPOND_NOT_FOUND = 998;
 
 	/** @deprecated Use \OCP\API::RESPOND_UNKNOWN_ERROR instead */
-	const RESPOND_UNKNOWN_ERROR = 999;
+	public const RESPOND_UNKNOWN_ERROR = 999;
 
 	/**
 	 * api actions
@@ -118,10 +117,16 @@ class OC_API {
 	 * @param array $requirements
 	 * @param boolean $cors whether to enable cors for this route
 	 */
-	public static function register($method, $url, $action, $app,
-				$authLevel = API::USER_AUTH,
-				$defaults = [],
-				$requirements = [], $cors = true) {
+	public static function register(
+		$method,
+		$url,
+		$action,
+		$app,
+		$authLevel = API::USER_AUTH,
+		$defaults = [],
+		$requirements = [],
+		$cors = true
+	) {
 		$name = \strtolower($method).$url;
 		$name = \str_replace(['/', '{', '}'], '_', $name);
 		if (!isset(self::$actions[$name])) {
@@ -184,10 +189,14 @@ class OC_API {
 
 		// If CORS is set to active for some method, try to add CORS headers
 		if (self::$actions[$name][0]['cors'] &&
-			\OC::$server->getUserSession()->getUser() !== null &&
 			\OC::$server->getRequest()->getHeader('Origin') !== null) {
 			$requesterDomain = \OC::$server->getRequest()->getHeader('Origin');
-			$userId = \OC::$server->getUserSession()->getUser()->getUID();
+
+			// unauthenticated request shall add cors headers as well
+			$userId = null;
+			if (\OC::$server->getUserSession()->getUser() !== null) {
+				$userId = \OC::$server->getUserSession()->getUser()->getUID();
+			}
 			$headers = \OC_Response::setCorsHeaders($userId, $requesterDomain);
 			foreach ($headers as $key => $value) {
 				$response->addHeader($key, \implode(',', $value));
@@ -373,7 +382,6 @@ class OC_API {
 			if ($userSession->verifyAuthHeaders($request)) {
 				$ocsApiRequest = isset($_SERVER['HTTP_OCS_APIREQUEST']) ? $_SERVER['HTTP_OCS_APIREQUEST'] === 'true' : false;
 				if ($ocsApiRequest) {
-
 					// initialize the user's filesystem
 					\OC_Util::setupFS(\OC_User::getUser());
 					self::$isLoggedIn = true;
@@ -392,7 +400,8 @@ class OC_API {
 				self::$logoutRequired = false;
 			} elseif ($userSession->tryTokenLogin($request)
 				|| $userSession->tryAuthModuleLogin($request)
-				|| $userSession->tryBasicAuthLogin($request)) {
+				|| $userSession->tryBasicAuthLogin($request)
+				|| $userSession->tryRememberMeLogin($request)) {
 				self::$logoutRequired = true;
 			} else {
 				return false;
@@ -429,7 +438,7 @@ class OC_API {
 			} else {
 				\header('WWW-Authenticate: Basic realm="Authorisation Required"');
 			}
-			\header('HTTP/1.0 401 Unauthorized');
+			\http_response_code(401);
 		}
 
 		foreach ($result->getHeaders() as $name => $value) {
@@ -456,7 +465,7 @@ class OC_API {
 	 */
 	private static function toXML($array, $writer) {
 		foreach ($array as $k => $v) {
-			if ($k[0] === '@') {
+			if (isset($k[0]) && ($k[0] === '@')) {
 				if (\is_array($v)) {
 					foreach ($v as $name => $value) {
 						$writer->writeAttribute($name, $value);
@@ -570,7 +579,7 @@ class OC_API {
 	}
 
 	/**
-	 * Called when a not existing OCS endpoint has been called
+	 * Called when a nonexistent OCS endpoint has been called
 	 */
 	public static function notFound() {
 		$format = \OC::$server->getRequest()->getParam('format', 'xml');

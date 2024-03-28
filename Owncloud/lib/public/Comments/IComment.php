@@ -30,7 +30,8 @@ namespace OCP\Comments;
  * @since 9.0.0
  */
 interface IComment {
-	const MAX_MESSAGE_LENGTH = 1000;
+	public const MAX_MESSAGE_LENGTH = 1000;
+	public const MAX_VERB_LENGTH = 64;
 
 	/**
 	 * returns the ID of the comment
@@ -203,11 +204,11 @@ interface IComment {
 	/**
 	 * sets the date of the most recent child
 	 *
-	 * @param \DateTime $dateTime
+	 * @param \DateTime|null $dateTime
 	 * @return IComment
 	 * @since 9.0.0
 	 */
-	public function setLatestChildDateTime(\DateTime $dateTime);
+	public function setLatestChildDateTime(\DateTime $dateTime = null);
 
 	/**
 	 * returns the object type the comment is attached to

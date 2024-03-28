@@ -7,6 +7,7 @@ OC.L10N.register(
     "Please select tags to filter by" : "יש לבחור תגיות שיסוננו על ידי",
     "No files found for the selected tags" : "לא אותרו קבצים לתגיות הנבחרות",
     "<strong>System tags</strong> for a file have been modified" : "<strong>תגיות מערכת</strong> שהשתנו עבור קובץ",
+    "System tag %3$s was assigned to %2$s due to automation rule" : "תגית המערכת %3$s הוקצתה לטובת %2$s עקב כלל אוטומציה",
     "You assigned system tag %3$s" : "שייכת תגית מערכת %3$s",
     "%1$s assigned system tag %3$s" : "%1$s שייך/שייכה תגית מערכת %3$s",
     "You unassigned system tag %3$s" : "הסרת שיוך של תגית מערכת %3$s",
@@ -23,10 +24,11 @@ OC.L10N.register(
     "%1$s unassigned system tag %3$s from %2$s" : "%1$s הסיר/ה שיוך תגית מערכת %3$s מ- %2$s",
     "%s (restricted)" : "%s (מוגבל)",
     "%s (invisible)" : "%s (נסתר)",
+    "%s (static)" : "%s (סטטי)",
     "No files in here" : "אין כאן קבצים",
     "No entries found in this folder" : "לא נמצאו כניסות לתיקייה זו",
     "Name" : "שם",
     "Size" : "גודל",
     "Modified" : "זמן שינוי"
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n == 2 && n % 1 == 0) ? 1: (n % 10 == 0 && n % 1 == 0 && n > 10) ? 2 : 3;");

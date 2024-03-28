@@ -29,7 +29,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class OwnCloud extends Command {
-
 	/** @var IConfig */
 	protected $config;
 
@@ -63,7 +62,7 @@ class OwnCloud extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$toBeSet = [];
 
 		if ($input->getOption('enable')) {
@@ -104,6 +103,7 @@ class OwnCloud extends Command {
 			$rotateString = 'disabled';
 		}
 		$output->writeln('Rotate at: '.$rotateString);
+		return 0;
 	}
 
 	/**

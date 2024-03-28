@@ -29,10 +29,9 @@ use \Owncloud\Updater\Console\Application;
  * @package Owncloud\Updater\Utils
  */
 class Locator {
-
 	/**
 	 * absolute path to ownCloud root
-	 * @var string 
+	 * @var string
 	 */
 	protected $ownCloudRootPath;
 
@@ -46,15 +45,15 @@ class Locator {
 	 *
 	 * @param string $baseDir
 	 */
-	public function __construct($baseDir){
+	public function __construct($baseDir) {
 		$this->updaterRootPath = $baseDir;
-		$this->ownCloudRootPath = dirname($baseDir);
+		$this->ownCloudRootPath = \dirname($baseDir);
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getOwnCloudRootPath(){
+	public function getOwnCloudRootPath() {
 		return $this->ownCloudRootPath;
 	}
 
@@ -62,13 +61,14 @@ class Locator {
 	 * expected items in the core
 	 * @return string[]
 	 */
-	public function getRootDirContent(){
+	public function getRootDirContent() {
 		return [
 			"3rdparty",
 			"config",
 			"core",
 			"l10n",
 			"lib",
+			"ocm-provider",
 			"ocs",
 			"ocs-provider",
 			"resources",
@@ -98,13 +98,14 @@ class Locator {
 	/**
 	 * @return array
 	 */
-	public function getUpdaterContent(){
+	public function getUpdaterContent() {
 		return [
 			'app',
 			'application.php',
 			'box.json',
 			'composer.json',
 			'composer.lock',
+			'CHANGELOG.md',
 			'CONTRIBUTING.md',
 			'COPYING-AGPL',
 			'index.php',
@@ -119,13 +120,36 @@ class Locator {
 	}
 
 	/**
+	 * Get all files and directories in the OC root dir using signature.json as a source
+	 *
+	 * @param string $basePath
+	 *
+	 * @return array
+	 */
+	public function getRootDirItemsFromSignature($basePath) {
+		$signature = $this->getSignature($basePath);
+		$items = [];
+		if (isset($signature['hashes'])) {
+			$allItems = \array_keys($signature['hashes']);
+			foreach ($allItems as $k => $v) {
+				// Get the part of the string before the first slash or entire string if there is no slash
+				$allItems[$k] = \strtok($v, '/');
+			}
+			$items = \array_unique($allItems);
+		}
+		return $items;
+	}
+
+	/**
 	 * Absolute path to core root dir content
 	 * @return array
 	 */
-	public function getRootDirItems(){
+	public function getRootDirItems() {
 		$items = $this->getRootDirContent();
-		$items = array_map(
-			function($item){ return $this->ownCloudRootPath . "/" . $item;	},
+		$items = \array_map(
+			function ($item) {
+				return $this->ownCloudRootPath . "/" . $item;
+			},
 			$items
 		);
 		return $items;
@@ -136,15 +160,15 @@ class Locator {
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function getDataDir(){
+	public function getDataDir() {
 		$container = Application::$container;
-		if (isset($container['utils.configReader']) && $container['utils.configReader']->getIsLoaded()){
+		if (isset($container['utils.configReader']) && $container['utils.configReader']->getIsLoaded()) {
 			return $container['utils.configReader']->getByPath('system.datadirectory');
 		}
 
 		// Fallback case
 		include $this->getPathToConfigFile();
-		if (isset($CONFIG['datadirectory'])){
+		if (isset($CONFIG['datadirectory'])) {
 			return $CONFIG['datadirectory'];
 		}
 
@@ -156,7 +180,7 @@ class Locator {
 	 * Absolute path to updater root dir
 	 * @return string
 	 */
-	public function getUpdaterBaseDir(){
+	public function getUpdaterBaseDir() {
 		return $this->getDataDir() . '/updater-data';
 	}
 
@@ -164,7 +188,7 @@ class Locator {
 	 * Absolute path to create a core and apps backups
 	 * @return string
 	 */
-	public function getCheckpointDir(){
+	public function getCheckpointDir() {
 		return $this->getUpdaterBaseDir() . '/checkpoint';
 	}
 
@@ -172,7 +196,7 @@ class Locator {
 	 * Absolute path to store downloaded packages
 	 * @return string
 	 */
-	public function getDownloadBaseDir(){
+	public function getDownloadBaseDir() {
 		return $this->getUpdaterBaseDir() . '/download';
 	}
 
@@ -181,57 +205,57 @@ class Locator {
 	 * to extract downloaded packages into
 	 * @return string
 	 */
-	public function getExtractionBaseDir(){
-		 return $this->getUpdaterBaseDir() . "/_oc_upgrade";
+	public function getExtractionBaseDir() {
+		return $this->getUpdaterBaseDir() . "/_oc_upgrade";
 	}
 
 	/**
 	 *
 	 * @return string
 	 */
-	public function getPathToOccFile(){
+	public function getPathToOccFile() {
 		return $this->ownCloudRootPath . '/occ';
 	}
 
 	/**
 	 *
-	 * @return string
+	 * @return array
 	 */
-	public function getInstalledVersion(){
+	public function getInstalledVersion() {
 		include $this->getPathToVersionFile();
 
-		/** @var $OC_Version string */
-		return $OC_Version;
+		/** @var $OC_Version array */
+		return $OC_Version; /* @phan-suppress-current-line PhanUndeclaredVariable */
 	}
 
 	/**
 	 *
 	 * @return string
 	 */
-	public function getChannelFromVersionsFile(){
+	public function getChannelFromVersionsFile() {
 		include $this->getPathToVersionFile();
 
 		/** @var $OC_Channel string */
-		return $OC_Channel;
+		return $OC_Channel; /* @phan-suppress-current-line PhanUndeclaredVariable */
 	}
 
 	/**
 	 *
 	 * @return string
 	 */
-	public function getBuild(){
+	public function getBuild() {
 		include $this->getPathToVersionFile();
 
 		/** @var $OC_Build string */
-		return $OC_Build;
+		return $OC_Build; /* @phan-suppress-current-line PhanUndeclaredVariable */
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getSecretFromConfig(){
+	public function getSecretFromConfig() {
 		include $this->getPathToConfigFile();
-		if (isset($CONFIG['updater.secret'])){
+		if (isset($CONFIG['updater.secret'])) {
 			return $CONFIG['updater.secret'];
 		}
 		return '';
@@ -241,7 +265,7 @@ class Locator {
 	 * @param string $filePostfix
 	 * @return array
 	 */
-	public function getPathtoConfigFiles($filePostfix = 'config.php'){
+	public function getPathtoConfigFiles($filePostfix = 'config.php') {
 		// Only config.php for now
 		return [
 			$this->ownCloudRootPath . '/config/' . $filePostfix
@@ -251,7 +275,7 @@ class Locator {
 	/**
 	 * @return string
 	 */
-	public function getPathToConfigFile(){
+	public function getPathToConfigFile() {
 		return $this->ownCloudRootPath . '/config/config.php';
 	}
 
@@ -259,8 +283,24 @@ class Locator {
 	 *
 	 * @return string
 	 */
-	public function getPathToVersionFile(){
+	public function getPathToVersionFile() {
 		return $this->ownCloudRootPath . '/version.php';
 	}
 
+	/**
+	 * @param string $rootPath
+	 *
+	 * @return array|mixed
+	 */
+	private function getSignature($rootPath) {
+		$signature = [];
+		$signaturePath = $rootPath . '/core/signature.json';
+		if (\is_file($signaturePath)) {
+			$signature = \json_decode(\file_get_contents($signaturePath), true);
+			if (!\is_array($signature)) {
+				$signature = [];
+			}
+		}
+		return $signature;
+	}
 }

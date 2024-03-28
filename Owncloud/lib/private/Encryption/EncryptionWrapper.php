@@ -38,7 +38,6 @@ use OCP\ILogger;
  * @package OC\Encryption
  */
 class EncryptionWrapper {
-
 	/** @var ArrayCache  */
 	private $arrayCache;
 
@@ -55,9 +54,10 @@ class EncryptionWrapper {
 	 * @param Manager $manager
 	 * @param ILogger $logger
 	 */
-	public function __construct(ArrayCache $arrayCache,
-								Manager $manager,
-								ILogger $logger
+	public function __construct(
+		ArrayCache $arrayCache,
+		Manager $manager,
+		ILogger $logger
 	) {
 		$this->arrayCache = $arrayCache;
 		$this->manager = $manager;

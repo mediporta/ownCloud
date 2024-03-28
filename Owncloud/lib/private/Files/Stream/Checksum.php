@@ -24,6 +24,7 @@ namespace OC\Files\Stream;
 
 use Icewind\Streams\Wrapper;
 use OC\Cache\CappedMemoryCache;
+use OC_Util;
 
 /**
  * Computes the checksum of the wrapped stream. The checksum can be retrieved with
@@ -33,7 +34,6 @@ use OC\Cache\CappedMemoryCache;
  * @package OC\Files\Stream
  */
 class Checksum extends Wrapper {
-
 	/**
 	 * To stepwise compute a hash on a continuous stream
 	 * of data a "context" is required which stores the intermediate
@@ -46,13 +46,19 @@ class Checksum extends Wrapper {
 	 */
 	private $hashingContexts;
 
+	/**
+	 * Check if the stream has been read or written from the beginning.
+	 * If `fseek` is called, this flag should be false unless the target
+	 * position of the beginning of the stream
+	 */
+	private $fromBeginning = true;
+	private $reading = false;
+
 	/** @var CappedMemoryCache Key is path, value is array of checksums */
 	private static $checksums;
 
 	public function __construct(array $algos = ['sha1', 'md5', 'adler32']) {
-		foreach ($algos as $algo) {
-			$this->hashingContexts[$algo] = \hash_init($algo);
-		}
+		$this->startHashingContexts($algos);
 
 		if (!self::$checksums) {
 			self::$checksums = new CappedMemoryCache();
@@ -62,9 +68,10 @@ class Checksum extends Wrapper {
 	/**
 	 * @param $source
 	 * @param $path
+	 * @param $mode the fopen's mode of the source
 	 * @return resource
 	 */
-	public static function wrap($source, $path) {
+	public static function wrap($source, $path, $mode) {
 		$context = \stream_context_create([
 			'occhecksum' => [
 				'source' => $source,
@@ -72,8 +79,15 @@ class Checksum extends Wrapper {
 			]
 		]);
 
+		// Assume that the underlying stream is compatible with the requested mode.
+		// Getting the mode of the source might not be reliable due to additional
+		// wrappers masking it, usually forcing it to be "r+"
 		return Wrapper::wrapSource(
-			$source, $context, 'occhecksum', self::class
+			$source,
+			$context,
+			'occhecksum',
+			self::class,
+			$mode
 		);
 	}
 
@@ -97,7 +111,47 @@ class Checksum extends Wrapper {
 		$context = parent::loadContext('occhecksum');
 		$this->setSourceStream($context['source']);
 
+		switch ($mode[0]) {  // check first char of the mode
+			case 'r':
+			case 'c':
+				// "c" mode is write only, but we consider it as read because
+				// the content isn't truncated and there could be content after
+				// the pointer that should be read in order to compute the checksum
+				$this->fromBeginning = true;
+				$this->reading = true;
+				break;
+			case 'w':
+			case 'x':
+				$this->fromBeginning = true;
+				$this->reading = false;
+				break;
+			case 'a':
+				$this->fromBeginning = false;
+				$this->reading = true;
+				break;
+		}
+
 		return true;
+	}
+
+	/**
+	 * @param int $offset
+	 * @param int $whence
+	 * @return bool
+	 */
+	public function stream_seek($offset, $whence = SEEK_SET) {
+		$seeked = parent::stream_seek($offset, $whence);
+		if ($seeked) {
+			$this->fromBeginning = parent::stream_tell() === 0;
+			if ($this->fromBeginning) {
+				// start new hashing contexts if we've moved to the beginning of the stream
+				$this->startHashingContexts();
+				// mark the stream as reading because there could be content to read
+				// after the pointer even if we're only writing.
+				$this->reading = true;
+			}
+		}
+		return $seeked;
 	}
 
 	/**
@@ -128,47 +182,45 @@ class Checksum extends Wrapper {
 	}
 
 	/**
-	 * Remove .part extension from a file path
-	 * @param string $path Path that may identify a .part file
-	 * @return string File path without .part extension
-	 */
-	private function stripPartialFileExtension($path) {
-		$extension = \pathinfo($path, PATHINFO_EXTENSION);
-
-		if ($extension === 'part') {
-			$newLength = \strlen($path) - 5; // 5 = strlen(".part")
-			$fPath = \substr($path, 0, $newLength);
-
-			// if path also contains a transaction id, we remove it too
-			$extension = \pathinfo($fPath, PATHINFO_EXTENSION);
-			if (\substr($extension, 0, 12) === 'ocTransferId') { // 12 = strlen("ocTransferId")
-				$newLength = \strlen($fPath) - \strlen($extension) -1;
-				$fPath = \substr($fPath, 0, $newLength);
-			}
-			return $fPath;
-		} else {
-			return $path;
-		}
-	}
-
-	/**
 	 * Make checksums available for part files and the original file for which part file has been created
 	 * @return bool
 	 */
 	public function stream_close() {
 		$currentPath = $this->getPathFromStreamContext();
 		$checksum = $this->finalizeHashingContexts();
-		self::$checksums[$currentPath] = $checksum;
+		if ($this->fromBeginning && (!$this->reading || parent::stream_eof())) {
+			// only store the checksum if we've reached the end of the stream from the beginning
+			self::$checksums[$currentPath] = $checksum;
 
-		// If current path belongs to part file, save checksum for original file
-		// As a result, call to getChecksums for original file (of this part file) will
-		// fetch checksum from cache
-		$originalFilePath = $this->stripPartialFileExtension($currentPath);
-		if ($originalFilePath !== $currentPath) {
-			self::$checksums[$originalFilePath] = $checksum;
+			// If current path belongs to part file, save checksum for original file
+			// As a result, call to getChecksums for original file (of this part file) will
+			// fetch checksum from cache
+			$originalFilePath = OC_Util::stripPartialFileExtension($currentPath);
+			if ($originalFilePath !== $currentPath) {
+				self::$checksums[$originalFilePath] = $checksum;
+			}
 		}
 
 		return parent::stream_close();
+	}
+
+	/**
+	 * Start hashing contexts. If no algorithm is provided, the existing ones
+	 * will be reinitialized, otherwise the ones provided will be used
+	 * @param array|null a list of hashing algorithms or null to use the existing ones
+	 * (from a previous `startHashingContexts($algos)` call)
+	 */
+	private function startHashingContexts($algos = null) {
+		if ($algos === null) {
+			foreach ($this->hashingContexts as $key => $value) {
+				$this->hashingContexts[$key] = \hash_init($key);
+			}
+		} else {
+			$this->hashingContexts = [];
+			foreach ($algos as $algo) {
+				$this->hashingContexts[$algo] = \hash_init($algo);
+			}
+		}
 	}
 
 	/**
@@ -206,11 +258,24 @@ class Checksum extends Wrapper {
 	 * @return array
 	 */
 	public static function getChecksums($path) {
-		if (!isset(self::$checksums[$path])) {
+		if (isset(self::$checksums[$path])) {
+			return self::$checksums[$path];
+		}
+
+		// check the md5($path) in case "part_file_in_storage" is set to false
+		// see apps/dav/lib/Connector/Sabre/File.php getPartFileBasePath  (around line 305)
+		// strip initial dir, usually "files" from "files/dir1/dir2"
+		$pathPieces = \explode('/', $path, 2);
+		if (\count($pathPieces) !== 2) {
 			return [];
 		}
 
-		return self::$checksums[$path];
+		$pathToCheck = "{$pathPieces[0]}/" . \md5("/{$pathPieces[1]}");
+		if (isset(self::$checksums[$pathToCheck])) {
+			return self::$checksums[$pathToCheck];
+		}
+
+		return [];
 	}
 
 	/**
@@ -224,5 +289,12 @@ class Checksum extends Wrapper {
 		}
 
 		return self::$checksums;
+	}
+
+	/**
+	 * For tests
+	 */
+	public static function resetChecksums() {
+		self::$checksums = new CappedMemoryCache();
 	}
 }

@@ -21,7 +21,7 @@
 
 namespace OC\Share\Filters;
 
-use Zend\InputFilter\Factory as InputFilterFactory;
+use Laminas\InputFilter\Factory as InputFilterFactory;
 
 /**
  * Class MailNotificationFilter
@@ -34,9 +34,8 @@ use Zend\InputFilter\Factory as InputFilterFactory;
  * @see https://hackerone.com/reports/297535
  */
 class MailNotificationFilter {
-
 	/**
-	 * @var \Zend\InputFilter\InputFilterInterface
+	 * @var \Laminas\InputFilter\InputFilterInterface
 	 */
 	private $inputFilter;
 
@@ -98,7 +97,10 @@ class MailNotificationFilter {
 	/**
 	 * @return string The filtered file name
 	 */
-	public function getFile() {
+	public function getFile($raw = false) {
+		if ($raw) {
+			return $this->inputFilter->getRawValue('file');
+		}
 		return $this->inputFilter->getValue('file');
 	}
 

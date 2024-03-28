@@ -21,6 +21,7 @@ OCP\Util::addScript('files', 'newfilemenu');
 OCP\Util::addScript('files', 'files');
 OCP\Util::addScript('files', 'filelist');
 OCP\Util::addScript('files', 'keyboardshortcuts');
+OCP\Util::addScript('files', 'fileactionsapplicationselectmenu');
 
 // OpenGraph Support: http://ogp.me/
 OCP\Util::addHeader('meta', ['property' => "og:title", 'content' => $theme->getName() . ' - ' . $theme->getSlogan()]);
@@ -47,20 +48,22 @@ OCP\Util::addHeader('meta', ['property' => "og:image", 'content' => $_['previewI
 <input type="hidden" name="filename" value="<?php p($_['filename']) ?>" id="filename">
 <input type="hidden" name="mimetype" value="<?php p($_['mimetype']) ?>" id="mimetype">
 <input type="hidden" name="previewSupported" value="<?php p($_['previewSupported'] ? 'true' : 'false'); ?>" id="previewSupported">
+<input type="hidden" name="previewEnabled" value="<?php p($_['previewEnabled'] ? 'true' : 'false'); ?>" id="previewEnabled">
 <input type="hidden" name="mimetypeIcon" value="<?php p(\OC::$server->getMimeTypeDetector()->mimeTypeIcon($_['mimetype'])); ?>" id="mimetypeIcon">
 <input type="hidden" name="filesize" value="<?php p($_['nonHumanFileSize']); ?>" id="filesize">
 <input type="hidden" name="maxSizeAnimateGif" value="<?php p($_['maxSizeAnimateGif']); ?>" id="maxSizeAnimateGif">
+<input type="hidden" name="sharePermission" value="<?php p($_['sharePermission']); ?>" id="sharePermission">
 
 <header>
 	<div id="header" class="<?php p((isset($_['folder']) ? 'share-folder' : 'share-file')) ?>" data-protected="<?php p($_['protected']) ?>"
 		 data-owner-display-name="<?php p($_['displayName']) ?>" data-owner="<?php p($_['owner']) ?>" data-name="<?php p($_['filename']) ?>">
-		<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" title="" id="owncloud">
+		<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" title="" id="owncloud-public">
 			<h1 class="logo-icon">
-				<?php p($theme->getName()); ?>
+				<?php print_unescaped($theme->getHTMLName()); ?>
 			</h1>
 		</a>
 
-		<div id="logo-claim" style="display:none;"><?php p($theme->getLogoClaim()); ?></div>
+		<div id="logo-claim" style="display:none;"><?php print_unescaped($theme->getLogoClaim()); ?></div>
 		<?php
 			if ($_['canDownload']) {
 				?>

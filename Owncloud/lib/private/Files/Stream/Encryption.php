@@ -30,7 +30,6 @@ use Icewind\Streams\Wrapper;
 use OC\Encryption\Exceptions\EncryptionHeaderKeyExistsException;
 
 class Encryption extends Wrapper {
-
 	/** @var \OC\Encryption\Util */
 	protected $util;
 
@@ -144,20 +143,25 @@ class Encryption extends Wrapper {
 	 *
 	 * @throws \BadMethodCallException
 	 */
-	public static function wrap($source, $internalPath, $fullPath, array $header,
-								$uid,
-								\OCP\Encryption\IEncryptionModule $encryptionModule,
-								\OC\Files\Storage\Storage $storage,
-								\OC\Files\Storage\Wrapper\Encryption $encStorage,
-								\OC\Encryption\Util $util,
-								 \OC\Encryption\File $file,
-								$mode,
-								$size,
-								$unencryptedSize,
-								$headerSize,
-								$signed,
-								$sourceFileOfRename = null,
-								$wrapper =  'OC\Files\Stream\Encryption') {
+	public static function wrap(
+		$source,
+		$internalPath,
+		$fullPath,
+		array $header,
+		$uid,
+		\OCP\Encryption\IEncryptionModule $encryptionModule,
+		\OC\Files\Storage\Storage $storage,
+		\OC\Files\Storage\Wrapper\Encryption $encStorage,
+		\OC\Encryption\Util $util,
+		\OC\Encryption\File $file,
+		$mode,
+		$size,
+		$unencryptedSize,
+		$headerSize,
+		$signed,
+		$sourceFileOfRename = null,
+		$wrapper =  'OC\Files\Stream\Encryption'
+	) {
 		$context = \stream_context_create([
 			'ocencryption' => [
 				'source' => $source,
@@ -192,7 +196,7 @@ class Encryption extends Wrapper {
 	 * @return resource
 	 * @throws \BadMethodCallException
 	 */
-	protected static function wrapSource($source, $context, $protocol, $class, $mode = 'r+') {
+	protected static function wrapSource($source, $context = [], $protocol = null, $class = null, $mode = 'r+') {
 		try {
 			\stream_wrapper_register($protocol, $class);
 			if (@\rewinddir($source) === false) {
@@ -215,7 +219,7 @@ class Encryption extends Wrapper {
 	 * @return array
 	 * @throws \BadMethodCallException
 	 */
-	protected function loadContext($name) {
+	protected function loadContext($name = null) {
 		$context = parent::loadContext($name);
 
 		foreach ($this->expectedContextProperties as $property) {
@@ -234,7 +238,6 @@ class Encryption extends Wrapper {
 		$this->position = 0;
 		$this->cache = '';
 		$this->writeFlag = false;
-		$this->unencryptedBlockSize = $this->encryptionModule->getUnencryptedBlockSize($this->signed);
 
 		if (
 			$mode === 'w'
@@ -256,7 +259,8 @@ class Encryption extends Wrapper {
 
 		$accessList = $this->file->getAccessList($sharePath);
 		$this->newHeader = $this->encryptionModule->begin($this->fullPath, $this->uid, $mode, $this->header, $accessList, $context['sourceFileOfRename']);
-
+		$this->unencryptedBlockSize = $this->encryptionModule->getUnencryptedBlockSize($this->signed);
+		
 		if (
 			$mode === 'w'
 			|| $mode === 'w+'
@@ -294,7 +298,7 @@ class Encryption extends Wrapper {
 				$result .= \substr($this->cache, $blockPosition, $remainingLength);
 				$this->position += $remainingLength;
 				$count = 0;
-			// otherwise remainder of current block is fetched, the block is flushed and the position updated
+				// otherwise remainder of current block is fetched, the block is flushed and the position updated
 			} else {
 				$result .= \substr($this->cache, $blockPosition);
 				$this->flush();
@@ -303,6 +307,25 @@ class Encryption extends Wrapper {
 			}
 		}
 		return $result;
+	}
+
+	/**
+	* stream_read wrapper to read a block of the requested size
+	* There is a problem with the underlying php functions not returning the requested amount of data in any case.
+	* Thus, this function will call the read mechanism of its parent until it has read the correct amount.
+	*/
+	private function stream_read_block($blockSize) {
+		$remaining = $blockSize;
+		$data = "";
+
+		do {
+			$chunk = parent::stream_read($remaining);
+			$chunk_len = \strlen($chunk);
+			$data .= $chunk;
+			$remaining -= $chunk_len;
+		} while (($remaining > 0) && ($chunk_len > 0));
+
+		return $data;
 	}
 
 	public function stream_write($data) {
@@ -322,7 +345,6 @@ class Encryption extends Wrapper {
 
 			// only allow writes on seekable streams, or at the end of the encrypted stream
 			if (!($this->readOnly) && ($resultFseek || $positionInFile === $this->size)) {
-
 				// switch the writeFlag so flush() will write the block
 				$this->writeFlag = true;
 
@@ -337,7 +359,7 @@ class Encryption extends Wrapper {
 					$this->position += $remainingLength;
 					$length += $remainingLength;
 					$data = '';
-				// if $data doesn't fit the current block, the fill the current block and reiterate
+					// if $data doesn't fit the current block, the fill the current block and reiterate
 					// after the block is filled, it is flushed and $data is updatedxxx
 				} else {
 					$this->cache = \substr($this->cache, 0, $blockPosition) .
@@ -445,14 +467,18 @@ class Encryption extends Wrapper {
 		// don't try to fill the cache when trying to write at the end of the unencrypted file when it coincides with new block
 		if ($this->cache === '' && !($this->position === $this->unencryptedSize && ($this->position % $this->unencryptedBlockSize) === 0)) {
 			// Get the data from the file handle
-			$data = parent::stream_read($this->util->getBlockSize());
-			$position = (int)\floor($this->position/$this->unencryptedBlockSize);
-			$numberOfChunks = (int)($this->unencryptedSize / $this->unencryptedBlockSize);
-			if ($numberOfChunks === $position) {
-				$position .= 'end';
-			}
-			$this->cache = $this->encryptionModule->decrypt($data, $position);
+			$data = $this->stream_read_block($this->util->getBlockSize());
+			$this->cache = $this->encryptionModule->decrypt($data, $this->getPosition());
 		}
+	}
+
+	public function getPosition() {
+		$blockPosition = (int)\floor($this->position/$this->unencryptedBlockSize);
+		$numberOfChunks = (int)($this->unencryptedSize / $this->unencryptedBlockSize);
+		if ($numberOfChunks === $blockPosition) {
+			$blockPosition .= 'end';
+		}
+		return $blockPosition;
 	}
 
 	/**
@@ -470,7 +496,7 @@ class Encryption extends Wrapper {
 	 * read first block to skip the header
 	 */
 	protected function skipHeader() {
-		parent::stream_read($this->headerSize);
+		$this->stream_read_block($this->headerSize);
 	}
 
 	/**

@@ -36,12 +36,11 @@ use OCP\IL10N;
  * @package OCA\Federation
  */
 class DbHandler {
-
 	/** @var  IDBConnection */
 	private $connection;
 
 	/** @var  IL10N */
-	private $l;
+	private $il10n;
 
 	/** @var string  */
 	private $dbTable = 'trusted_servers';
@@ -55,7 +54,7 @@ class DbHandler {
 		IL10N $il10n
 	) {
 		$this->connection = $connection;
-		$this->IL10N = $il10n;
+		$this->il10n = $il10n;
 	}
 
 	/**
@@ -85,7 +84,7 @@ class DbHandler {
 			return (int)$this->connection->lastInsertId('*PREFIX*'.$this->dbTable);
 		} else {
 			$message = 'Internal failure, Could not add ownCloud as trusted server: ' . $url;
-			$message_t = $this->l->t('Could not add server');
+			$message_t = $this->il10n->t('Could not add server');
 			throw new HintException($message, $message_t);
 		}
 	}

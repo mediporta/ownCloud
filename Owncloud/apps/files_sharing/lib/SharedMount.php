@@ -108,7 +108,6 @@ class SharedMount extends MountPoint implements MoveableMount {
 	 *
 	 * @param string $newPath
 	 * @param \OCP\Share\IShare $share
-	 * @return bool
 	 */
 	private function updateFileTarget($newPath, &$share) {
 		$share->setTarget($newPath);
@@ -163,9 +162,11 @@ class SharedMount extends MountPoint implements MoveableMount {
 
 		// it is not a file relative to data/user/files
 		if (\count($split) < 3 || $split[1] !== 'files') {
-			\OCP\Util::writeLog('file sharing',
+			\OCP\Util::writeLog(
+				'files_sharing',
 				'Can not strip userid and "files/" from path: ' . $path,
-				\OCP\Util::ERROR);
+				\OCP\Util::ERROR
+			);
 			throw new \OCA\Files_Sharing\Exceptions\BrokenPath('Path does not start with /user/files', 10);
 		}
 
@@ -185,30 +186,41 @@ class SharedMount extends MountPoint implements MoveableMount {
 	 * @return bool true if allowed, false otherwise
 	 */
 	public function isTargetAllowed($target) {
+		$currentMount = $this->getMountPoint();
+		// note: $currentMount has a trailing slash. It doesn't matter for the check below
+		$isRename = \dirname($currentMount) === \dirname($target);
+
 		list($targetStorage, $targetInternalPath) = \OC\Files\Filesystem::resolvePath($target);
 		// note: cannot use the view because the target is already locked
 		$fileId = (int)$targetStorage->getCache()->getId($targetInternalPath);
+		if ($isRename) {
+			// if it's a rename, it's allowed if the target doesn't exists
+			return $fileId === -1;
+		}
+
 		if ($fileId === -1) {
 			// target might not exist, need to check parent instead
 			$fileId = (int)$targetStorage->getCache()->getId(\dirname($targetInternalPath));
 		}
 
-		$targetNodes = \OC::$server->getRootFolder()->getById($fileId);
-		if (empty($targetNodes)) {
+		$targetNodes = \OC::$server->getRootFolder()->getById($fileId, true);
+		$targetNode = $targetNodes[0] ?? null;
+		if ($targetNode === null) {
 			return false;
 		}
 
 		$shareManager = \OC::$server->getShareManager();
-		$targetNode = $targetNodes[0];
 		// FIXME: make it stop earlier in '/$userId/files'
 		while ($targetNode !== null && $targetNode->getPath() !== '/') {
 			$shares = $shareManager->getSharesByPath($targetNode);
 
 			foreach ($shares as $share) {
 				if ($this->user === $share->getShareOwner()) {
-					\OCP\Util::writeLog('files',
+					\OCP\Util::writeLog(
+						'files_sharing',
 						'It is not allowed to move one mount point into a shared folder',
-						\OCP\Util::DEBUG);
+						\OCP\Util::DEBUG
+					);
 					return false;
 				}
 			}
@@ -231,18 +243,22 @@ class SharedMount extends MountPoint implements MoveableMount {
 		}
 
 		$relTargetPath = $this->stripUserFilesPath($target);
-		$share = $this->storage->getShare();
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
+		$share = $this->getStorage()->getShare();
 
 		$result = true;
 
 		try {
 			$this->updateFileTarget($relTargetPath, $share);
 			$this->setMountPoint($target);
-			$this->storage->setMountPoint($relTargetPath);
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
+			$this->getStorage()->setMountPoint($relTargetPath);
 		} catch (\Exception $e) {
-			\OCP\Util::writeLog('file sharing',
+			\OCP\Util::writeLog(
+				'files_sharing',
 				'Could not rename mount point for shared folder "' . $this->getMountPoint() . '" to "' . $target . '"',
-				\OCP\Util::ERROR);
+				\OCP\Util::ERROR
+			);
 		}
 
 		return $result;
@@ -257,6 +273,7 @@ class SharedMount extends MountPoint implements MoveableMount {
 		$mountManager = \OC\Files\Filesystem::getMountManager();
 		/** @var $storage \OCA\Files_Sharing\SharedStorage */
 		$storage = $this->getStorage();
+		'@phan-var \OCA\Files_Sharing\SharedStorage $storage';
 		$result = $storage->unshareStorage();
 		$mountManager->removeMount($this->mountPoint);
 

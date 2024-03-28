@@ -30,7 +30,7 @@ use Sabre\Xml\XmlSerializable;
  * checksum name.
  */
 class ChecksumList implements XmlSerializable {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
 
 	/** @var string[] of TYPE:CHECKSUM */
 	private $checksums;
@@ -48,7 +48,7 @@ class ChecksumList implements XmlSerializable {
 	 * Use the $writer argument to write its own xml serialization.
 	 *
 	 * An important note: do _not_ create a parent element. Any element
-	 * implementing XmlSerializble should only ever write what's considered
+	 * implementing XmlSerializable should only ever write what's considered
 	 * its 'inner xml'.
 	 *
 	 * The parent of the current element is responsible for writing a

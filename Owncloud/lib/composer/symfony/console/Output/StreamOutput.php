@@ -12,7 +12,6 @@
 namespace Symfony\Component\Console\Output;
 
 use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Formatter\OutputFormatterInterface;
 
 /**
@@ -20,11 +19,11 @@ use Symfony\Component\Console\Formatter\OutputFormatterInterface;
  *
  * Usage:
  *
- * $output = new StreamOutput(fopen('php://stdout', 'w'));
+ *     $output = new StreamOutput(fopen('php://stdout', 'w'));
  *
  * As `StreamOutput` can use any stream, you can also use a file:
  *
- * $output = new StreamOutput(fopen('/path/to/output.log', 'a', false));
+ *     $output = new StreamOutput(fopen('/path/to/output.log', 'a', false));
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
@@ -40,7 +39,7 @@ class StreamOutput extends Output
      *
      * @throws InvalidArgumentException When first argument is not a real stream
      */
-    public function __construct($stream, $verbosity = self::VERBOSITY_NORMAL, $decorated = null, OutputFormatterInterface $formatter = null)
+    public function __construct($stream, int $verbosity = self::VERBOSITY_NORMAL, ?bool $decorated = null, ?OutputFormatterInterface $formatter = null)
     {
         if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
             throw new InvalidArgumentException('The StreamOutput class needs a stream as its first argument.');
@@ -58,22 +57,20 @@ class StreamOutput extends Output
     /**
      * Gets the stream attached to this StreamOutput instance.
      *
-     * @return resource A stream resource
+     * @return resource
      */
     public function getStream()
     {
         return $this->stream;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function doWrite($message, $newline)
+    protected function doWrite(string $message, bool $newline)
     {
-        if (false === @fwrite($this->stream, $message) || ($newline && (false === @fwrite($this->stream, PHP_EOL)))) {
-            // should never happen
-            throw new RuntimeException('Unable to write output.');
+        if ($newline) {
+            $message .= \PHP_EOL;
         }
+
+        @fwrite($this->stream, $message);
 
         fflush($this->stream);
     }
@@ -93,27 +90,54 @@ class StreamOutput extends Output
      */
     protected function hasColorSupport()
     {
-        if ('Hyper' === getenv('TERM_PROGRAM')) {
+        // Follow https://no-color.org/
+        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
+            return false;
+        }
+
+        if (!$this->isTty()) {
+            return false;
+        }
+
+        if (\DIRECTORY_SEPARATOR === '\\'
+            && \function_exists('sapi_windows_vt100_support')
+            && @sapi_windows_vt100_support($this->stream)
+        ) {
             return true;
         }
 
-        if (\DIRECTORY_SEPARATOR === '\\') {
-            return (\function_exists('sapi_windows_vt100_support')
-                && @sapi_windows_vt100_support($this->stream))
-                || false !== getenv('ANSICON')
-                || 'ON' === getenv('ConEmuANSI')
-                || 'xterm' === getenv('TERM');
+        return 'Hyper' === getenv('TERM_PROGRAM')
+            || false !== getenv('ANSICON')
+            || 'ON' === getenv('ConEmuANSI')
+            || str_starts_with((string) getenv('TERM'), 'xterm');
+    }
+
+    /**
+     * Checks if the stream is a TTY, i.e; whether the output stream is connected to a terminal.
+     *
+     * Reference: Composer\Util\Platform::isTty
+     * https://github.com/composer/composer
+     */
+    private function isTty(): bool
+    {
+        // Detect msysgit/mingw and assume this is a tty because detection
+        // does not work correctly, see https://github.com/composer/composer/issues/9690
+        if (\in_array(strtoupper((string) getenv('MSYSTEM')), ['MINGW32', 'MINGW64'], true)) {
+            return true;
         }
 
+        // Modern cross-platform function, includes the fstat fallback so if it is present we trust it
         if (\function_exists('stream_isatty')) {
-            return @stream_isatty($this->stream);
+            return stream_isatty($this->stream);
         }
 
-        if (\function_exists('posix_isatty')) {
-            return @posix_isatty($this->stream);
+        // Only trusting this if it is positive, otherwise prefer fstat fallback.
+        if (\function_exists('posix_isatty') && posix_isatty($this->stream)) {
+            return true;
         }
 
         $stat = @fstat($this->stream);
+
         // Check if formatted mode is S_IFCHR
         return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
     }

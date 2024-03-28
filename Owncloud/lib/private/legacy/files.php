@@ -45,11 +45,11 @@ use OCP\Lock\ILockingProvider;
  *
  */
 class OC_Files {
-	const FILE = 1;
-	const ZIP_FILES = 2;
-	const ZIP_DIR = 3;
+	public const FILE = 1;
+	public const ZIP_FILES = 2;
+	public const ZIP_DIR = 3;
 
-	const UPLOAD_MIN_LIMIT_BYTES = 1048576; // 1 MiB
+	public const UPLOAD_MIN_LIMIT_BYTES = 1048576; // 1 MiB
 
 	private static $multipartBoundary = '';
 
@@ -76,11 +76,11 @@ class OC_Files {
 		$type = \OC::$server->getMimeTypeDetector()->getSecureMimeType(\OC\Files\Filesystem::getMimeType($filename));
 		if ($fileSize > -1) {
 			if (!empty($rangeArray)) {
-				\header('HTTP/1.1 206 Partial Content', true);
+				\http_response_code(206);
 				\header('Accept-Ranges: bytes', true);
 				if (\count($rangeArray) > 1) {
 					$type = 'multipart/byteranges; boundary='.self::getBoundary();
-				// no Content-Length header here
+					// no Content-Length header here
 				} else {
 					\header(\sprintf('Content-Range: bytes %d-%d/%d', $rangeArray[0]['from'], $rangeArray[0]['to'], $fileSize), true);
 					OC_Response::setContentLengthHeader($rangeArray[0]['to'] - $rangeArray[0]['from'] + 1);
@@ -101,96 +101,108 @@ class OC_Files {
 	 */
 	public static function get($dir, $files, $params = null) {
 		$view = \OC\Files\Filesystem::getView();
-		$getType = self::FILE;
-		$filename = $dir;
+
+		if (!\is_array($files)) {
+			// "files" contains a string with a filename
+			$listOfFiles = [$files];
+		} else {
+			$listOfFiles = $files;
+		}
+
 		try {
-			if (\is_array($files) && \count($files) === 1) {
-				$files = $files[0];
-			}
-
-			if (!\is_array($files)) {
-				$filename = $dir . '/' . $files;
-				if (!$view->is_dir($filename)) {
-					self::getSingleFile($view, $dir, $files, $params === null ? [] : $params);
-					return;
-				}
-			}
-
-			$name = 'download';
-			if (\is_array($files)) {
-				$getType = self::ZIP_FILES;
-				$basename = \basename($dir);
-				if ($basename) {
-					$name = $basename;
-				}
-
-				$filename = $dir . '/' . $name;
-			} else {
-				$filename = $dir . '/' . $files;
+			/*
+			 * $listOfFiles might be an empty array,
+			 * for example if the client requests to download a whole folder
+			 * and does not supply individual files.
+			 */
+			if (\count($listOfFiles) === 0) {
+				$filename = $dir;
 				$getType = self::ZIP_DIR;
-				// downloading root ?
-				if ($files !== '') {
-					$name = $files;
+			} elseif (\count($listOfFiles) === 1) {
+				$filename = "{$dir}/{$listOfFiles[0]}";
+				if (!$view->is_dir($filename)) {
+					self::getSingleFile($view, $dir, $listOfFiles[0], $params === null ? [] : $params);
+					return;
+				} else {
+					$getType = self::ZIP_DIR;
 				}
+			} else {
+				$filename = $dir;
+				$getType = self::ZIP_FILES;
 			}
 
-			//Dispatch an event to see if any apps have problem with download
-			$event = new \Symfony\Component\EventDispatcher\GenericEvent(null, ['dir' => $dir, 'files' => $files, 'run' => true]);
-			OC::$server->getEventDispatcher()->dispatch('file.beforeCreateZip', $event);
+			//Dispatch an event to see if any apps have problem with download.
+			// 'files' event param will be always an array now
+			$event = new \Symfony\Component\EventDispatcher\GenericEvent(null, ['dir' => $dir, 'files' => $listOfFiles, 'run' => true]);
+			OC::$server->getEventDispatcher()->dispatch($event, 'file.beforeCreateZip');
 			if (($event->getArgument('run') === false) or ($event->hasArgument('errorMessage'))) {
-				throw new \OC\ForbiddenException("Access denied: " . $event->getArgument('errorMessage'));
+				throw new \OC\ForbiddenException($event->getArgument('errorMessage'));
 			}
 
 			$streamer = new Streamer();
 			OC_Util::obEnd();
 
-			self::lockFiles($view, $dir, $files);
+			self::lockFiles($view, $dir, $listOfFiles);
 
-			$streamer->sendHeaders($name);
+			if ($filename === '' || $filename === '/') {
+				$filename = 'download';
+				// default filename. Could happen downloading the root folder
+			}
+			$streamer->sendHeaders(\basename($filename));
 			$executionTime = \intval(OC::$server->getIniWrapper()->getNumeric('max_execution_time'));
 			\set_time_limit(0);
 			\ignore_user_abort(true);
 			if ($getType === self::ZIP_FILES) {
-				foreach ($files as $file) {
-					$file = $dir . '/' . $file;
+				foreach ($listOfFiles as $file) {
+					$file = "{$dir}/{$file}";
 					if (\OC\Files\Filesystem::is_file($file)) {
 						$fileSize = \OC\Files\Filesystem::filesize($file);
+						$fileOpts = [
+							'timestamp' => \OC\Files\Filesystem::filemtime($file),
+						];
 						$fh = \OC\Files\Filesystem::fopen($file, 'r');
-						$streamer->addFileFromStream($fh, \basename($file), $fileSize);
+						$streamer->addFileFromStream($fh, \basename($file), $fileSize, $fileOpts);
 						\fclose($fh);
 					} elseif (\OC\Files\Filesystem::is_dir($file)) {
 						$streamer->addDirRecursive($file);
 					}
 				}
 			} elseif ($getType === self::ZIP_DIR) {
-				$file = $dir . '/' . $files;
+				$file = "{$dir}/{$listOfFiles[0]}";
 				$streamer->addDirRecursive($file);
 			}
 			$streamer->finalize();
 			\set_time_limit($executionTime);
-			self::unlockAllTheFiles($dir, $files, $getType, $view, $filename);
+			self::unlockFiles($view, $dir, $listOfFiles);
 			$event = new \Symfony\Component\EventDispatcher\GenericEvent(null, ['result' => 'success', 'dir' => $dir, 'files' => $files]);
-			OC::$server->getEventDispatcher()->dispatch('file.afterCreateZip', $event);
+			OC::$server->getEventDispatcher()->dispatch($event, 'file.afterCreateZip');
 		} catch (\OCP\Lock\LockedException $ex) {
-			self::unlockAllTheFiles($dir, $files, $getType, $view, $filename);
+			self::unlockFiles($view, $dir, $listOfFiles);
 			OC::$server->getLogger()->logException($ex);
-			$l = \OC::$server->getL10N('core');
+			$l = \OC::$server->getL10N('lib');
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$hint = \method_exists($ex, 'getHint') ? $ex->getHint() : '';
 			\OC_Template::printErrorPage($l->t('File is currently busy, please try again later'), $hint);
 		} catch (\OCP\Files\ForbiddenException $ex) {
-			self::unlockAllTheFiles($dir, $files, $getType, $view, $filename);
+			self::unlockFiles($view, $dir, $listOfFiles);
 			OC::$server->getLogger()->logException($ex);
-			$l = \OC::$server->getL10N('core');
-			\OC_Template::printErrorPage($l->t('File cannot be read'), $ex->getMessage(), 403);
+			$l = \OC::$server->getL10N('lib');
+			\OC_Template::printErrorPage($l->t('Access to this resource or one of its sub-items has been denied.'), $ex->getMessage(), 403);
+		} catch (\OC\ForbiddenException $ex) {
+			self::unlockFiles($view, $dir, $listOfFiles);
+			\OC_Template::printErrorPage('Access denied', $ex->getMessage(), 403);
 		} catch (\Exception $ex) {
-			self::unlockAllTheFiles($dir, $files, $getType, $view, $filename);
-			OC::$server->getLogger()->logException($ex);
-			$l = \OC::$server->getL10N('core');
-			$hint = \method_exists($ex, 'getHint') ? $ex->getHint() : '';
-			if ($event->hasArgument('message')) {
-				$hint .= ' ' . $event->getArgument('message');
+			self::unlockFiles($view, $dir, $listOfFiles);
+			if (\connection_status() !== 0) {
+				// assume the client closed the connection
+				OC::$server->getLogger()->debug($ex->getMessage());
+			} else {
+				OC::$server->getLogger()->logException($ex);
+				$l = \OC::$server->getL10N('lib');
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
+				$hint = \method_exists($ex, 'getHint') ? $ex->getHint() : '';
+				\OC_Template::printErrorPage($l->t('File cannot be downloaded'), $hint);
 			}
-			\OC_Template::printErrorPage($l->t('File cannot be read'), $hint);
 		}
 	}
 
@@ -251,31 +263,46 @@ class OC_Files {
 	 * @param array $params ; 'head' boolean to only send header of the request ; 'range' http range header
 	 */
 	private static function getSingleFile($view, $dir, $name, $params) {
-		$filename = $dir . '/' . $name;
+		$filename = "{$dir}/{$name}";
 		OC_Util::obEnd();
 		$view->lockFile($filename, ILockingProvider::LOCK_SHARED);
-		
+
 		$rangeArray = [];
 
 		if (isset($params['range']) && \substr($params['range'], 0, 6) === 'bytes=') {
-			$rangeArray = self::parseHttpRangeHeader(\substr($params['range'], 6),
-								 \OC\Files\Filesystem::filesize($filename));
+			$rangeArray = self::parseHttpRangeHeader(
+				\substr($params['range'], 6),
+				\OC\Files\Filesystem::filesize($filename)
+			);
 		}
-		
-		if (\OC\Files\Filesystem::isReadable($filename)) {
+
+		$event = new \Symfony\Component\EventDispatcher\GenericEvent(null, ['path' => $filename]);
+		OC::$server->getEventDispatcher()->dispatch($event, 'file.beforeGetDirect');
+
+		if (\OC\Files\Filesystem::isReadable($filename) && !$event->hasArgument('errorMessage')) {
 			self::sendHeaders($filename, $name, $rangeArray);
+			if (isset($params['head']) && $params['head']) {
+				// if it's a HEAD request, stop here.
+				$view->unlockFile($filename, ILockingProvider::LOCK_SHARED);
+				return;
+			}
 		} elseif (!\OC\Files\Filesystem::file_exists($filename)) {
-			\header("HTTP/1.1 404 Not Found");
+			$view->unlockFile($filename, ILockingProvider::LOCK_SHARED);
+			\http_response_code(404);
 			$tmpl = new OC_Template('', '404', 'guest');
 			$tmpl->printPage();
 			exit();
 		} else {
-			\header("HTTP/1.1 403 Forbidden");
-			die('403 Forbidden');
-		}
-		if (isset($params['head']) && $params['head']) {
+			$view->unlockFile($filename, ILockingProvider::LOCK_SHARED);
+			if (!$event->hasArgument('errorMessage')) {
+				$msg = $event->getArgument('errorMessage');
+			} else {
+				$msg = 'Access denied';
+			}
+			\OC_Template::printErrorPage('Access denied', $msg, 403);
 			return;
 		}
+
 		if (!empty($rangeArray)) {
 			try {
 				if (\count($rangeArray) == 1) {
@@ -299,59 +326,57 @@ class OC_Files {
 				// file is unseekable
 				\header_remove('Accept-Ranges');
 				\header_remove('Content-Range');
-				\header("HTTP/1.1 200 OK");
+				\http_response_code(200);
 				self::sendHeaders($filename, $name, []);
 				$view->readfile($filename);
 			}
 		} else {
 			$view->readfile($filename);
 		}
+		$view->unlockFile($filename, ILockingProvider::LOCK_SHARED);
 	}
 
 	/**
 	 * @param View $view
 	 * @param string $dir
-	 * @param string[]|string $files
+	 * @param string[] $files
 	 */
-	public static function lockFiles($view, $dir, $files) {
-		if (!\is_array($files)) {
-			$file = $dir . '/' . $files;
-			$files = [$file];
-		}
+	private static function lockFiles($view, $dir, $files) {
 		foreach ($files as $file) {
-			$file = $dir . '/' . $file;
-			$view->lockFile($file, ILockingProvider::LOCK_SHARED);
-			if ($view->is_dir($file)) {
-				$contents = $view->getDirectoryContent($file);
+			$filePath = "{$dir}/{$file}";
+			$view->lockFile($filePath, ILockingProvider::LOCK_SHARED);
+			if ($view->is_dir($filePath)) {
+				$contents = $view->getDirectoryContent($filePath);
 				$contents = \array_map(function ($fileInfo) use ($file) {
 					/** @var \OCP\Files\FileInfo $fileInfo */
-					return $file . '/' . $fileInfo->getName();
+					return "{$file}/" . $fileInfo->getName();
 				}, $contents);
 				self::lockFiles($view, $dir, $contents);
+				// $dir is expected to remain constant while $files can
+				// evolve to ["d1/d2/d3/file001", "d1/d2/d3/file002", ...]
 			}
 		}
 	}
 
 	/**
-	 * @param string $dir
-	 * @param $files
-	 * @param integer $getType
 	 * @param View $view
-	 * @param string $filename
+	 * @param string $dir
+	 * @param string[] $files
 	 */
-	private static function unlockAllTheFiles($dir, $files, $getType, $view, $filename) {
-		if ($getType === self::FILE) {
-			$view->unlockFile($filename, ILockingProvider::LOCK_SHARED);
-		}
-		if ($getType === self::ZIP_FILES) {
-			foreach ($files as $file) {
-				$file = $dir . '/' . $file;
-				$view->unlockFile($file, ILockingProvider::LOCK_SHARED);
+	private static function unlockFiles($view, $dir, $files) {
+		foreach ($files as $file) {
+			$filePath = "{$dir}/{$file}";
+			$view->unlockFile($filePath, ILockingProvider::LOCK_SHARED);
+			if ($view->is_dir($filePath)) {
+				$contents = $view->getDirectoryContent($filePath);
+				$contents = \array_map(function ($fileInfo) use ($file) {
+					/** @var \OCP\Files\FileInfo $fileInfo */
+					return "{$file}/" . $fileInfo->getName();
+				}, $contents);
+				self::unlockFiles($view, $dir, $contents);
+				// $dir is expected to remain constant while $files can
+				// evolve to ["d1/d2/d3/file001", "d1/d2/d3/file002", ...]
 			}
-		}
-		if ($getType === self::ZIP_DIR) {
-			$file = $dir . '/' . $files;
-			$view->unlockFile($file, ILockingProvider::LOCK_SHARED);
 		}
 	}
 }

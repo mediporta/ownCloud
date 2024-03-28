@@ -12,7 +12,7 @@ namespace Icewind\Streams;
  *
  * This wrapper itself doesn't implement any functionality but is just a base class for other wrappers to extend
  */
-abstract class Wrapper implements File, Directory {
+abstract class Wrapper extends WrapperHandler implements File, Directory {
 	/**
 	 * @var resource
 	 */
@@ -25,36 +25,15 @@ abstract class Wrapper implements File, Directory {
 	 */
 	protected $source;
 
-	protected static function wrapSource($source, $context, $protocol, $class) {
-		try {
-			stream_wrapper_register($protocol, $class);
-			if (@rewinddir($source) === false) {
-				$wrapped = fopen($protocol . '://', 'r+', false, $context);
-			} else {
-				$wrapped = opendir($protocol . '://', $context);
-			}
-		} catch (\BadMethodCallException $e) {
-			stream_wrapper_unregister($protocol);
-			throw $e;
-		}
-		stream_wrapper_unregister($protocol);
-		return $wrapped;
+	/**
+	 * @param resource $source
+	 */
+	protected function setSourceStream($source) {
+		$this->source = $source;
 	}
 
-	/**
-	 * Load the source from the stream context and return the context options
-	 *
-	 * @param string $name
-	 * @return array
-	 * @throws \Exception
-	 */
-	protected function loadContext($name) {
-		$context = stream_context_get_options($this->context);
-		if (isset($context[$name])) {
-			$context = $context[$name];
-		} else {
-			throw new \BadMethodCallException('Invalid context, "' . $name . '" options not set');
-		}
+	protected function loadContext($name = null) {
+		$context = parent::loadContext($name);
 		if (isset($context['source']) and is_resource($context['source'])) {
 			$this->setSourceStream($context['source']);
 		} else {
@@ -63,16 +42,9 @@ abstract class Wrapper implements File, Directory {
 		return $context;
 	}
 
-	/**
-	 * @param resource $source
-	 */
-	protected function setSourceStream($source) {
-		$this->source = $source;
-	}
-
 	public function stream_seek($offset, $whence = SEEK_SET) {
 		$result = fseek($this->source, $offset, $whence);
-		return $result == 0 ? true : false;
+		return $result == 0;
 	}
 
 	public function stream_tell() {
@@ -90,14 +62,13 @@ abstract class Wrapper implements File, Directory {
 	public function stream_set_option($option, $arg1, $arg2) {
 		switch ($option) {
 			case STREAM_OPTION_BLOCKING:
-				stream_set_blocking($this->source, $arg1);
-				break;
+				return stream_set_blocking($this->source, (bool)$arg1);
 			case STREAM_OPTION_READ_TIMEOUT:
-				stream_set_timeout($this->source, $arg1, $arg2);
-				break;
+				return stream_set_timeout($this->source, $arg1, $arg2);
 			case STREAM_OPTION_WRITE_BUFFER:
-				stream_set_write_buffer($this->source, $arg1);
+				return stream_set_write_buffer($this->source, $arg1) === 0;
 		}
+		return false;
 	}
 
 	public function stream_truncate($size) {
@@ -121,7 +92,9 @@ abstract class Wrapper implements File, Directory {
 	}
 
 	public function stream_close() {
-		return fclose($this->source);
+		if (is_resource($this->source)) {
+			return fclose($this->source);
+		}
 	}
 
 	public function dir_readdir() {
@@ -135,5 +108,24 @@ abstract class Wrapper implements File, Directory {
 
 	public function dir_rewinddir() {
 		return rewind($this->source);
+	}
+
+	public function getSource() {
+		return $this->source;
+	}
+
+	/**
+	 * Retrieves header/metadata from the source stream.
+	 *
+	 * This is equivalent to calling `stream_get_meta_data` on the source stream except nested stream wrappers are handled transparently
+	 *
+	 * @return array
+	 */
+	public function getMetaData(): array {
+		$meta = stream_get_meta_data($this->source);
+		while (isset($meta['wrapper_data']) && $meta['wrapper_data'] instanceof Wrapper) {
+			$meta = $meta['wrapper_data']->getMetaData();
+		}
+		return $meta;
 	}
 }

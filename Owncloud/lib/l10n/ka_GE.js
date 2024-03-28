@@ -1,6 +1,8 @@
 OC.L10N.register(
     "lib",
     {
+    "Unknown filetype" : "უცნობი ფაილის ტიპი",
+    "Invalid image" : "არასწორი სურათი",
     "today" : "დღეს",
     "yesterday" : "გუშინ",
     "last month" : "გასულ თვეში",
@@ -9,6 +11,7 @@ OC.L10N.register(
     "None" : "არა",
     "Username" : "მომხმარებლის სახელი",
     "Password" : "პაროლი",
+    "__language_name__" : "__language_name__",
     "Apps" : "აპლიკაციები",
     "General" : "ზოგადი",
     "Storage" : "საცავი",
@@ -18,7 +21,6 @@ OC.L10N.register(
     "Search" : "ძებნა",
     "%s enter the database username." : "%s შეიყვანეთ ბაზის იუზერნეიმი.",
     "%s enter the database name." : "%s შეიყვანეთ ბაზის სახელი.",
-    "%s you may not use dots in the database name" : "%s არ მიუთითოთ წერტილი ბაზის სახელში",
     "Oracle username and/or password not valid" : "Oracle იუზერნეიმი და/ან პაროლი არ არის სწორი",
     "DB Error: \"%s\"" : "DB შეცდომა: \"%s\"",
     "Offending command was: \"%s\"" : "Offending ბრძანება იყო: \"%s\"",
@@ -30,14 +32,11 @@ OC.L10N.register(
     "Could not find category \"%s\"" : "\"%s\" კატეგორიის მოძებნა ვერ მოხერხდა",
     "A valid username must be provided" : "უნდა მიუთითოთ არსებული მომხმარებლის სახელი",
     "A valid password must be provided" : "უნდა მიუთითოთ არსებული პაროლი",
-    "Help" : "დახმარება",
     "Settings" : "პარამეტრები",
     "Users" : "მომხმარებელი",
-    "web services under your control" : "web services under your control",
+    "Imprint" : "ბეჭედი",
     "Application is not enabled" : "აპლიკაცია არ არის აქტიური",
     "Authentication error" : "ავთენტიფიკაციის შეცდომა",
-    "Token expired. Please reload page." : "Token–ს ვადა გაუვიდა. გთხოვთ განაახლოთ გვერდი.",
-    "Imprint" : "ბეჭედი",
-    "__language_name__" : "__language_name__"
+    "Token expired. Please reload page." : "Token–ს ვადა გაუვიდა. გთხოვთ განაახლოთ გვერდი."
 },
-"nplurals=1; plural=0;");
+"nplurals=2; plural=(n!=1);");

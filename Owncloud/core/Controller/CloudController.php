@@ -41,6 +41,7 @@ class CloudController extends OCSController {
 	 */
 	public function getCapabilities() {
 		$result = [];
+		$defaults = new \OCP\Defaults();
 		list($major, $minor, $micro) = \OCP\Util::getVersion();
 		$result['version'] = [
 			'major' => $major,
@@ -48,6 +49,7 @@ class CloudController extends OCSController {
 			'micro' => $micro,
 			'string' => \OC_Util::getVersionString(),
 			'edition' => \OC_Util::getEditionString(),
+			'product' => $defaults->getName(),
 		];
 
 		$result['capabilities'] = \OC::$server->getCapabilitiesManager()->getCapabilities();
@@ -68,7 +70,29 @@ class CloudController extends OCSController {
 			'id' => $userObject->getUID(),
 			'display-name' => $userObject->getDisplayName(),
 			'email' => $userObject->getEMailAddress(),
+			'language' => \OC::$server->getConfig()->getUserValue($userObject->getUID(), 'core', 'lang', \OC::$server->getConfig()->getSystemValue('default_language', 'en'))
 		];
 		return ['data' => $data];
+	}
+
+	/**
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @CORS
+	 *
+	 * @return array
+	 * @throws \OCP\PreConditionNotMetException
+	 */
+	public function getSigningKey(): array {
+		$userId = \OC_User::getUser();
+		$signingKey = \OC::$server->getConfig()->getUserValue($userId, 'core', 'signing-key', null);
+		if ($signingKey === null) {
+			$signingKey = \OC::$server->getSecureRandom()->generate(64);
+			\OC::$server->getConfig()->setUserValue($userId, 'core', 'signing-key', $signingKey, null);
+		}
+		return ['data' => [
+			'user' => $userId,
+			'signing-key' => $signingKey
+		]];
 	}
 }

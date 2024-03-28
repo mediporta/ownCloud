@@ -34,7 +34,7 @@ namespace OC;
 
 use InterfaSys\LogNormalizer\Normalizer;
 
-use \OCP\ILogger;
+use OCP\ILogger;
 use OCP\IUserSession;
 use OCP\Util;
 use Symfony\Component\EventDispatcher\GenericEvent;
@@ -51,7 +51,6 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  */
 
 class Log implements ILogger {
-
 	/** @var string */
 	private $logger;
 
@@ -62,7 +61,7 @@ class Log implements ILogger {
 	private $eventDispatcher;
 
 	/** @var boolean|null cache the result of the log condition check for the request */
-	private $logConditionSatisfied = null;
+	private $logConditionSatisfied;
 
 	/** @var Normalizer */
 	private $normalizer;
@@ -74,13 +73,15 @@ class Log implements ILogger {
 	 */
 	private $inEvent = false;
 
-	protected $methodsWithSensitiveParameters = [
+	protected static $methodsWithSensitiveParameters = [
 		// Session/User
 		'login',
 		'checkPassword',
 		'updatePrivateKeyPassword',
 		'validateUserPass',
 		'loginWithPassword',
+		'createSessionToken',
+		'loginInOwnCloud',
 
 		// TokenProvider
 		'getToken',
@@ -103,19 +104,28 @@ class Log implements ILogger {
 		//LoginController
 		'tryLogin',
 
-		//bind
+		//User_LDAP\Connection
 		'bind',
 
-		//invokeLDAPMethod
-		'invokeLDAPMethod'
+		//User_LDAP\LDAP
+		'invokeLDAPMethod',
+
+		//User_LDAP\Access
+		'areCredentialsValid',
+
+		//UserManagement\Controller\UsersController
+		'setPassword',
+
+		//any closure can leak passwords
+		'{closure}'
 
 	];
 
 	/**
-	 * @param string $logger The logger that should be used
-	 * @param SystemConfig $config the system config object
+	 * @param null $logger The logger that should be used
+	 * @param SystemConfig|null $config the system config object
 	 * @param null $normalizer
-	 * @param EventDispatcherInterface $eventDispatcher event dispatcher
+	 * @param EventDispatcherInterface|null $eventDispatcher event dispatcher
 	 */
 	public function __construct(
 		$logger = null,
@@ -318,18 +328,20 @@ class Log implements ILogger {
 			$this->logConditionSatisfied = false;
 			if (!empty($logConditions)) {
 				foreach ($logConditions as $logCondition) {
-
 					// check for secret token in the request
 					if (!empty($logCondition['shared_secret'])) {
 						$request = \OC::$server->getRequest();
 
 						// if token is found in the request change set the log condition to satisfied
-						if ($request && \hash_equals($logCondition['shared_secret'], $request->getParam('log_secret', ''))) {
-							$this->logConditionSatisfied = true;
-							if (!empty($logCondition['logfile'])) {
-								$logConditionFile = $logCondition['logfile'];
+						if ($request) {
+							$q = $request->query;
+							if (\hash_equals($logCondition['shared_secret'], $q['log_secret'] ?? '')) {
+								$this->logConditionSatisfied = true;
+								if (!empty($logCondition['logfile'])) {
+									$logConditionFile = $logCondition['logfile'];
+								}
+								break;
 							}
-							break;
 						}
 					}
 
@@ -379,16 +391,20 @@ class Log implements ILogger {
 			$this->inEvent = true;
 			$event = new GenericEvent(null);
 			$event->setArguments($eventArgs);
-			$this->eventDispatcher->dispatch('log.beforewrite', $event);
+			$this->eventDispatcher->dispatch($event, 'log.beforewrite');
 		}
 
 		if ($level >= $minLevel) {
 			$logger = $this->logger;
-			// check if logger supports extra fields
-			if (!empty($extraFields) && \is_callable($logger, 'writeExtra')) {
+			// check if logger supports extra fields, and which method is available
+			if (!empty($extraFields) && \is_callable([$logger, 'writeExtra'])) {
 				\call_user_func([$logger, 'writeExtra'], $app, $formattedMessage, $level, $logConditionFile, $extraFields);
-			} else {
+			} elseif (\is_callable([$logger, 'write'])) {
 				\call_user_func([$logger, 'write'], $app, $formattedMessage, $level, $logConditionFile);
+			} elseif (\is_callable([$logger, 'log'])) {
+				\call_user_func([$logger, 'log'], $level, $formattedMessage, $context);
+			} else {
+				throw new \Exception("No logger method available. Trying to log message '$formattedMessage'.");
 			}
 		}
 
@@ -396,7 +412,7 @@ class Log implements ILogger {
 			$event = new GenericEvent(null);
 			$event->setArguments($eventArgs);
 			try {
-				$this->eventDispatcher->dispatch('log.afterwrite', $event);
+				$this->eventDispatcher->dispatch($event, 'log.afterwrite');
 			} finally {
 				$this->inEvent = false;
 			}
@@ -416,7 +432,6 @@ class Log implements ILogger {
 		$level = Util::ERROR;
 		if (isset($context['level'])) {
 			$level = $context['level'];
-			unset($context['level']);
 		}
 		$exception = [
 			'Exception' => \get_class($exception),
@@ -426,12 +441,25 @@ class Log implements ILogger {
 			'File' => $exception->getFile(),
 			'Line' => $exception->getLine(),
 		];
-		$exception['Trace'] = \preg_replace('!(' . \implode('|', $this->methodsWithSensitiveParameters) . ')\(.*\)!', '$1(*** sensitive parameters replaced ***)', $exception['Trace']);
+		$exception['Trace'] = self::replaceSensitiveData($exception['Trace']);
 		if (\OC::$server->getUserSession() && \OC::$server->getUserSession()->isLoggedIn()) {
 			$context['userid'] = \OC::$server->getUserSession()->getUser()->getUID();
 		}
 		$msg = isset($context['message']) ? $context['message'] : 'Exception';
 		$msg .= ': ' . \json_encode($exception);
 		$this->log($level, $msg, $context);
+		// also log previous exception
+		if ($context['exception']->getPrevious()) {
+			$context['message'] = 'Caused by';
+			$this->logException($context['exception']->getPrevious(), $context);
+		}
+	}
+
+	/**
+	 * @param $trace
+	 * @return array|string|string[]|null
+	 */
+	public static function replaceSensitiveData($trace) {
+		return \preg_replace('!(' . \implode('|', self::$methodsWithSensitiveParameters) . ')\(.*\)!', '$1(*** sensitive parameters replaced ***)', $trace);
 	}
 }

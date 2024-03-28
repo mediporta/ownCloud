@@ -2,7 +2,7 @@
  * Strengthify - show the weakness of a password (uses zxcvbn for this)
  * https://github.com/MorrisJobke/strengthify
  *
- * Version: 0.5.0
+ * Version: 0.5.9
  * Author: Morris Jobke (github.com/MorrisJobke) - original
  *         Eve Ragins @ Eve Corp (github.com/eve-corp)
  *
@@ -11,7 +11,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2013-2015 Morris Jobke <morris.jobke@gmail.com>
+ * Copyright (c) 2013-2020 Morris Jobke <morris.jobke@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -38,6 +38,7 @@
 
         var defaults = {
             zxcvbn: 'zxcvbn/zxcvbn.js',
+            userInputs: [],
             titles: [
                 'Weakest',
                 'Weak',
@@ -45,9 +46,15 @@
                 'Good',
                 'Perfect'
             ],
+            tilesOptions:{
+              tooltip: true,
+              element: false
+            },
             drawTitles: false,
             drawMessage: false,
-            drawBars: true
+            drawBars: true,
+            $addAfter: null,
+            nonce: null
         };
 
         return this.each(function() {
@@ -63,12 +70,12 @@
             };
 
             function drawStrengthify() {
-                var password = $(this).val(),
+                var password = $(this).val().substring(0, 100),
                     elemId = $(this).attr('id'),
                     // hide strengthify if no input is provided
                     opacity = (password === '') ? 0 : 1,
                     // calculate result
-                    result = zxcvbn(password),
+                    result = zxcvbn(password, options.userInputs),
                     // setup some vars for later
                     css = '',
                     bsLevel = '',
@@ -84,6 +91,10 @@
                     .css('-ms-filter',
                     '"progid:DXImageTransform.Microsoft.Alpha(Opacity=' + opacity * 100 + ')"'
                     );
+
+                if (options.onResult) {
+                    options.onResult(result);
+                }
 
                 // style strengthify bar
                 // possible scores: 0-4
@@ -103,6 +114,7 @@
                         css = 'password-good';
                         bsLevel = 'info';
                         message = "Getting better.";
+                        break;
                     case 4:
                         css = 'password-good';
                         bsLevel = 'success';
@@ -139,22 +151,28 @@
 
                 if (options.drawTitles) {
                     // set a title for the wrapper
-                    $wrapper.attr(
-                        'title',
-                        options.titles[result.score]
-                    ).tooltip({
-                        placement: 'bottom',
-                        trigger: 'manual',
-                    }).tooltip(
-                        'fixTitle'
-                    ).tooltip(
-                        'show'
+                    if(options.tilesOptions.tooltip){
+                        $wrapper.attr(
+                            'title',
+                            options.titles[result.score]
+                        ).tooltip({
+                            placement: 'bottom',
+                            trigger: 'manual',
+                        }).tooltip(
+                            'fixTitle'
+                        ).tooltip(
+                            'show'
                         );
 
-                    if (opacity === 0) {
-                        $wrapper.tooltip(
-                            'hide'
-                        );
+                        if (opacity === 0) {
+                            $wrapper.tooltip(
+                                'hide'
+                            );
+                        }
+                    }
+
+                    if(options.tilesOptions.element){
+                        $wrapper.find(".strengthify-tiles").text(options.titles[result.score]);
                     }
                 }
             };
@@ -164,8 +182,13 @@
                     elemId = $elem.attr('id');
                 var drawSelf = drawStrengthify.bind(this);
 
+                var $addAfter = options.$addAfter;
+                if (!$addAfter) {
+                    $addAfter = $elem;
+                }
+
                 // add elements
-                $elem.after('<div class="strengthify-wrapper" data-strengthifyFor="' + $elem.attr('id') + '"></div>');
+                $addAfter.after('<div class="strengthify-wrapper" data-strengthifyFor="' + $elem.attr('id') + '"></div>');
 
                 if (options.drawBars) {
                     getWrapperFor(elemId)
@@ -180,15 +203,22 @@
                     getWrapperFor(elemId).append('<div data-strengthifyMessage></div>');
                 }
 
-                $elem.parent().on('scroll', drawSelf);
+                if (options.drawTitles && options.tilesOptions) {
+                    getWrapperFor(elemId).append('<div class="strengthify-tiles"></div>');
+                }
 
-                $.ajax({
-                    cache: true,
-                    dataType: 'script',
-                    url: options.zxcvbn
-                }).done(function() {
-                    $elem.bind('keyup input change', drawSelf);
-                });
+                var script = document.createElement("script");
+                script.src = options.zxcvbn;
+                if (options.nonce !== null) {
+                    script.setAttribute('nonce', options.nonce);
+                }
+
+                script.onload = function() {
+                	$elem.parent().on('scroll', drawSelf);
+                        $elem.bind('keyup input change', drawSelf);
+                }
+
+                document.head.appendChild(script);
             };
 
             init.call(this);

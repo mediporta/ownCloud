@@ -3,7 +3,7 @@
  */
 
 /* global dav */
-if (typeof dav == 'undefined') { dav = {}; };
+var dav = dav || {}
 
 dav._XML_CHAR_MAP = {
     '<': '&lt;',
@@ -227,13 +227,17 @@ dav.Client.prototype = {
      * @param {string} url Relative or absolute url
      * @param {Object} headers HTTP headers as an object.
      * @param {string} body HTTP request body.
+     * @param {string} responseType HTTP request response type.
+     * @param {Object} options
+     * @param {Function} options.onProgress progress callback
      * @return {Promise}
      */
-    request : function(method, url, headers, body) {
+    request : function(method, url, headers, body, responseType, options) {
 
         var self = this;
         var xhr = this.xhrProvider();
         headers = headers || {};
+        responseType = responseType || "";
         
         if (this.userName) {
             headers['Authorization'] = 'Basic ' + btoa(this.userName + ':' + this.password);
@@ -243,6 +247,20 @@ dav.Client.prototype = {
         var ii;
         for(ii in headers) {
             xhr.setRequestHeader(ii, headers[ii]);
+        }
+        xhr.responseType = responseType;
+
+        if (options && typeof(options.onProgress) === 'function') {
+            if (method === 'PUT' || method === 'POST') {
+                xhr.upload.addEventListener('progress', function (e) {
+                  options.onProgress(e)
+                }, false)
+            }
+            else {
+                xhr.addEventListener('progress', function (e) {
+                  options.onProgress(e)
+                }, false)
+            }
         }
 
         // Work around for edge
@@ -464,3 +482,6 @@ dav.Client.prototype = {
 
 };
 
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports.Client = dav.Client;
+}

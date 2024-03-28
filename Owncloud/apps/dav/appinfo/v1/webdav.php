@@ -37,7 +37,8 @@ $serverFactory = new \OCA\DAV\Connector\Sabre\ServerFactory(
 	\OC::$server->getUserSession(),
 	\OC::$server->getMountManager(),
 	\OC::$server->getTagManager(),
-	\OC::$server->getRequest()
+	\OC::$server->getRequest(),
+	\OC::$server->getTimeFactory()
 );
 
 // Backends
@@ -47,6 +48,7 @@ $authBackend = new \OCA\DAV\Connector\Sabre\Auth(
 	\OC::$server->getRequest(),
 	\OC::$server->getTwoFactorAuthManager(),
 	\OC::$server->getAccountModuleManager(),
+	\OC::$server->getConfig(),
 	'principals/'
 );
 $requestUri = \OC::$server->getRequest()->getRequestUri();
@@ -58,7 +60,8 @@ $server = $serverFactory->createServer($baseuri, $requestUri, $authBackend, func
 
 // allow setup of additional auth backends
 $event = new \OCP\SabrePluginEvent($server);
-\OC::$server->getEventDispatcher()->dispatch('OCA\DAV\Connector\Sabre::authInit', $event);
+\OC::$server->getEventDispatcher()->dispatch($event, 'OCA\DAV\Connector\Sabre::authInit');
 
+\Sabre\DAV\Server::$streamMultiStatus = true;
 // And off we go!
 $server->exec();

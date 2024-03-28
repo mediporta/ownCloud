@@ -35,7 +35,6 @@ use OCP\Files\External\IStoragesBackendService;
  * Service class to manage backend definitions
  */
 class StoragesBackendService implements IStoragesBackendService {
-
 	/** @var IConfig */
 	protected $config;
 
@@ -69,7 +68,8 @@ class StoragesBackendService implements IStoragesBackendService {
 		if ($this->config->getAppValue('files_external', 'allow_user_mounting', 'yes') !== 'yes') {
 			$this->userMountingAllowed = false;
 		}
-		$this->userMountingBackends = \explode(',',
+		$this->userMountingBackends = \explode(
+			',',
 			$this->config->getAppValue('files_external', 'user_mounting_backends', '')
 		);
 

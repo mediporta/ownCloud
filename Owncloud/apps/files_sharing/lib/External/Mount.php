@@ -28,7 +28,6 @@ use OC\Files\Mount\MountPoint;
 use OC\Files\Mount\MoveableMount;
 
 class Mount extends MountPoint implements MoveableMount {
-
 	/**
 	 * @var \OCA\Files_Sharing\External\Manager
 	 */
@@ -54,8 +53,9 @@ class Mount extends MountPoint implements MoveableMount {
 	 */
 	public function moveMount($target) {
 		$result = $this->manager->setMountPoint($this->mountPoint, $target);
-		$this->setMountPoint($target);
-
+		if ($result === true) {
+			$this->setMountPoint($target);
+		}
 		return $result;
 	}
 

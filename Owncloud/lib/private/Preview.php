@@ -33,7 +33,7 @@ namespace OC;
 
 use OC\Files\Filesystem;
 use OC\Files\View;
-use OCP\Files\File;
+use OCA\Files_Sharing\SharedMount;
 use OCP\Files\FileInfo;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -45,10 +45,10 @@ use OCP\Util;
 
 class Preview {
 	//the thumbnail folder
-	const THUMBNAILS_FOLDER = 'thumbnails';
+	public const THUMBNAILS_FOLDER = 'thumbnails';
 
-	const MODE_FILL = 'fill';
-	const MODE_COVER = 'cover';
+	public const MODE_FILL = 'fill';
+	public const MODE_COVER = 'cover';
 
 	//config
 	private $maxScaleFactor;
@@ -58,11 +58,10 @@ class Preview {
 	private $configMaxHeight;
 
 	//fileview object
-	private $fileView = null;
-	private $userView = null;
+	private $userView;
 
 	//vars
-	/** @var File */
+	/** @var Node | null */
 	private $file;
 	private $maxX;
 	private $maxY;
@@ -81,11 +80,6 @@ class Preview {
 	/** @var int $previewHeight calculated height of the preview we're looking for */
 	private $previewHeight;
 
-	// filemapper used for deleting previews
-	// index is path, value is fileinfo
-	public static $deleteFileMapper = [];
-	public static $deleteChildrenMapper = [];
-
 	/**
 	 * preview images object
 	 *
@@ -99,8 +93,7 @@ class Preview {
 	 * check if thumbnail or bigger version of thumbnail of file is cached
 	 *
 	 * @param string $user userid - if no user is given, OC_User::getUser will be used
-	 * @param string $root path of root
-	 * @param Node $file The path to the file where you want a thumbnail from
+	 * @param Node|null $file The path to the file where you want a thumbnail from
 	 * @param int $maxX The maximum X size of the thumbnail. It can be smaller depending on the
 	 *     shape of the image
 	 * @param int $maxY The maximum Y size of the thumbnail. It can be smaller depending on the
@@ -112,7 +105,8 @@ class Preview {
 	public function __construct(
 		$user = '',
 		$root = '/',
-		Node $file = null, $maxX = 1,
+		Node $file = null,
+		$maxX = 1,
 		$maxY = 1,
 		$scalingUp = true,
 		$versionId = null
@@ -121,7 +115,6 @@ class Preview {
 		if ($user === '') {
 			$user = \OC_User::getUser();
 		}
-		$this->fileView = new View('/' . $user . '/' . $root);
 		$this->userView = new View('/' . $user);
 
 		//set config
@@ -138,8 +131,6 @@ class Preview {
 		$this->setMaxY((int)$maxY);
 		$this->setScalingup($scalingUp);
 
-		$this->preview = null;
-
 		//check if there are preview backends
 		if (!\OC::$server->getPreviewManager()
 				->hasProviders()
@@ -152,9 +143,9 @@ class Preview {
 	}
 
 	/**
-	 * returns the path of the file you want a thumbnail from
+	 * returns the node you want a thumbnail from
 	 *
-	 * @return File
+	 * @return Node | null
 	 */
 	public function getFile() {
 		return $this->file;
@@ -221,29 +212,6 @@ class Preview {
 	 */
 	public function getConfigMaxY() {
 		return $this->configMaxHeight;
-	}
-
-	/**
-	 * Returns the FileInfo object associated with the file to preview
-	 *
-	 * @return false|Files\FileInfo|\OCP\Files\FileInfo
-	 */
-	protected function getFileInfo() {
-		return $this->file;
-	}
-
-	/**
-	 * @return array|null
-	 */
-	private function getChildren() {
-		$absPath = $this->file->getPath();
-		$absPath = Files\Filesystem::normalizePath($absPath);
-
-		if (\array_key_exists($absPath, self::$deleteChildrenMapper)) {
-			return self::$deleteChildrenMapper[$absPath];
-		}
-
-		return null;
 	}
 
 	/**
@@ -367,7 +335,7 @@ class Preview {
 			return false;
 		}
 
-		if (!$this->getFileInfo() instanceof FileInfo) {
+		if (!$this->getFile() instanceof FileInfo) {
 			Util::writeLog('core', 'File:"' . $file->getPath() . '" not found', Util::DEBUG);
 
 			return false;
@@ -379,48 +347,32 @@ class Preview {
 	/**
 	 * Deletes the preview of a file with specific width and height
 	 *
-	 * This should never delete the max preview, use deleteAllPreviews() instead
+	 * This should never delete versions preview, use deleteAllPreviews() instead
+	 *
+	 * @param bool $keepMax - keep max size preview
 	 *
 	 * @return bool
 	 */
-	public function deletePreview() {
-		$fileInfo = $this->getFileInfo();
+	public function deletePreview($keepMax = true) {
+		$fileInfo = $this->getFile();
 		if ($fileInfo !== null && $fileInfo !== false) {
-			$previewPath = $this->buildCachePath();
-			if (!\strpos($previewPath, 'max')) {
-				return $this->userView->unlink($previewPath);
+			if ($keepMax === true) {
+				$previewPath = $this->buildCachePath();
+				if (!\strpos($previewPath, 'max')) {
+					return $this->userView->unlink($previewPath);
+				}
+			} else {
+				$previewPath = $this->getPreviewPath();
+				foreach ($this->userView->getDirectoryContent($previewPath) as $fileInfo) {
+					if ($fileInfo->getType() === FileInfo::TYPE_FILE) {
+						$this->userView->unlink("$previewPath/{$fileInfo->getName()}");
+					}
+				}
+				return true;
 			}
 		}
 
 		return false;
-	}
-
-	/**
-	 * Deletes all previews of a file
-	 */
-	public function deleteAllPreviews() {
-		$thumbnailMount = $this->userView->getMount($this->getThumbnailsFolder());
-		$propagator = $thumbnailMount->getStorage()->getPropagator();
-		$propagator->beginBatch();
-
-		$toDelete = $this->getChildren();
-		$toDelete[] = $this->getFileInfo();
-
-		foreach ($toDelete as $delete) {
-			if ($delete instanceof FileInfo) {
-				/** @var \OCP\Files\FileInfo $delete */
-				$fileId = $delete->getId();
-
-				// getId() might return null, e.g. when the file is a
-				// .ocTransferId*.part file from chunked file upload.
-				if (!empty($fileId)) {
-					$previewPath = $this->getPreviewPath($fileId);
-					$this->userView->rmdir($previewPath);
-				}
-			}
-		}
-
-		$propagator->commitBatch();
 	}
 
 	/**
@@ -435,7 +387,7 @@ class Preview {
 	 * @return string|false path to the cached preview if it exists or false
 	 */
 	public function isCached() {
-		$fileId = $this->getFileInfo()->getId();
+		$fileId = $this->getFile()->getId();
 		if ($fileId === null) {
 			return false;
 		}
@@ -450,7 +402,6 @@ class Preview {
 
 		// Only use the cache if we have a max preview
 		if ($maxPreviewWidth !== null && $maxPreviewHeight !== null) {
-
 			/**
 			 * Phase 2: Calculating the size of the preview we need to send back
 			 */
@@ -486,11 +437,11 @@ class Preview {
 				// The preview we-re looking for is the exact size or larger than the max preview,
 				// so return that
 				return $this->buildCachePath($maxPreviewWidth, $maxPreviewHeight);
-			} else {
-				// The last resort is to look for something bigger than what we've calculated,
-				// but still smaller than the max preview
-				return $this->isCachedBigger($allThumbnails);
 			}
+
+			// The last resort is to look for something bigger than what we've calculated,
+			// but still smaller than the max preview
+			return $this->isCachedBigger($allThumbnails);
 		}
 
 		return false;
@@ -649,9 +600,9 @@ class Preview {
 		foreach ($possibleThumbnails as $width => $path) {
 			if ($width < $maxX) {
 				continue;
-			} else {
-				return $path;
 			}
+
+			return $path;
 		}
 
 		// At this stage, we didn't find a preview, so we return the max preview
@@ -746,7 +697,7 @@ class Preview {
 		}
 
 		$this->preview = null;
-		$fileInfo = $this->getFileInfo();
+		$fileInfo = $this->getFile();
 		if ($fileInfo === null || $fileInfo === false) {
 			return new \OC_Image();
 		}
@@ -754,6 +705,33 @@ class Preview {
 		$cached = $this->isCached();
 		if ($cached) {
 			$this->getCachedPreview($cached);
+
+			if ($this->preview) {
+				$mount = $fileInfo->getMountPoint();
+
+				// Updating a shared file will always re-generate the preview for the
+				// share owner, but not its sharees. Therefore we need to check if the
+				// current cached preview is different from the share owner's one.
+				if ($mount instanceof SharedMount) {
+					$owner = $fileInfo->getOwner();
+					$ownerView = new View($owner->getUID() . '/' . $cached);
+					$ownerPreview = $ownerView->getFileInfo('');
+
+					if ($ownerPreview) {
+						$currentPreview = $this->userView->getFileInfo($cached);
+
+						// Different checksums mean we need to re-generate the thumbnail
+						// to match with the share owner's one.
+						if ($ownerPreview->getChecksum() !== $currentPreview->getChecksum()) {
+							$this->preview = null;
+						}
+					} else {
+						// Owner preview gets deleted when a sharee edits a file.
+						// Re-generate preview for the sharee in this case.
+						$this->preview = null;
+					}
+				}
+			}
 		}
 
 		if ($this->preview === null) {
@@ -833,13 +811,15 @@ class Preview {
 		$image = $this->preview;
 		if (!($image instanceof IImage)) {
 			Util::writeLog(
-				'core', '$this->preview is not an instance of \OCP\IImage', Util::DEBUG
+				'core',
+				'$this->preview is not an instance of \OCP\IImage',
+				Util::DEBUG
 			);
 
 			return;
 		}
-		$previewWidth = (int)$image->width();
-		$previewHeight = (int)$image->height();
+		$previewWidth = $image->width();
+		$previewHeight = $image->height();
 		$askedWidth = $this->getMaxX();
 		$askedHeight = $this->getMaxY();
 
@@ -861,7 +841,11 @@ class Preview {
 		 * Takes the scaling ratio into consideration
 		 */
 		list($newPreviewWidth, $newPreviewHeight) = $this->scale(
-			$image, $askedWidth, $askedHeight, $previewWidth, $previewHeight
+			$image,
+			$askedWidth,
+			$askedHeight,
+			$previewWidth,
+			$previewHeight
 		);
 
 		// The preview has been resized and should now have the asked dimensions
@@ -887,7 +871,11 @@ class Preview {
 		// so we fill the space with a transparent background
 		if (($newPreviewWidth < $askedWidth || $newPreviewHeight < $askedHeight)) {
 			$this->cropAndFill(
-				$image, $askedWidth, $askedHeight, $newPreviewWidth, $newPreviewHeight
+				$image,
+				$askedWidth,
+				$askedHeight,
+				$newPreviewWidth,
+				$newPreviewHeight
 			);
 			$this->storePreview($askedWidth, $askedHeight);
 
@@ -934,7 +922,8 @@ class Preview {
 		if ($maxScaleFactor !== null) {
 			if ($factor > $maxScaleFactor) {
 				Util::writeLog(
-					'core', 'scale factor reduced from ' . $factor . ' to ' . $maxScaleFactor,
+					'core',
+					'scale factor reduced from ' . $factor . ' to ' . $maxScaleFactor,
 					Util::DEBUG
 				);
 				$factor = $maxScaleFactor;
@@ -1005,7 +994,13 @@ class Preview {
 
 		// Pastes the preview on top of the background
 		\imagecopy(
-			$backgroundLayer, $image, $mergeX, $mergeY, 0, 0, $previewWidth,
+			$backgroundLayer,
+			$image,
+			$mergeX,
+			$mergeY,
+			0,
+			0,
+			$previewWidth,
 			$previewHeight
 		);
 
@@ -1025,7 +1020,8 @@ class Preview {
 	private function storePreview($previewWidth, $previewHeight) {
 		if (empty($previewWidth) || empty($previewHeight)) {
 			Util::writeLog(
-				'core', 'Cannot save preview of dimension ' . $previewWidth . 'x' . $previewHeight,
+				'core',
+				'Cannot save preview of dimension ' . $previewWidth . 'x' . $previewHeight,
 				Util::DEBUG
 			);
 		} else {
@@ -1071,14 +1067,15 @@ class Preview {
 	/**
 	 * Returns the path to the folder where the previews are stored, identified by the fileId
 	 *
+	 * @param int $fileId (optional)
+	 *
 	 * @return string
 	 */
 	private function getPreviewPath($fileId = null) {
 		if ($fileId === null) {
-			$fileId = $this->getFileInfo()->getId();
+			$fileId = $this->getFile()->getId();
 			if ($this->versionId !== null) {
-				$fileId .= '/';
-				$fileId .= $this->versionId;
+				$fileId .= "/{$this->versionId}";
 			}
 		}
 		return $this->getThumbnailsFolder() . '/' . $fileId . '/';
@@ -1113,8 +1110,10 @@ class Preview {
 				}
 
 				Util::writeLog(
-					'core', 'Generating preview for "' . $file->getPath() . '" with "' . \get_class($provider)
-					. '"', Util::DEBUG
+					'core',
+					'Generating preview for "' . $file->getPath() . '" with "' . \get_class($provider)
+					. '"',
+					Util::DEBUG
 				);
 
 				$preview = $provider->getThumbnail($file, $this->configMaxWidth, $this->configMaxHeight, false);
@@ -1207,7 +1206,9 @@ class Preview {
 		if ($maxDim !== null) {
 			if ($dim > $maxDim) {
 				Util::writeLog(
-					'core', $dimName . ' reduced from ' . $dim . ' to ' . $maxDim, Util::DEBUG
+					'core',
+					$dimName . ' reduced from ' . $dim . ' to ' . $maxDim,
+					Util::DEBUG
 				);
 				$dim = $maxDim;
 			}
@@ -1217,112 +1218,34 @@ class Preview {
 	}
 
 	/**
-	 * @param array $args
+	 * @param string[] $args
 	 */
-	public static function post_write($args) {
-		self::post_delete($args, 'files/');
-	}
-
-	/**
-	 * @param array $args
-	 */
-	public static function prepare_delete_files($args) {
-		self::prepare_delete($args, 'files/');
-	}
-
-	/**
-	 * @param array $args
-	 * @param string $prefix
-	 */
-	public static function prepare_delete(array $args, $prefix = '') {
-		$path = Files\Filesystem::normalizePath($args['path']);
-		$user = isset($args['user']) ? $args['user'] : \OC_User::getUser();
+	private static function getUserFolder($args): ?Folder {
+		$user = $args['user'] ?? \OC_User::getUser();
 		if ($user === false) {
-			$user = Filesystem::getOwner($path);
+			try {
+				$path = Files\Filesystem::normalizePath($args['path']);
+				$user = Filesystem::getOwner($path);
+			} catch (NotFoundException $e) {
+				return null;
+			}
 		}
+		return \OC::$server->getUserFolder($user);
+	}
 
-		$userFolder = \OC::$server->getUserFolder($user);
-		if ($userFolder === null) {
+	public static function post_write($args) {
+		$path = Files\Filesystem::normalizePath($args['path']);
+		$userFolder = self::getUserFolder($args);
+		if (!$userFolder) {
 			return;
 		}
-
-		$node = $userFolder->get($path);
-		self::addPathToDeleteFileMapper($path, $node);
-		if ($node->getType() === FileInfo::TYPE_FOLDER) {
-			$children = self::getAllChildren($node);
-			self::$deleteChildrenMapper[$node->getPath()] = $children;
-		}
-	}
-
-	/**
-	 * @param string $absolutePath
-	 * @param \OCP\Files\FileInfo $info
-	 */
-	private static function addPathToDeleteFileMapper($absolutePath, $info) {
-		self::$deleteFileMapper[$absolutePath] = $info;
-	}
-
-	/**
-	 * @param Folder $node
-	 *
-	 * @return array
-	 */
-	private static function getAllChildren($node) {
-		$children = $node->getDirectoryListing();
-		$childrenFiles = [];
-
-		foreach ($children as $child) {
-			if ($child->getType() === FileInfo::TYPE_FOLDER) {
-				$childrenFiles = \array_merge(
-					$childrenFiles,
-					self::getAllChildren($child)
-				);
-			} else {
-				$childrenFiles[] = $child;
-			}
-		}
-
-		return $childrenFiles;
-	}
-
-	/**
-	 * @param array $args
-	 */
-	public static function post_delete_files($args) {
-		self::post_delete($args, 'files/');
-	}
-
-	/**
-	 * @param array $args
-	 */
-	public static function post_delete_versions($args) {
-		self::post_delete($args, 'files/');
-	}
-
-	/**
-	 * @param array $args
-	 * @param string $prefix
-	 */
-	public static function post_delete($args, $prefix = '') {
-		$path = Files\Filesystem::normalizePath($args['path']);
-		if (!isset(self::$deleteFileMapper[$path])) {
-			$user = isset($args['user']) ? $args['user'] : \OC_User::getUser();
-			if ($user === false) {
-				$user = Filesystem::getOwner($path);
-			}
-
-			$userFolder = \OC::$server->getUserFolder($user);
-			if ($userFolder === null) {
-				return;
-			}
-
-			$node = $userFolder->get($path);
+		if (\strpos($path, '/files_trashbin/') === 0) {
+			$node = $userFolder->getParent()->get($path);
 		} else {
-			/** @var FileInfo $node */
-			$node = self::$deleteFileMapper[$path];
+			$node = $userFolder->get($path);
 		}
 
-		$preview = new Preview($node->getOwner()->getUID(), $prefix, $node);
-		$preview->deleteAllPreviews();
+		$preview = new Preview($node->getOwner()->getUID(), '', $node);
+		$preview->deletePreview(false);
 	}
 }

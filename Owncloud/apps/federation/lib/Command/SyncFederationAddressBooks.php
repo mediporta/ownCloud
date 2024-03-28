@@ -28,7 +28,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SyncFederationAddressBooks extends Command {
-
 	/** @var \OCA\Federation\SyncFederationAddressBooks */
 	private $syncService;
 
@@ -52,7 +51,7 @@ class SyncFederationAddressBooks extends Command {
 	 * @param OutputInterface $output
 	 * @return int
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$progress = new ProgressBar($output);
 		$progress->start();
 		$this->syncService->syncThemAll(function ($url, $ex) use ($progress, $output) {

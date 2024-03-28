@@ -48,9 +48,9 @@ namespace OCP;
  * It provides the following hooks:
  *  - post_shared
  * @since 5.0.0
+ * @deprecated since 10.0.11 and will be removed in 11.0, please use the share manager instead
  */
 class Share extends \OC\Share\Constants {
-
 	/**
 	 * Register a sharing backend class that implements OCP\Share_Backend for an item type
 	 * @param string $itemType Item type
@@ -101,8 +101,13 @@ class Share extends \OC\Share\Constants {
 	 * @return mixed Return depends on format
 	 * @since 5.0.0
 	 */
-	public static function getItemsSharedWith($itemType, $format = self::FORMAT_NONE,
-		$parameters = null, $limit = -1, $includeCollections = false) {
+	public static function getItemsSharedWith(
+		$itemType,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$limit = -1,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemsSharedWith($itemType, $format, $parameters, $limit, $includeCollections);
 	}
 
@@ -117,8 +122,14 @@ class Share extends \OC\Share\Constants {
 	 * @return mixed Return depends on format
 	 * @since 7.0.0
 	 */
-	public static function getItemsSharedWithUser($itemType, $user, $format = self::FORMAT_NONE,
-		$parameters = null, $limit = -1, $includeCollections = false) {
+	public static function getItemsSharedWithUser(
+		$itemType,
+		$user,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$limit = -1,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemsSharedWithUser($itemType, $user, $format, $parameters, $limit, $includeCollections);
 	}
 
@@ -132,8 +143,13 @@ class Share extends \OC\Share\Constants {
 	 * @return mixed Return depends on format
 	 * @since 5.0.0
 	 */
-	public static function getItemSharedWith($itemType, $itemTarget, $format = self::FORMAT_NONE,
-		$parameters = null, $includeCollections = false) {
+	public static function getItemSharedWith(
+		$itemType,
+		$itemTarget,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemSharedWith($itemType, $itemTarget, $format, $parameters, $includeCollections);
 	}
 
@@ -160,8 +176,13 @@ class Share extends \OC\Share\Constants {
 	 * @return array
 	 * @since 5.0.0
 	 */
-	public static function getItemSharedWithBySource($itemType, $itemSource, $format = self::FORMAT_NONE,
-		$parameters = null, $includeCollections = false) {
+	public static function getItemSharedWithBySource(
+		$itemType,
+		$itemSource,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemSharedWithBySource($itemType, $itemSource, $format, $parameters, $includeCollections);
 	}
 
@@ -208,8 +229,13 @@ class Share extends \OC\Share\Constants {
 	 * @return mixed Return depends on format
 	 * @since 5.0.0
 	 */
-	public static function getItemsShared($itemType, $format = self::FORMAT_NONE, $parameters = null,
-		$limit = -1, $includeCollections = false) {
+	public static function getItemsShared(
+		$itemType,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$limit = -1,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemsShared($itemType, $format, $parameters, $limit, $includeCollections);
 	}
 
@@ -223,8 +249,13 @@ class Share extends \OC\Share\Constants {
 	 * @return mixed Return depends on format
 	 * @since 5.0.0
 	 */
-	public static function getItemShared($itemType, $itemSource, $format = self::FORMAT_NONE,
-										 $parameters = null, $includeCollections = false) {
+	public static function getItemShared(
+		$itemType,
+		$itemSource,
+		$format = self::FORMAT_NONE,
+		$parameters = null,
+		$includeCollections = false
+	) {
 		return \OC\Share\Share::getItemShared($itemType, $itemSource, $format, $parameters, $includeCollections);
 	}
 
@@ -310,7 +341,7 @@ class Share extends \OC\Share\Constants {
 	 * @since 6.0.0 - parameter $originIsSource was added in 8.0.0
 	 */
 	public static function setSendMailStatus($itemType, $itemSource, $shareType, $recipient, $status) {
-		return \OC\Share\Share::setSendMailStatus($itemType, $itemSource, $shareType, $recipient, $status);
+		\OC\Share\Share::setSendMailStatus($itemType, $itemSource, $shareType, $recipient, $status);
 	}
 
 	/**

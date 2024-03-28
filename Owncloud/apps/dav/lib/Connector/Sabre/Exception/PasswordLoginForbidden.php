@@ -27,7 +27,7 @@ use Sabre\DAV\Exception\NotAuthenticated;
 use Sabre\DAV\Server;
 
 class PasswordLoginForbidden extends NotAuthenticated {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
 
 	public function getHTTPCode() {
 		return 401;
@@ -42,7 +42,6 @@ class PasswordLoginForbidden extends NotAuthenticated {
 	 * @return void
 	 */
 	public function serialize(Server $server, DOMElement $errorNode) {
-
 		// set ownCloud namespace
 		$errorNode->setAttribute('xmlns:o', self::NS_OWNCLOUD);
 

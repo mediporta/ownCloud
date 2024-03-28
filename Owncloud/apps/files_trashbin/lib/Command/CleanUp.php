@@ -32,7 +32,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CleanUp extends Command {
-
 	/** @var IUserManager */
 	protected $userManager;
 
@@ -65,7 +64,7 @@ class CleanUp extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$users = $input->getArgument('user_id');
 		if (!empty($users)) {
 			foreach ($users as $user) {
@@ -96,6 +95,7 @@ class CleanUp extends Command {
 				} while (\count($users) >= $limit);
 			}
 		}
+		return 0;
 	}
 
 	/**
@@ -105,7 +105,7 @@ class CleanUp extends Command {
 	 */
 	protected function removeDeletedFiles($uid) {
 		\OC_Util::tearDownFS();
-		\OC_Util::setupFS($uid);
+		\OC_Util::setupFS($uid, false);
 		if ($this->rootFolder->nodeExists('/' . $uid . '/files_trashbin')) {
 			$this->rootFolder->get('/' . $uid . '/files_trashbin')->delete();
 			$query = $this->dbConnection->getQueryBuilder();

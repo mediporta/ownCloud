@@ -58,11 +58,21 @@ class RootCollection extends SimpleCollection {
 		$systemPrincipals->disableListing = $disableListing;
 		$filesCollection = new Files\RootCollection($userPrincipalBackend, 'principals/users');
 		$filesCollection->disableListing = $disableListing;
+
+		$trashBinCollection = new TrashBin\RootCollection(
+			$userPrincipalBackend,
+			\OC::$server->getUserSession(),
+			'principals/users'
+		);
+		$trashBinCollection->disableListing = $disableListing;
+
 		$caldavBackend = new CalDavBackend($db, $userPrincipalBackend, $groupPrincipalBackend, $random);
 		$calendarRoot = new CalendarRoot($userPrincipalBackend, $caldavBackend, 'principals/users');
 		$calendarRoot->disableListing = $disableListing;
 		$publicCalendarRoot = new PublicCalendarRoot($caldavBackend);
 		$publicCalendarRoot->disableListing = $disableListing;
+		$publicFilesRoot = new Files\PublicFiles\RootCollection();
+		$publicFilesRoot->disableListing = $disableListing;
 
 		$systemTagCollection = new SystemTag\SystemTagsByIdCollection(
 			\OC::$server->getSystemTagManager(),
@@ -74,7 +84,7 @@ class RootCollection extends SimpleCollection {
 			\OC::$server->getSystemTagObjectMapper(),
 			\OC::$server->getUserSession(),
 			\OC::$server->getGroupManager(),
-			\OC::$server->getRootFolder()
+			\OC::$server->getLazyRootFolder()
 		);
 
 		$usersCardDavBackend = new CardDavBackend($db, $userPrincipalBackend, $groupPrincipalBackend, $dispatcher);
@@ -95,23 +105,26 @@ class RootCollection extends SimpleCollection {
 		$queueCollection->disableListing = $disableListing;
 
 		$children = [
-				new SimpleCollection('principals', [
-						$userPrincipals,
-						$groupPrincipals,
-						$systemPrincipals]),
-				$filesCollection,
-				$calendarRoot,
-				$publicCalendarRoot,
-				new SimpleCollection('addressbooks', [
-						$usersAddressBookRoot,
-						$systemAddressBookRoot]),
-				$systemTagCollection,
-				$systemTagRelationsCollection,
-				$uploadCollection,
-				$avatarCollection,
-				new \OCA\DAV\Meta\RootCollection(\OC::$server->getRootFolder()),
-				$queueCollection
+			new SimpleCollection('principals', [
+				$userPrincipals,
+				$groupPrincipals,
+				$systemPrincipals]),
+			$filesCollection,
+			$calendarRoot,
+			$publicCalendarRoot,
+			new SimpleCollection('addressbooks', [
+				$usersAddressBookRoot,
+				$systemAddressBookRoot]),
+			$systemTagCollection,
+			$systemTagRelationsCollection,
+			$uploadCollection,
+			$avatarCollection,
+			new Meta\RootCollection(\OC::$server->getLazyRootFolder()),
+			$queueCollection,
+			$publicFilesRoot
 		];
+
+		$children[] = $trashBinCollection;
 
 		parent::__construct('root', $children);
 	}

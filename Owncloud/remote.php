@@ -28,9 +28,6 @@
  *
  */
 
-require_once 'vendor/autoload.php';
-
-
 use OCA\DAV\Connector\Sabre\ExceptionLoggerPlugin;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\Server;
@@ -49,7 +46,7 @@ class RemoteException extends Exception {
 function handleException($e) {
 	$request = \OC::$server->getRequest();
 	// in case the request content type is text/xml - we assume it's a WebDAV request
-	$isXmlContentType = \strpos($request->getHeader('Content-Type'), 'text/xml');
+	$isXmlContentType = \strpos($request->getHeader('Content-Type') ?? '', 'text/xml');
 	if ($isXmlContentType === 0) {
 		// fire up a simple server to properly process the exception
 		$server = new Server();
@@ -57,7 +54,7 @@ function handleException($e) {
 			// we shall not log on RemoteException
 			$server->addPlugin(new ExceptionLoggerPlugin('webdav', \OC::$server->getLogger()));
 		}
-		$server->on('beforeMethod', function () use ($e) {
+		$server->on('beforeMethod:*', function () use ($e) {
 			if ($e instanceof RemoteException) {
 				switch ($e->getCode()) {
 					case OC_Response::STATUS_SERVICE_UNAVAILABLE:
@@ -73,7 +70,7 @@ function handleException($e) {
 		$server->exec();
 	} else {
 		$statusCode = OC_Response::STATUS_INTERNAL_SERVER_ERROR;
-		if ($e instanceof \OC\ServiceUnavailableException ) {
+		if ($e instanceof \OC\ServiceUnavailableException) {
 			$statusCode = OC_Response::STATUS_SERVICE_UNAVAILABLE;
 		}
 		if ($e instanceof RemoteException) {
@@ -111,9 +108,6 @@ function resolveService($service) {
 
 try {
 	require_once __DIR__ . '/lib/base.php';
-
-	require_once 'telemetry.php';
-	initializeTelemetry();
 
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
@@ -169,11 +163,13 @@ try {
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
 	require_once $file;
-	executeTelemetry(null);
-} catch (Exception $ex) {
-	handleException($ex);
-	executeTelemetry($ex);
-} catch (Error $e) {
-	handleException($e);
-	executeTelemetry($e);
+} catch (\Throwable $ex) {
+	try {
+		handleException($ex);
+	} catch (\Throwable $ex2) {
+		// log through the crashLog
+		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");
+		\OC::crashLog($ex);
+		\OC::crashLog($ex2);
+	}
 }

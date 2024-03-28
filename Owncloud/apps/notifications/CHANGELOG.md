@@ -4,46 +4,74 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [0.3.5]
+## [0.6.0] - 2023-07-10
 
-- Added translations - [#233](https://github.com/owncloud/notifications/issues/233)
-- Clear user notifications after user deletion - [#223](https://github.com/owncloud/notifications/issues/223) [#238](https://github.com/owncloud/notifications/issues/238)
-- Include the product name in the mail for the notifications - [#211](https://github.com/owncloud/notifications/issues/211)
-- Add "hello" in the mail templates - [#209](https://github.com/owncloud/notifications/issues/209)
-- Add common footer to notifications - [#207](https://github.com/owncloud/notifications/issues/207)
+### Changed
 
-## [0.3.4]
+- [#376](https://github.com/owncloud/notifications/pull/376) -  Always return an int from Symfony Command execute method #376 
+- Minimum core version 10.11, minimum php version 7.4
 
-- Fix migration from 8.2.11 to 10.0.x with postgresql - [#195](https://github.com/owncloud/notifications/issues/195)
-- Adjust email message for notifications to be more user-friendly - [#188](https://github.com/owncloud/notifications/issues/188)
 
-## [0.3.3]
+## [0.5.4] - 2021-06-30
 
-- Allow CORS requests to list notifications - [#176](https://github.com/owncloud/notifications/issues/176)
-- Include the template folder in the Makefile - [#168](https://github.com/owncloud/notifications/issues/168)
-- Add support for email notifications - [#156](https://github.com/owncloud/notifications/issues/156) [#162](https://github.com/owncloud/notifications/issues/162) [#175](https://github.com/owncloud/notifications/issues/175) [#171](https://github.com/owncloud/notifications/issues/171)
-- Add occ command arguments for link and link text - [#172](https://github.com/owncloud/notifications/issues/172)
-- Fix occ command for group notification - [#146](https://github.com/owncloud/notifications/issues/146)
-
-## [0.3.2]
 ### Fixed
-- Fix login page URL detection which caused trouble with shibboleth users - [#122](https://github.com/owncloud/notifications/issues/122)
 
-## [0.3.1]
+- Provide get/list api link resource as absolute url - [#342](https://github.com/owncloud/notifications/issues/342)
+
+## [0.5.3] - 2021-06-21
+
 ### Added
-- Notifications can now have an icon - [#104](https://github.com/owncloud/notifications/issues/104)
-- Added occ command to send notification to a user or a grouop - [#104](https://github.com/owncloud/notifications/issues/104)
+
+- Add command to repair notifications and properly handle mail sending … - [#333](https://github.com/owncloud/notifications/issues/333)
+- Add Mail sender name - [#338](https://github.com/owncloud/notifications/issues/338)
+
+## [0.5.2] - 2020-07-15
 
 ### Fixed
+
+- Use language code to correctly translate mail body of notifications - [#322](https://github.com/owncloud/notifications/issues/322)
+
+### Added
+
+- Add `Hello` as translatable string to the mail templates - [#320](https://github.com/owncloud/notifications/issues/320)
+
+### Changed
+
+- Bump libraries
+
+## [0.5.0] - 2019-04-25
+
+### Added
+
+- Added bell icon in black - [#185](https://github.com/owncloud/notifications/pull/185)
+
+### Changed
+
+- Drop php 5.6 - [#267](https://github.com/owncloud/notifications/issues/267)
+
+### Fixes
+
+- Only set icon in case an icon is available - [#275](https://github.com/owncloud/notifications/issues/275)
+
+## [0.4.1]
+
+### Added
+
+- Notifications can now have an icon - [#104](https://github.com/owncloud/notifications/issues/104)
+- Added occ command to send notification to a user or a group - [#104](https://github.com/owncloud/notifications/issues/104)
+
+### Fixed
+
 - Make sure buttons stays in place even with long messages - [#114](https://github.com/owncloud/notifications/issues/114)
 - Don't escape link text title - [#111](https://github.com/owncloud/notifications/issues/111)
 - Fix actions and escaping - [#109](https://github.com/owncloud/notifications/issues/109)
 - Move OCS calls to app framework - consumes less resources - [#98](https://github.com/owncloud/notifications/pull/98)
 - Don't use escaped message for browser notification - [#100](https://github.com/owncloud/notifications/pull/100)
 
-[0.3.5]: https://github.com/owncloud/notifications/compare/v10.0.9...stable10
-[0.3.4]: https://github.com/owncloud/notifications/compare/v10.0.8...v10.0.9
-[0.3.3]: https://github.com/owncloud/notifications/compare/v10.0.4...v10.0.8
-[0.3.2]: https://github.com/owncloud/notifications/compare/v10.0.3...v10.0.4
-[0.3.1]: https://github.com/owncloud/notifications/compare/v10.0.2...v10.0.4RC2
-
+[Unreleased]: https://github.com/owncloud/notifications/compare/v0.6.0...master
+[0.6.0]: https://github.com/owncloud/notifications/compare/v0.5.4...v0.6.0
+[0.5.4]: https://github.com/owncloud/notifications/compare/v0.5.3...v0.5.4
+[0.5.3]: https://github.com/owncloud/notifications/compare/v0.5.2...v0.5.3
+[0.5.2]: https://github.com/owncloud/notifications/compare/v0.5.0...v0.5.2
+[0.5.0]: https://github.com/owncloud/notifications/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/owncloud/notifications/compare/v0.4.0...v0.4.1

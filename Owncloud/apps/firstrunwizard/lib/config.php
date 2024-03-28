@@ -1,5 +1,4 @@
 <?php
-
 /**
  * ownCloud - firstrunwizard App
  *
@@ -20,15 +19,26 @@
  * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+
 namespace OCA\FirstRunWizard;
 
 use OCP\IConfig;
 use OCP\IUserSession;
 
+/**
+ * Class Config
+ *
+ * @package OCA\FirstRunWizard
+ */
 class Config {
-
+	/**
+	 * @var IConfig
+	 */
 	protected $config;
 
+	/**
+	 * @var IUserSession
+	 */
 	protected $userSession;
 
 	/**
@@ -46,7 +56,7 @@ class Config {
 	public function enable() {
 		$user = $this->userSession->getUser();
 		if ($user) {
-			$this->config->setUserValue($user->getUID(), 'firstrunwizard', 'show', 1);
+			$this->config->setUserValue($user->getUID(), 'firstrunwizard', 'show', '1');
 		}
 	}
 
@@ -56,7 +66,7 @@ class Config {
 	public function disable() {
 		$user = $this->userSession->getUser();
 		if ($user) {
-			$this->config->setUserValue($user->getUID(), 'firstrunwizard', 'show', 0);
+			$this->config->setUserValue($user->getUID(), 'firstrunwizard', 'show', '0');
 		}
 	}
 
@@ -68,9 +78,30 @@ class Config {
 		$user = $this->userSession->getUser();
 		if ($user) {
 			$conf = $this->config->getUserValue($user->getUID(), 'firstrunwizard', 'show', 1);
-			return (intval($conf) === 1);
+			return (\intval($conf) === 1);
 		} else {
 			return false;
+		}
+	}
+
+	/**
+	 * Enables the firstrunwizard for all users again that had it disabled
+	 *
+	 * @param callable $callback called with the current user being set
+	 *
+	 * @return void
+	 *
+	 * @throws \OCP\PreConditionNotMetException
+	 */
+	public function resetAllUsers(callable $callback) {
+		$users = $this->config->getUsersForUserValue(
+			'firstrunwizard',
+			'show',
+			'0'
+		);
+		foreach ($users as $user) {
+			\call_user_func($callback, $user);
+			$this->config->setUserValue($user, 'firstrunwizard', 'show', '1');
 		}
 	}
 }

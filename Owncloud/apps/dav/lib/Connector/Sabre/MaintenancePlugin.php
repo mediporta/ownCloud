@@ -30,7 +30,6 @@ use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\ServerPlugin;
 
 class MaintenancePlugin extends ServerPlugin {
-
 	/** @var IConfig */
 	private $config;
 
@@ -64,7 +63,7 @@ class MaintenancePlugin extends ServerPlugin {
 	 */
 	public function initialize(\Sabre\DAV\Server $server) {
 		$this->server = $server;
-		$this->server->on('beforeMethod', [$this, 'checkMaintenanceMode'], 1);
+		$this->server->on('beforeMethod:*', [$this, 'checkMaintenanceMode'], 1);
 	}
 
 	/**

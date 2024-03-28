@@ -46,12 +46,11 @@ use OCP\Files\StorageNotAvailableException;
  */
 interface IStorage {
 	/**
-	 * $parameters is a free form array with the configuration options needed to construct the storage
-	 *
-	 * @param array $parameters
-	 * @since 9.0.0
+	 * usePartFile - allows a storage to opt-out of .part upload and rename
+	 * @return boolean
+	 * @since 10.5.1
 	 */
-	public function __construct($parameters);
+	public function usePartFile();
 
 	/**
 	 * Get the identifier for the storage,
@@ -238,11 +237,11 @@ interface IStorage {
 	public function file_get_contents($path);
 
 	/**
-	 * see http://php.net/manual/en/function.file_put_contents.php
+	 * see http://php.net/manual/en/function.file-put-contents.php
 	 *
 	 * @param string $path
 	 * @param string $data
-	 * @return bool
+	 * @return int|false the number of bytes that were written to the file, or FALSE on failure
 	 * @throws StorageNotAvailableException if the storage is temporarily not available
 	 * @since 9.0.0
 	 */
@@ -317,8 +316,13 @@ interface IStorage {
 	/**
 	 * see http://php.net/manual/en/function.free_space.php
 	 *
+	 * This method should return an int if possible. If the free space doesn't fit in
+	 * an integer, a float can be used instead
+	 * The local storage implementation uses the disk_free_space function, which returns
+	 * a float.
+	 *
 	 * @param string $path
-	 * @return int|false
+	 * @return int|float|false
 	 * @throws StorageNotAvailableException if the storage is temporarily not available
 	 * @since 9.0.0
 	 */

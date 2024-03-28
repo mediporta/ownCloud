@@ -36,7 +36,7 @@ if (!isset($_GET['t'])) {
 	exit;
 }
 
-$federatedSharingApp = new \OCA\FederatedFileSharing\AppInfo\Application('federatedfilesharing');
+$federatedSharingApp = new \OCA\FederatedFileSharing\AppInfo\Application();
 $federatedShareProvider = $federatedSharingApp->getFederatedShareProvider();
 
 if ($federatedShareProvider->isOutgoingServer2serverShareEnabled() === false) {
@@ -82,8 +82,13 @@ $sharePermissions= (int)$share->getPermissions();
  * @return array
  */
 function getChildInfo($dir, $view, $sharePermissions) {
+	// Prevent user to see directory content if share is a file drop
+	if (($sharePermissions & \OCP\Constants::PERMISSION_READ) !== \OCP\Constants::PERMISSION_READ) {
+		return [];
+	}
 	$children = $view->getDirectoryContent($dir->getPath());
 	$result = [];
+
 	foreach ($children as $child) {
 		$formatted = \OCA\Files\Helper::formatFileInfo($child);
 		if ($child->getType() === 'dir') {

@@ -62,11 +62,12 @@ class Create extends Base {
 	/** @var IUserSession */
 	private $userSession;
 
-	public function __construct(IGlobalStoragesService $globalService,
-						 IUserStoragesService $userService,
-						 IUserManager $userManager,
-						 IUserSession $userSession,
-						 IStoragesBackendService $backendService
+	public function __construct(
+		IGlobalStoragesService $globalService,
+		IUserStoragesService $userService,
+		IUserManager $userManager,
+		IUserSession $userSession,
+		IStoragesBackendService $backendService
 	) {
 		parent::__construct();
 		$this->globalService = $globalService;
@@ -116,7 +117,7 @@ class Create extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $input->getOption('user');
 		$mountPoint = $input->getArgument('mount_point');
 		$storageIdentifier = $input->getArgument('storage_backend');

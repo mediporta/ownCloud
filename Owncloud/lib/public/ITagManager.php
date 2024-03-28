@@ -35,7 +35,7 @@ namespace OCP;
 /**
  * Factory class creating instances of \OCP\ITags
  *
- * A tag can be e.g. 'Family', 'Work', 'Chore', 'Special Occation' or
+ * A tag can be e.g. 'Family', 'Work', 'Chore', 'Special Occasion' or
  * anything else that is either parsed from a vobject or that the user chooses
  * to add.
  * Tag names are not case-sensitive, but will be saved with the case they
@@ -44,7 +44,6 @@ namespace OCP;
  * @since 6.0.0
  */
 interface ITagManager {
-
 	/**
 	 * Create a new \OCP\ITags instance and load tags from db for the current user.
 	 *

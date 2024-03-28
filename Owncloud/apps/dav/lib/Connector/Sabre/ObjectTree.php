@@ -37,7 +37,6 @@ use OCP\Files\StorageNotAvailableException;
 use OCP\Lock\LockedException;
 
 class ObjectTree extends \Sabre\DAV\Tree {
-
 	/**
 	 * @var \OC\Files\View
 	 */
@@ -77,7 +76,7 @@ class ObjectTree extends \Sabre\DAV\Tree {
 	private function resolveChunkFile($path) {
 		if (\OC_FileChunking::isWebdavChunk()) {
 			// resolve to real file name to find the proper node
-			list($dir, $name) = \Sabre\HTTP\URLUtil::splitPath($path);
+			list($dir, $name) = \Sabre\Uri\split($path);
 			if ($dir == '/' || $dir == '.') {
 				$dir = '';
 			}
@@ -107,7 +106,7 @@ class ObjectTree extends \Sabre\DAV\Tree {
 	public function nodeExists($path) {
 		$path = \trim($path, '/');
 		if (isset($this->cache[$path]) && $this->cache[$path] === false) {
-			// Node is not existing, as it was explicitely set in the cache
+			// Node is nonexistent, as it was explicitly set in the cache
 			// Next call to getNodeForPath will create cache instance and unset the cached value
 			return false;
 		}
@@ -228,7 +227,7 @@ class ObjectTree extends \Sabre\DAV\Tree {
 		// with that we have covered both source and destination
 		$this->getNodeForPath($source);
 
-		list($destinationDir, $destinationName) = \Sabre\HTTP\URLUtil::splitPath($destination);
+		list($destinationDir, $destinationName) = \Sabre\Uri\split($destination);
 		try {
 			$this->fileView->verifyPath($destinationDir, $destinationName);
 		} catch (\OCP\Files\InvalidPathException $ex) {
@@ -255,7 +254,7 @@ class ObjectTree extends \Sabre\DAV\Tree {
 			throw new FileLocked($e->getMessage(), $e->getCode(), $e);
 		}
 
-		list($destinationDir, ) = \Sabre\HTTP\URLUtil::splitPath($destination);
+		list($destinationDir, ) = \Sabre\Uri\split($destination);
 		$this->markDirty($destinationDir);
 	}
 

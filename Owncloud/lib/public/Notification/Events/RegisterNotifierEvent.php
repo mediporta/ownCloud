@@ -21,7 +21,7 @@
 
 namespace OCP\Notification\Events;
 
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 use OCP\Notification\INotifier;
 
 /**
@@ -48,14 +48,14 @@ abstract class RegisterNotifierEvent extends Event {
 	/**
 	 * Implementations should use this name
 	 */
-	const NAME = 'notification.register.notifier';
+	public const NAME = 'notification.register.notifier';
 
 	/**
 	 * Empty implementation in order to prevent stopping the propagation of this event
 	 *
 	 * @since 10.0.8
 	 */
-	public function stopPropagation() {
+	public function stopPropagation(): void {
 	}
 
 	/**

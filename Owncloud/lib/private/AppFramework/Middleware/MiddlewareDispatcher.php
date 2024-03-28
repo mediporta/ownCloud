@@ -28,20 +28,19 @@ namespace OC\AppFramework\Middleware;
 
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Response;
-use OCP\AppFramework\MiddleWare;
+use OCP\AppFramework\Middleware;
 
 /**
  * This class is used to store and run all the middleware in correct order
  */
 class MiddlewareDispatcher {
-
 	/**
 	 * @var array array containing all the middlewares
 	 */
 	private $middlewares;
 
 	/**
-	 * @var int counter which tells us what middlware was executed once an
+	 * @var int counter which tells us what middleware was executed once an
 	 *                  exception occurs
 	 */
 	private $middlewareCounter;

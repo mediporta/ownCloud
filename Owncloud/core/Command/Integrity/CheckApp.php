@@ -34,7 +34,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @package OC\Core\Command\Integrity
  */
 class CheckApp extends Base {
-
 	/**
 	 * @var Checker
 	 */
@@ -44,7 +43,7 @@ class CheckApp extends Base {
 		parent::__construct();
 		$this->checker = $checker;
 	}
-	
+
 	/**
 	 * {@inheritdoc }
 	 */
@@ -60,7 +59,7 @@ class CheckApp extends Base {
 	/**
 	 * {@inheritdoc }
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appid = $input->getArgument('appid');
 		$path = \strval($input->getOption('path'));
 		$result = $this->checker->verifyAppSignature($appid, $path);
@@ -68,5 +67,6 @@ class CheckApp extends Base {
 		if (\count($result)>0) {
 			return 1;
 		}
+		return 0;
 	}
 }

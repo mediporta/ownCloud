@@ -113,7 +113,7 @@ class Manager implements ICommentsManager {
 		if ($comment->getId() === '') {
 			$comment->setChildrenCount(0);
 			$comment->setLatestChildDateTime(new \DateTime('0000-00-00 00:00:00', new \DateTimeZone('UTC')));
-			$comment->setLatestChildDateTime(null);
+			$comment->setLatestChildDateTime();
 		}
 
 		if ($comment->getCreationDateTime() === null) {
@@ -328,11 +328,11 @@ class Manager implements ICommentsManager {
 	 * @since 9.0.0
 	 */
 	public function getForObject(
-			$objectType,
-			$objectId,
-			$limit = 0,
-			$offset = 0,
-			\DateTime $notOlderThan = null
+		$objectType,
+		$objectId,
+		$limit = 0,
+		$offset = 0,
+		\DateTime $notOlderThan = null
 	) {
 		$comments = [];
 
@@ -380,7 +380,7 @@ class Manager implements ICommentsManager {
 	public function getNumberOfUnreadCommentsForNodes($objectType, $objectIds, IUser $user) {
 		$qbMain = $this->dbConn->getQueryBuilder();
 		$qbSup = $this->dbConn->getQueryBuilder();
-		
+
 		$unreadCountsForNodes = [];
 		$objectIdChunks = \array_chunk($objectIds, 100);
 		foreach ($objectIdChunks as $objectIdChunk) {
@@ -390,9 +390,9 @@ class Manager implements ICommentsManager {
 				->where($qbMain->expr()->eq('object_type', $qbMain->createParameter('type')))
 				->andWhere($qbMain->expr()->in('object_id', $qbMain->createParameter('object_ids')))
 				->setParameter('type', $objectType)
-				->setParameter('object_ids', $objectIdChunk, IQueryBuilder::PARAM_INT_ARRAY);
+				->setParameter('object_ids', $objectIdChunk, IQueryBuilder::PARAM_STR_ARRAY);
 
-			// For those found object_id, find all records from oc_comments which are not existing in oc_comments_read_markers or
+			// For those found object_id, find all records from oc_comments which are nonexistent in oc_comments_read_markers or
 			// if matched, its timestamp is lower then the one in oc_comments_read_markers
 			// This query will find all unread comments for user oc_comments_read_markers.user_id $user
 			$qbSup->select('object_id')
@@ -506,10 +506,10 @@ class Manager implements ICommentsManager {
 			}
 
 			if ($affectedRows > 0 && $comment instanceof IComment) {
-				$this->dispatcher->dispatch(CommentsEvent::EVENT_DELETE, new CommentsEvent(
-					CommentsEvent::EVENT_DELETE,
-					$comment
-				));
+				$this->dispatcher->dispatch(
+					new CommentsEvent(CommentsEvent::EVENT_DELETE, $comment),
+					CommentsEvent::EVENT_DELETE
+				);
 			}
 
 			return ($affectedRows > 0);
@@ -545,7 +545,8 @@ class Manager implements ICommentsManager {
 				$result = $this->update($comment);
 			}
 
-			if ($result && !!$comment->getParentId()) {
+			// getParentId() returns a "falsey" string such as "0" if there is no parent
+			if ($result && (bool) $comment->getParentId()) {
 				$this->updateChildrenInformation(
 					$comment->getParentId(),
 					$comment->getCreationDateTime()
@@ -567,38 +568,37 @@ class Manager implements ICommentsManager {
 	 * @return bool
 	 */
 	protected function insert(IComment &$comment) {
-		return $this->emittingCall(function () use (&$comment) {
-			$qb = $this->dbConn->getQueryBuilder();
-			$affectedRows = $qb
-				->insert('comments')
-				->values([
-					'parent_id'					=> $qb->createNamedParameter($comment->getParentId()),
-					'topmost_parent_id' 		=> $qb->createNamedParameter($comment->getTopmostParentId()),
-					'children_count' 			=> $qb->createNamedParameter($comment->getChildrenCount()),
-					'actor_type' 				=> $qb->createNamedParameter($comment->getActorType()),
-					'actor_id' 					=> $qb->createNamedParameter($comment->getActorId()),
-					'message' 					=> $qb->createNamedParameter($comment->getMessage()),
-					'verb' 						=> $qb->createNamedParameter($comment->getVerb()),
-					'creation_timestamp' 		=> $qb->createNamedParameter($comment->getCreationDateTime(), 'datetime'),
-					'latest_child_timestamp'	=> $qb->createNamedParameter($comment->getLatestChildDateTime(), 'datetime'),
-					'object_type' 				=> $qb->createNamedParameter($comment->getObjectType()),
-					'object_id' 				=> $qb->createNamedParameter($comment->getObjectId()),
-				])
-				->execute();
+		$qb = $this->dbConn->getQueryBuilder();
+		$affectedRows = $qb
+			->insert('comments')
+			->values([
+				'parent_id'					=> $qb->createNamedParameter($comment->getParentId()),
+				'topmost_parent_id' 		=> $qb->createNamedParameter($comment->getTopmostParentId()),
+				'children_count' 			=> $qb->createNamedParameter($comment->getChildrenCount()),
+				'actor_type' 				=> $qb->createNamedParameter($comment->getActorType()),
+				'actor_id' 					=> $qb->createNamedParameter($comment->getActorId()),
+				'message' 					=> $qb->createNamedParameter($comment->getMessage()),
+				'verb' 						=> $qb->createNamedParameter($comment->getVerb()),
+				'creation_timestamp' 		=> $qb->createNamedParameter($comment->getCreationDateTime(), 'datetime'),
+				'latest_child_timestamp'	=> $qb->createNamedParameter($comment->getLatestChildDateTime(), 'datetime'),
+				'object_type' 				=> $qb->createNamedParameter($comment->getObjectType()),
+				'object_id' 				=> $qb->createNamedParameter($comment->getObjectId()),
+			])
+			->execute();
 
-			if ($affectedRows > 0) {
-				$comment->setId(\strval($qb->getLastInsertId()));
-			}
+		if ($affectedRows > 0) {
+			$comment->setId(\strval($qb->getLastInsertId()));
+		}
 
-			$this->dispatcher->dispatch(CommentsEvent::EVENT_ADD, new CommentsEvent(
-				CommentsEvent::EVENT_ADD,
-				$comment
-			));
-
+		$this->dispatcher->dispatch(
+			new CommentsEvent(CommentsEvent::EVENT_ADD, $comment),
+			CommentsEvent::EVENT_ADD
+		);
+		return $this->emittingCall(function () use ($affectedRows) {
 			return $affectedRows > 0;
 		}, [
 			'before' => ['objectId' => $comment->getObjectId(), 'message' => $comment->getMessage()],
-			'after' => ['objectId' => $comment->getObjectId(), 'message' => $comment->getMessage()]
+			'after' => ['commentId' => $comment->getId(), 'objectId' => $comment->getObjectId(), 'message' => $comment->getMessage()]
 		], 'comment', 'create');
 	}
 
@@ -633,10 +633,10 @@ class Manager implements ICommentsManager {
 				throw new NotFoundException('Comment to update does ceased to exist');
 			}
 
-			$this->dispatcher->dispatch(CommentsEvent::EVENT_UPDATE, new CommentsEvent(
-				CommentsEvent::EVENT_UPDATE,
-				$comment
-			));
+			$this->dispatcher->dispatch(
+				new CommentsEvent(CommentsEvent::EVENT_UPDATE, $comment),
+				CommentsEvent::EVENT_UPDATE
+			);
 
 			return $affectedRows > 0;
 		}, [

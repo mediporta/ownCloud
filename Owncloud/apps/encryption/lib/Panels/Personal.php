@@ -2,7 +2,7 @@
 /**
  * @author Tom Needham <tom@owncloud.com>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -31,7 +31,6 @@ use OCP\Settings\ISettings;
 use OCP\Template;
 
 class Personal implements ISettings {
-
 	/** @var ILogger */
 	protected $logger;
 	/** @var IUserSession */
@@ -54,7 +53,8 @@ class Personal implements ISettings {
 		IL10N $l,
 		IUserManager $userManager,
 		ISession $session,
-		IStorage $encKeyStorage) {
+		IStorage $encKeyStorage
+	) {
 		$this->logger = $logger;
 		$this->userSession = $userSession;
 		$this->config = $config;
@@ -72,6 +72,9 @@ class Personal implements ISettings {
 		return 'encryption';
 	}
 
+	/**
+	 * @return \OCP\AppFramework\Http\TemplateResponse|Template|null
+	 */
 	public function getPanel() {
 		$session = new \OCA\Encryption\Session($this->session);
 		$template = new Template('encryption', 'settings-personal');
@@ -79,7 +82,8 @@ class Personal implements ISettings {
 			$this->logger,
 			$this->userSession,
 			$this->config,
-			$this->l);
+			$this->l
+		);
 
 		$util = new \OCA\Encryption\Util(
 			new \OC\Files\View(),
@@ -87,7 +91,8 @@ class Personal implements ISettings {
 			$this->logger,
 			$this->userSession,
 			$this->config,
-			$this->userManager);
+			$this->userManager
+		);
 
 		$user = $this->userSession->getUser()->getUID();
 		$privateKeySet = $session->isPrivateKeySet();

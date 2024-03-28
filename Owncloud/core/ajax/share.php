@@ -35,13 +35,8 @@
  *
  */
 
-use OC\Share\Filters\MailNotificationFilter;
-use OCP\IUser;
-
 OC_JSON::checkLoggedIn();
 OCP\JSON::callCheck();
-
-$defaults = new \OCP\Defaults();
 
 /**
  * @return mixed
@@ -77,205 +72,7 @@ function displayNamesInGroups($gids, $search = '', $limit = -1, $offset = 0) {
 	return $displayNames;
 }
 
-/**
- * @param $gid
- * @param string $search
- * @param int $limit
- * @param int $offset
- * @return array
- */
-function usersInGroup($gid, $search = '', $limit = -1, $offset = 0) {
-	$group = \OC::$server->getGroupManager()->get($gid);
-	if ($group) {
-		$users = $group->searchUsers($search, $limit, $offset);
-		$userIds = [];
-		foreach ($users as $user) {
-			$userIds[] = $user->getUID();
-		}
-		return $userIds;
-	} else {
-		return [];
-	}
-}
-
-if (isset($_POST['action'], $_POST['itemType'], $_POST['itemSource'])) {
-	switch ($_POST['action']) {
-		case 'informRecipients':
-			$l = \OC::$server->getL10N('core');
-			$shareType = (int) $_POST['shareType'];
-			$itemType = (string)$_POST['itemType'];
-			$itemSource = (string)$_POST['itemSource'];
-			$recipient = (string)$_POST['recipient'];
-
-			$userManager = \OC::$server->getUserManager();
-			$recipientList = [];
-			if ($shareType === \OCP\Share::SHARE_TYPE_USER) {
-				$recipientList[] = $userManager->get($recipient);
-			} elseif ($shareType === \OCP\Share::SHARE_TYPE_GROUP) {
-				$recipientList = usersInGroup($recipient);
-				$group = \OC::$server->getGroupManager()->get($recipient);
-				$recipientList = $group->searchUsers('');
-			}
-			// don't send a mail to the user who shared the file
-			$recipientList = \array_filter($recipientList, function ($user) {
-				/** @var IUser $user */
-				return $user->getUID() !== \OCP\User::getUser();
-			});
-
-			$mailNotification = new \OC\Share\MailNotifications(
-				\OC::$server->getUserSession()->getUser(),
-				\OC::$server->getL10N('lib'),
-				\OC::$server->getMailer(),
-				\OC::$server->getConfig(),
-				\OC::$server->getLogger(),
-				$defaults,
-				\OC::$server->getURLGenerator(),
-				\OC::$server->getEventDispatcher()
-			);
-
-			$result = $mailNotification->sendInternalShareMail($recipientList, $itemSource, $itemType);
-
-			// if we were able to send to at least one recipient, mark as sent
-			// allowing the user to resend would spam users who already got a notification
-			if (\count($result) < \count($recipientList)) {
-				\OCP\Share::setSendMailStatus($itemType, $itemSource, $shareType, $recipient, true);
-			}
-
-			if (empty($result)) {
-				OCP\JSON::success();
-			} else {
-				OCP\JSON::error([
-					'data' => [
-						'message' => $l->t("Couldn't send mail to following recipient(s): %s ",
-								\implode(', ', $result)
-								)
-					]
-				]);
-			}
-			break;
-		case 'informRecipientsDisabled':
-			$itemSource = (string)$_POST['itemSource'];
-			$shareType = (int)$_POST['shareType'];
-			$itemType = (string)$_POST['itemType'];
-			$recipient = (string)$_POST['recipient'];
-			\OCP\Share::setSendMailStatus($itemType, $itemSource, $shareType, $recipient, false);
-			OCP\JSON::success();
-			break;
-
-		case 'email':
-			$emailBody = null;
-
-			if (isset($_POST['emailBody'])) {
-				$emailBody = \trim((string)$_POST['emailBody']);
-			}
-
-			// read and filter post variables
-			$filter = new MailNotificationFilter([
-				'link' => $_POST['link'],
-				'file' => $_POST['file'],
-				'toAddress' => $_POST['toAddress'],
-				'expirationDate' => $_POST['expiration'],
-				'personalNote' => $emailBody
-			]);
-
-			$options = [];
-			$results = [];
-			$toEmails = \explode(',', $filter->getToAddress());
-
-			//Lets get the senders email address and add to the 'to'
-			if (isset($_POST['toSelf']) && $_POST['toSelf'] === 'true') {
-				$toEmails [] = \OC::$server->getUserSession()->getUser()->getEMailAddress();
-			}
-			//Send separate email
-			foreach ($toEmails as $toEmail) {
-				$options['to'] = $toEmail;
-
-				$l10n = \OC::$server->getL10N('lib');
-
-				$sendingUser = \OC::$server->getUserSession()->getUser();
-				$mailNotification = new \OC\Share\MailNotifications(
-					$sendingUser,
-					$l10n,
-					\OC::$server->getMailer(),
-					\OC::$server->getConfig(),
-					\OC::$server->getLogger(),
-					$defaults,
-					\OC::$server->getURLGenerator(),
-					\OC::$server->getEventDispatcher()
-				);
-
-				$expiration = null;
-				if ($filter->getExpirationDate() !== '') {
-					try {
-						$date = new DateTime($filter->getExpirationDate());
-						$expiration = $date->getTimestamp();
-					} catch (Exception $e) {
-						\OCP\Util::writeLog('sharing', "Couldn't read date: " . $e->getMessage(), \OCP\Util::ERROR);
-					}
-				}
-
-				if ($emailBody !== null || $emailBody !== '') {
-					$emailBody = \strip_tags($emailBody);
-				}
-				$result = $mailNotification->sendLinkShareMail(
-					null,
-					$filter->getFile(),
-					$filter->getLink(),
-					$expiration,
-					$filter->getPersonalNote(),
-					$options
-				);
-
-				$results = \array_merge($results, $result);
-			}
-
-			if (empty($results)) {
-				// Get the token from the link
-				$linkParts = \explode('/', $filter->getLink());
-				$token = \array_pop($linkParts);
-
-				// Get the share for the token
-				$share = \OCP\Share::getShareByToken($token, false);
-				if ($share !== false) {
-					$currentUser = \OC::$server->getUserSession()->getUser()->getUID();
-					$file = '/' . \ltrim($file, '/');
-
-					// Check whether share belongs to the user and whether the file is the same
-					if ($share['file_target'] === $file && $share['uid_owner'] === $currentUser) {
-
-						// Get the path for the user
-						$view = new \OC\Files\View('/' . $currentUser . '/files');
-						$fileId = (int) $share['item_source'];
-						$path = $view->getPath((int) $share['item_source']);
-
-						if ($path !== null) {
-							$event = \OC::$server->getActivityManager()->generateEvent();
-							$event->setApp(\OCA\Files_Sharing\Activity::FILES_SHARING_APP)
-								->setType(\OCA\Files_Sharing\Activity::TYPE_SHARED)
-								->setAuthor($currentUser)
-								->setAffectedUser($currentUser)
-								->setObject('files', $fileId, $path)
-								->setSubject(\OCA\Files_Sharing\Activity::SUBJECT_SHARED_EMAIL, [$path, $toAddress]);
-							\OC::$server->getActivityManager()->publish($event);
-						}
-					}
-				}
-
-				\OCP\JSON::success();
-			} else {
-				$l = \OC::$server->getL10N('core');
-				OCP\JSON::error([
-					'data' => [
-						'message' => $l->t("Couldn't send mail to following recipient(s): %s ",
-								\implode(', ', $results)
-							)
-					]
-				]);
-			}
-
-			break;
-	}
-} elseif (isset($_GET['fetch'])) {
+if (isset($_GET['fetch'])) {
 	switch ($_GET['fetch']) {
 		case 'getItemsSharedStatuses':
 			if (isset($_GET['itemType'])) {
@@ -286,7 +83,7 @@ if (isset($_POST['action'], $_POST['itemType'], $_POST['itemSource'])) {
 		case 'getItem':
 			if (isset($_GET['itemType'], $_GET['itemSource'], $_GET['checkReshare'], $_GET['checkShares'])
 				 
-				 ) {
+			) {
 				if ($_GET['checkReshare'] == 'true') {
 					$reshare = OCP\Share::getItemSharedWithBySource(
 						(string)$_GET['itemType'],
@@ -484,9 +281,11 @@ if (isset($_POST['action'], $_POST['itemType'], $_POST['itemSource'])) {
 					});
 				}
 
-				$sorter = new \OC\Share\SearchResultSorter((string)$_GET['search'],
-														   'label',
-														   \OC::$server->getLogger());
+				$sorter = new \OC\Share\SearchResultSorter(
+					(string)$_GET['search'],
+					'label',
+					\OC::$server->getLogger()
+				);
 				\usort($shareWith, [$sorter, 'sort']);
 				OC_JSON::success(['data' => $shareWith]);
 			}

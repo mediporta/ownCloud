@@ -23,11 +23,9 @@ namespace OCA\DAV\Files;
 
 use OCA\DAV\Connector\Sabre\ObjectTree;
 use Sabre\DAV\Exception\Forbidden;
-use Sabre\HTTP\URLUtil;
 use Sabre\DAV\ICollection;
 
 class FilesHome extends ObjectTree implements ICollection {
-
 	/** @var array */
 	private $principalInfo;
 
@@ -80,7 +78,7 @@ class FilesHome extends ObjectTree implements ICollection {
 	}
 
 	public function getName() {
-		list(, $name) = URLUtil::splitPath($this->principalInfo['uri']);
+		list(, $name) = \Sabre\Uri\split($this->principalInfo['uri']);
 		return $name;
 	}
 

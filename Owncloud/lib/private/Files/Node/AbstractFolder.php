@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -26,7 +26,6 @@ use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 
 class AbstractFolder extends AbstractNode implements \OCP\Files\Folder {
-
 	/**
 	 * @inheritdoc
 	 */
@@ -112,7 +111,7 @@ class AbstractFolder extends AbstractNode implements \OCP\Files\Folder {
 	/**
 	 * @inheritdoc
 	 */
-	public function getById($id) {
+	public function getById($id, $first = false) {
 		throw new NotPermittedException();
 	}
 

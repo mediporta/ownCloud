@@ -6,6 +6,7 @@ OC.L10N.register(
     "None" : "يوق",
     "Username" : "ئىشلەتكۈچى ئاتى",
     "Password" : "ئىم",
+    "__language_name__" : "ئۇيغۇرچە",
     "Apps" : "ئەپلەر",
     "General" : "ئادەتتىكى",
     "Storage" : "ساقلىغۇچ",
@@ -15,10 +16,11 @@ OC.L10N.register(
     "Search" : "ئىزدە",
     "A valid username must be provided" : "چوقۇم ئىناۋەتلىك ئىشلەتكۈچى ئىسمىدىن بىرنى تەمىنلەش كېرەك",
     "A valid password must be provided" : "چوقۇم ئىناۋەتلىك ئىم تەمىنلەش كېرەك",
-    "Help" : "ياردەم",
     "Settings" : "تەڭشەكلەر",
     "Users" : "ئىشلەتكۈچىلەر",
     "Authentication error" : "سالاھىيەت دەلىللەش خاتالىقى",
-    "__language_name__" : "ئۇيغۇرچە"
+    "Unknown user" : "نامەلۇم ئىشلەتكۈچى",
+    "This is probably caused by a cache/accelerator such as Zend OPcache or eAccelerator." : "بۇ بەلكىم Zend OPcache ياكى eAccelerator غا ئوخشاش غەملەك/تېزلەتكۈچ تەرىپىدىن كىلىپ چىققان.",
+    "Storage is temporarily not available" : "ساقلاشنى ۋاقتىنچە ئىشلەتكىلى بولمايدۇ"
 },
-"nplurals=1; plural=0;");
+"nplurals=2; plural=(n != 1);");

@@ -36,7 +36,6 @@ use OCP\Util;
 use Sabre\DAV\Auth\Plugin;
 
 class Application extends \OCP\AppFramework\App {
-
 	/**
 	 * @param array $urlParams
 	 */
@@ -102,10 +101,10 @@ class Application extends \OCP\AppFramework\App {
 		$hooksManager = new Hooks($container->query('TrustedServers'));
 
 		Util::connectHook(
-				'OCP\Share',
-				'federated_share_added',
-				$hooksManager,
-				'addServerHook'
+			'OCP\Share',
+			'federated_share_added',
+			$hooksManager,
+			'addServerHook'
 		);
 
 		$dispatcher = $this->getContainer()->getServer()->getEventDispatcher();
@@ -113,13 +112,24 @@ class Application extends \OCP\AppFramework\App {
 			if ($event instanceof SabrePluginEvent) {
 				$authPlugin = $event->getServer()->getPlugin('auth');
 				if ($authPlugin instanceof Plugin) {
-					$h = new DbHandler($container->getServer()->getDatabaseConnection(),
-							$container->getServer()->getL10N('federation')
+					$h = new DbHandler(
+						$container->getServer()->getDatabaseConnection(),
+						$container->getServer()->getL10N('federation')
 					);
 					$authPlugin->addBackend(new FedAuth($h));
 				}
 			}
 		});
+
+		$dispatcher->addListener(
+			'remoteshare.received',
+			function ($event) use ($container) {
+				$remote = $event->getArgument('remote');
+				$trustedServers = $container->query('TrustedServers');
+				$event->setArgument('autoAddServers', $trustedServers->getAutoAddServers());
+				$event->setArgument('isRemoteTrusted', $trustedServers->isTrustedServer($remote));
+			}
+		);
 	}
 
 	/**

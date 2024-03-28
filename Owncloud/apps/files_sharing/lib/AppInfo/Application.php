@@ -28,11 +28,18 @@
 namespace OCA\Files_Sharing\AppInfo;
 
 use OC\AppFramework\Utility\SimpleContainer;
+use OC\Files\Filesystem;
+use OC\Helper\UserTypeHelper;
+use OCA\Files_Sharing\Controller\RemoteOcsController;
+use OCA\Files_Sharing\Controller\Share20OcsController;
 use OCA\Files_Sharing\Controllers\ExternalSharesController;
 use OCA\Files_Sharing\Controllers\ShareController;
+use OCA\Files_Sharing\External\Manager;
 use OCA\Files_Sharing\Middleware\SharingCheckMiddleware;
 use OCA\Files_Sharing\MountProvider;
 use OCA\Files_Sharing\Notifier;
+use OCA\Files_Sharing\SharingBlacklist;
+use OCA\Files_Sharing\SharingAllowlist;
 use OCP\AppFramework\App;
 use OCP\IContainer;
 use OCA\Files_Sharing\Hooks;
@@ -40,6 +47,8 @@ use OCA\Files_Sharing\Service\NotificationPublisher;
 use OCP\Notification\Events\RegisterNotifierEvent;
 
 class Application extends App {
+	private $isProviderRegistered = false;
+
 	public function __construct(array $urlParams = []) {
 		parent::__construct('files_sharing', $urlParams);
 
@@ -62,6 +71,7 @@ class Application extends App {
 				$server->getSession(),
 				$server->getPreviewManager(),
 				$server->getRootFolder(),
+				$server->getUserSession(),
 				$server->getEventDispatcher()
 			);
 		});
@@ -71,7 +81,48 @@ class Application extends App {
 				$c->query('Request'),
 				$c->query('ExternalManager'),
 				$c->query('HttpClientService'),
-				$server->getEventDispatcher()
+				$server->getEventDispatcher(),
+				$server->getConfig()
+			);
+		});
+
+		$container->registerService('Share20OcsController', function (SimpleContainer $c) use ($server) {
+			return new Share20OcsController(
+				$c->query('AppName'),
+				$server->getRequest(),
+				$server->getShareManager(),
+				$server->getGroupManager(),
+				$server->getUserManager(),
+				$server->getRootFolder(),
+				$server->getURLGenerator(),
+				$server->getUserSession(),
+				$server->getL10N('files_sharing'),
+				$server->getConfig(),
+				$c->query(NotificationPublisher::class),
+				$server->getEventDispatcher(),
+				$c->query(SharingBlacklist::class),
+				$c->query(SharingAllowlist::class),
+				$c->query(UserTypeHelper::class)
+			);
+		});
+
+		$container->registerService('RemoteOcsController', function (SimpleContainer $c) use ($server) {
+			$user = $server->getUserSession()->getUser();
+			$uid = $user ? $user->getUID() : null;
+			return new RemoteOcsController(
+				$c->query('AppName'),
+				$server->getRequest(),
+				new Manager(
+					$server->getDatabaseConnection(),
+					Filesystem::getMountManager(),
+					Filesystem::getLoader(),
+					$server->getNotificationManager(),
+					$server->getEventDispatcher(),
+					$uid
+				),
+				$server->getConfig(),
+				$server->getLogger(),
+				$uid
 			);
 		});
 
@@ -130,16 +181,16 @@ class Application extends App {
 			);
 		});
 
-		/*
-		 * Register trashbin service
-		 */
 		$container->registerService('Hooks', function ($c) {
 			return new Hooks(
 				$c->getServer()->getLazyRootFolder(),
 				$c->getServer()->getUrlGenerator(),
 				$c->getServer()->getEventDispatcher(),
 				$c->getServer()->getShareManager(),
-				$c->query(NotificationPublisher::class)
+				$c->query(NotificationPublisher::class),
+				$c->getServer()->getActivityManager(),
+				$c->query(SharingAllowlist::class),
+				$c->getServer()->getUserSession()
 			);
 		});
 
@@ -150,11 +201,16 @@ class Application extends App {
 	}
 
 	public function registerMountProviders() {
-		/** @var \OCP\IServerContainer $server */
-		$server = $this->getContainer()->query('ServerContainer');
-		$mountProviderCollection = $server->getMountProviderCollection();
-		$mountProviderCollection->registerProvider($this->getContainer()->query('MountProvider'));
-		$mountProviderCollection->registerProvider($this->getContainer()->query('ExternalMountProvider'));
+		// We need to prevent adding providers more than once
+		// Doing this on MountProviderCollection level makes a lot tests to fail
+		if ($this->isProviderRegistered === false) {
+			/** @var \OCP\IServerContainer $server */
+			$server = $this->getContainer()->query('ServerContainer');
+			$mountProviderCollection = $server->getMountProviderCollection();
+			$mountProviderCollection->registerProvider($this->getContainer()->query('MountProvider'));
+			$mountProviderCollection->registerProvider($this->getContainer()->query('ExternalMountProvider'));
+			$this->isProviderRegistered = true;
+		}
 	}
 
 	/**

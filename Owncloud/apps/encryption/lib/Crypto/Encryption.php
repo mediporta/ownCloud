@@ -7,7 +7,7 @@
  * @author Lukas Reschke <lukas@statuscode.ch>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -26,7 +26,6 @@
 
 namespace OCA\Encryption\Crypto;
 
-
 use OC\Encryption\Exceptions\DecryptionFailedException;
 use OC\Files\Cache\Scanner;
 use OC\Files\View;
@@ -41,9 +40,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Encryption implements IEncryptionModule {
-
-	const ID = 'OC_DEFAULT_MODULE';
-	const DISPLAY_NAME = 'Default encryption module';
+	public const ID = 'OC_DEFAULT_MODULE';
+	public const DISPLAY_NAME = 'Default encryption module';
 
 	/**
 	 * @var Crypt
@@ -95,18 +93,18 @@ class Encryption implements IEncryptionModule {
 	/** @var DecryptAll  */
 	private $decryptAll;
 
-	/** @var int unencrypted block size if block contains signature */
-	private $unencryptedBlockSizeSigned = 6072;
-
-	/** @var int unencrypted block size */
-	private $unencryptedBlockSize = 6126;
+	/**
+	 * @var boolean $useLegacyEncoding
+	 * In write operation, it is equal to crypt->useLegacyEncoding(),
+	 * In read operation, it is false if header contains "encoding:binary" otherwise true.
+	 */
+	private $useLegacyEncoding = false;
 
 	/** @var int Current version of the file */
 	private $version = 0;
 
 	/** @var array remember encryption signature version */
 	private static $rememberVersion = [];
-
 
 	/**
 	 *
@@ -119,14 +117,16 @@ class Encryption implements IEncryptionModule {
 	 * @param ILogger $logger
 	 * @param IL10N $il10n
 	 */
-	public function __construct(Crypt $crypt,
-								KeyManager $keyManager,
-								Util $util,
-								Session $session,
-								EncryptAll $encryptAll,
-								DecryptAll $decryptAll,
-								ILogger $logger,
-								IL10N $il10n) {
+	public function __construct(
+		Crypt $crypt,
+		KeyManager $keyManager,
+		Util $util,
+		Session $session,
+		EncryptAll $encryptAll,
+		DecryptAll $decryptAll,
+		ILogger $logger,
+		IL10N $il10n
+	) {
 		$this->crypt = $crypt;
 		$this->keyManager = $keyManager;
 		$this->util = $util;
@@ -165,7 +165,7 @@ class Encryption implements IEncryptionModule {
 	 * @param array $header contains the header data read from the file
 	 * @param array $accessList who has access to the file contains the key 'users' and 'public'
 	 * @param string|null $sourceFileOfRename Either false or the name of source file to be renamed.
-	 * 										This is helpful for revision increment during move operation between storage.
+	 * 										  This is helpful for revision increment during move operation between storage.
 	 *
 	 * @return array $header contain data as key-value pairs which should be
 	 *                       written to the header, in case of a write operation
@@ -177,13 +177,20 @@ class Encryption implements IEncryptionModule {
 		$this->user = $user;
 		$this->isWriteOperation = false;
 		$this->writeCache = '';
+		$this->useLegacyEncoding = true;
+
+		if (isset($header['encoding'])) {
+			$this->useLegacyEncoding = $header['encoding'] !== Crypt::DEFAULT_ENCODING_FORMAT;
+		}
 
 		if ($this->session->decryptAllModeActivated()) {
 			$encryptedFileKey = $this->keyManager->getEncryptedFileKey($this->path);
 			$shareKey = $this->keyManager->getShareKey($this->path, $this->session->getDecryptAllUid());
-			$this->fileKey = $this->crypt->multiKeyDecrypt($encryptedFileKey,
+			$this->fileKey = $this->crypt->multiKeyDecrypt(
+				$encryptedFileKey,
 				$shareKey,
-				$this->session->getDecryptAllKey());
+				$this->session->getDecryptAllKey()
+			);
 		} else {
 			$this->fileKey = $this->keyManager->getFileKey($this->path, $this->user);
 		}
@@ -211,13 +218,14 @@ class Encryption implements IEncryptionModule {
 			// if we read a part file we need to increase the version by 1
 			// because the version number was also increased by writing
 			// the part file
-			if(Scanner::isPartialFile($path)) {
+			if (Scanner::isPartialFile($path)) {
 				$this->version = $this->version + 1;
 			}
 		}
 
 		if ($this->isWriteOperation) {
 			$this->cipher = $this->crypt->getCipher();
+			$this->useLegacyEncoding = $this->crypt->useLegacyEncoding();
 		} elseif (isset($header['cipher'])) {
 			$this->cipher = $header['cipher'];
 		} else {
@@ -226,7 +234,11 @@ class Encryption implements IEncryptionModule {
 			$this->cipher = $this->crypt->getLegacyCipher();
 		}
 
-		return ['cipher' => $this->cipher, 'signed' => 'true'];
+		$return = ['cipher' => $this->cipher, 'signed' => 'true'];
+		if ($this->useLegacyEncoding !== true) {
+			$return['encoding'] = $this->crypt::DEFAULT_ENCODING_FORMAT;
+		}
+		return $return;
 	}
 
 	/**
@@ -235,7 +247,7 @@ class Encryption implements IEncryptionModule {
 	 * buffer.
 	 *
 	 * @param string $path to the file
-	 * @param int $position
+	 * @param int|string $position
 	 * @return string remained data which should be written to the file in case
 	 *                of a write operation
 	 * @throws PublicKeyMissingException
@@ -288,35 +300,31 @@ class Encryption implements IEncryptionModule {
 	 * encrypt data
 	 *
 	 * @param string $data you want to encrypt
-	 * @param int $position
+	 * @param int|string $position
 	 * @return string encrypted data
 	 */
 	public function encrypt($data, $position = 0) {
 		// If extra data is left over from the last round, make sure it
 		// is integrated into the next block
 		if ($this->writeCache) {
-
 			// Concat writeCache to start of $data
 			$data = $this->writeCache . $data;
 
 			// Clear the write cache, ready for reuse - it has been
 			// flushed and its old contents processed
 			$this->writeCache = '';
-
 		}
 
 		$encrypted = '';
 		// While there still remains some data to be processed & written
-		while (strlen($data) > 0) {
-
+		while (\strlen($data) > 0) {
 			// Remaining length for this iteration, not of the
 			// entire file (may be greater than 8192 bytes)
-			$remainingLength = strlen($data);
+			$remainingLength = \strlen($data);
 
 			// If data remaining to be written is less than the
-			// size of 1 6126 byte block
-			if ($remainingLength < $this->unencryptedBlockSizeSigned) {
-
+			// size of 1 unencrypted block size byte block
+			if ($remainingLength < $this->getUnencryptedBlockSize(true)) {
 				// Set writeCache to contents of $data
 				// The writeCache will be carried over to the
 				// next write round, and added to the start of
@@ -329,21 +337,17 @@ class Encryption implements IEncryptionModule {
 
 				// Clear $data ready for next round
 				$data = '';
-
 			} else {
-
 				// Read the chunk from the start of $data
-				$chunk = substr($data, 0, $this->unencryptedBlockSizeSigned);
+				$chunk = \substr($data, 0, $this->getUnencryptedBlockSize(true));
 
 				$encrypted .= $this->crypt->symmetricEncryptFileContent($chunk, $this->fileKey, $this->version + 1, $position);
 
 				// Remove the chunk we just processed from
 				// $data, leaving only unprocessed data in $data
 				// var, for handling on the next round
-				$data = substr($data, $this->unencryptedBlockSizeSigned);
-
+				$data = \substr($data, $this->getUnencryptedBlockSize(true));
 			}
-
 		}
 
 		return $encrypted;
@@ -353,7 +357,7 @@ class Encryption implements IEncryptionModule {
 	 * decrypt data
 	 *
 	 * @param string $data you want to decrypt
-	 * @param int $position
+	 * @param int|string $position
 	 * @return string decrypted data
 	 * @throws DecryptionFailedException
 	 */
@@ -366,7 +370,7 @@ class Encryption implements IEncryptionModule {
 			throw new DecryptionFailedException($msg, $hint);
 		}
 
-		return $this->crypt->symmetricDecryptFileContent($data, $this->fileKey, $this->cipher, $this->version, $position);
+		return $this->crypt->symmetricDecryptFileContent($data, $this->fileKey, $this->cipher, $this->version, $position, !$this->useLegacyEncoding);
 	}
 
 	/**
@@ -375,10 +379,9 @@ class Encryption implements IEncryptionModule {
 	 * @param string $path path to the file which should be updated
 	 * @param string $uid of the user who performs the operation
 	 * @param array $accessList who has access to the file contains the key 'users' and 'public'
-	 * @return boolean
+	 * @return boolean|void
 	 */
 	public function update($path, $uid, array $accessList) {
-
 		if (empty($accessList)) {
 			if (isset(self::$rememberVersion[$path])) {
 				$this->keyManager->setVersion($path, self::$rememberVersion[$path], new View());
@@ -390,7 +393,6 @@ class Encryption implements IEncryptionModule {
 		$fileKey = $this->keyManager->getFileKey($path, $uid);
 
 		if (!empty($fileKey)) {
-
 			$publicKeys = [];
 			if ($this->useMasterPassword === true) {
 				$publicKeys[$this->keyManager->getMasterKeyId()] = $this->keyManager->getPublicMasterKey();
@@ -411,10 +413,11 @@ class Encryption implements IEncryptionModule {
 			$this->keyManager->deleteAllFileKeys($path);
 
 			$this->keyManager->setAllFileKeys($path, $encryptedFileKey);
-
 		} else {
-			$this->logger->debug('no file key found, we assume that the file "{file}" is not encrypted',
-				['file' => $path, 'app' => 'encryption']);
+			$this->logger->debug(
+				'no file key found, we assume that the file "{file}" is not encrypted',
+				['file' => $path, 'app' => 'encryption']
+			);
 
 			return false;
 		}
@@ -435,8 +438,8 @@ class Encryption implements IEncryptionModule {
 				return false;
 			}
 		}
-		$parts = explode('/', $path);
-		if (count($parts) < 4) {
+		$parts = \explode('/', $path);
+		if (\count($parts) < 4) {
 			return false;
 		}
 
@@ -457,15 +460,29 @@ class Encryption implements IEncryptionModule {
 	 * get size of the unencrypted payload per block.
 	 * ownCloud read/write files with a block size of 8192 byte
 	 *
+	 * Every block has 22 bytes IV and 2 bytes padding
+	 * Signed blocks have 71 bytes sign and 1 additional padding byte
+	 * unsigned unencrypted block size = 8196 - 24 = 8168
+	 * signed unencrypted block size = 8168 - 71 - 1 = 8096
+	 *
+	 * Legacy base64 encoding reduces unencrypted block size in a 3/4 ratio.
+	 * base64 encoded unsigned unencrypted block size = 8168 * 3/4 = 6126
+	 * base64 encoded signed unencrypted block size = 8096 * 3/4 = 6072
+	 *
 	 * @param bool $signed
 	 * @return int
 	 */
 	public function getUnencryptedBlockSize($signed = false) {
-		if ($signed === false) {
-			return $this->unencryptedBlockSize;
+		$unencryptedBlockSize = 8168;
+		if ($signed === true) {
+			$unencryptedBlockSize = 8096;
 		}
 
-		return $this->unencryptedBlockSizeSigned;
+		if ($this->useLegacyEncoding) {
+			$unencryptedBlockSize = ($unencryptedBlockSize * 3) / 4;
+		}
+
+		return $unencryptedBlockSize;
 	}
 
 	/**
@@ -520,18 +537,23 @@ class Encryption implements IEncryptionModule {
 		return $this->decryptAll->prepare($input, $output, $user);
 	}
 
-
 	/**
 	 * @param string $path
 	 * @return string
 	 */
 	protected function getPathToRealFile($path) {
+		// By default, the "real path" is the same as the original path
 		$realPath = $path;
-		$parts = explode('/', $path);
+		$parts = \explode('/', $path);
 		if ($parts[2] === 'files_versions') {
-			$realPath = '/' . $parts[1] . '/files/' . implode('/', array_slice($parts, 3));
-			$length = strrpos($realPath, '.');
-			$realPath = substr($realPath, 0, $length);
+			// for versions, we need to point to the actual file, not the version of the file
+			$realPath = '/' . $parts[1] . '/files/' . \implode('/', \array_slice($parts, 3));
+			$length = \strrpos($realPath, '.');
+			$realPath = \substr($realPath, 0, $length);
+		} elseif ($parts[2] === 'files_trashbin' && $parts[3] === 'versions') {
+			// if the version is in the trashbin, we need to point to the actual file inside the trashbin
+			$realPath = "/{$parts[1]}/files_trashbin/files/" . \implode('/', \array_slice($parts, 4));
+			$realPath = \preg_replace('/.v[0-9]+([^\/]*)$/', '$1', $realPath);
 		}
 
 		return $realPath;
@@ -545,9 +567,9 @@ class Encryption implements IEncryptionModule {
 	 * @return string
 	 */
 	protected function stripPartFileExtension($path) {
-		if (pathinfo($path, PATHINFO_EXTENSION) === 'part') {
-			$pos = strrpos($path, '.', -6);
-			$path = substr($path, 0, $pos);
+		if (\pathinfo($path, PATHINFO_EXTENSION) === 'part') {
+			$pos = \strrpos($path, '.', -6);
+			$path = \substr($path, 0, $pos);
 		}
 
 		return $path;

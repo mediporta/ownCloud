@@ -22,6 +22,7 @@
 namespace OC\Core\Command\Group;
 
 use OC\Core\Command\Base;
+use OCP\IGroup;
 use OCP\IGroupManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -53,13 +54,14 @@ class ListGroups extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$groupNameSubString = $input->getArgument('search-pattern');
-		$groups = $this->groupManager->search($groupNameSubString, null, null, 'management');
+		$groups = $this->groupManager->search($groupNameSubString, null, null, 'management', true);
 		$groups = \array_map(function ($group) {
 			/** @var IGroup $group */
 			return $group->getGID();
 		}, $groups);
 		parent::writeArrayInOutputFormat($input, $output, $groups);
+		return 0;
 	}
 }

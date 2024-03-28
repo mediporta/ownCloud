@@ -6,8 +6,6 @@ OC.L10N.register(
     "Username" : "பயனாளர் பெயர்",
     "Password" : "கடவுச்சொல்",
     "Save" : "சேமிக்க ",
-    "Port" : "துறை ",
-    "Region" : "பிரதேசம்",
     "URL" : "URL",
     "Location" : "இடம்",
     "ownCloud" : "OwnCloud",

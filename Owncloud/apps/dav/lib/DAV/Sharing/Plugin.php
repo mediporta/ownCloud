@@ -33,7 +33,7 @@ use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
 
 class Plugin extends ServerPlugin {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
 
 	/** @var Auth */
 	private $auth;
@@ -140,7 +140,6 @@ class Plugin extends ServerPlugin {
 		$message = $this->server->xml->parse($requestBody, $request->getUrl(), $documentType);
 
 		switch ($documentType) {
-
 			// Dealing with the 'share' document, which modified invitees on a
 			// calendar.
 			case '{' . self::NS_OWNCLOUD . '}share':
@@ -158,6 +157,7 @@ class Plugin extends ServerPlugin {
 				// If there's no ACL support, we allow everything
 				if ($acl) {
 					/** @var \Sabre\DAVACL\Plugin $acl */
+					'@phan-var \Sabre\DAVACL\Plugin $acl';
 					$acl->checkPrivileges($path, '{DAV:}write');
 				}
 

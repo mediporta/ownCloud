@@ -42,7 +42,7 @@ use OCP\Events\EventEmitterTrait;
  */
 class Config {
 	use EventEmitterTrait;
-	const ENV_PREFIX = 'OC_';
+	public const ENV_PREFIX = 'OC_';
 
 	/** @var array Associative array ($key => $value) */
 	protected $cache = [];
@@ -146,16 +146,11 @@ class Config {
 			$oldValue = $this->cache[$key];
 		}
 
-		$this->emittingCall(function () use (&$key, &$value) {
-			if ($this->set($key, $value)) {
-				// Write changes
-				$this->writeData();
-			}
-			return true;
-		}, [
-			'before' => ['key' => $key, 'value' => $value],
-			'after' => ['key' => $key, 'value' => $value, 'update' => $update, 'oldvalue' => $oldValue]
-		], 'config', 'setvalue');
+		if ($this->set($key, $value)) {
+			// Write changes
+			$this->writeData();
+		}
+		return true;
 	}
 
 	/**
@@ -192,19 +187,12 @@ class Config {
 		if ($this->isReadOnly()) {
 			throw new \Exception('Config file is read only.');
 		}
-		$this->emittingCall(function (&$afterArray) use (&$key) {
-			if (isset($this->cache[$key])) {
-				$afterArray['value'] = $this->cache[$key];
-			}
-			if ($this->delete($key)) {
-				// Write changes
-				$this->writeData();
-			}
-			return true;
-		}, [
-			'before' => ['key' => $key, 'value' => null],
-			'after' => ['key' => $key, 'value' => null]
-		], 'config', 'deletevalue');
+
+		if ($this->delete($key)) {
+			// Write changes
+			$this->writeData();
+		}
+		return true;
 	}
 
 	/**
@@ -303,7 +291,8 @@ class Config {
 			throw new HintException(
 				"Can't write into config directory!",
 				'This can usually be fixed by '
-				.'<a href="' . $url . '" target="_blank" rel="noreferrer">giving the webserver write access to the config directory</a>.');
+				.'<a href="' . $url . '" target="_blank" rel="noreferrer">giving the webserver write access to the config directory</a>.'
+			);
 		}
 
 		// Try to acquire a file lock

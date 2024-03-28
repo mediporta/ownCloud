@@ -27,7 +27,7 @@ use OCP\Comments\IllegalIDChangeException;
 use OCP\Comments\MessageTooLongException;
 
 class Comment implements IComment {
-	protected $data = [
+	protected array $data = [
 		'id'              => '',
 		'parentId'        => '0',
 		'topmostParentId' => '0',
@@ -45,7 +45,7 @@ class Comment implements IComment {
 	/**
 	 * Comment constructor.
 	 *
-	 * @param [] $data	optional, array with keys according to column names from
+	 * @param array|null $data	optional, array with keys according to column names from
 	 * 					the comments database scheme
 	 */
 	public function __construct(array $data = null) {
@@ -98,7 +98,7 @@ class Comment implements IComment {
 	/**
 	 * returns the parent ID of the comment
 	 *
-	 * @return string
+	 * @return string the parent id or "0" if there is no parent
 	 * @since 9.0.0
 	 */
 	public function getParentId() {
@@ -193,7 +193,7 @@ class Comment implements IComment {
 			throw new \InvalidArgumentException('String expected.');
 		}
 		$message = \trim($message);
-		if (\mb_strlen($message, 'UTF-8') > IComment::MAX_MESSAGE_LENGTH) {
+		if (\strlen($message) > IComment::MAX_MESSAGE_LENGTH) {
 			throw new MessageTooLongException('Comment message must not exceed ' . IComment::MAX_MESSAGE_LENGTH . ' characters');
 		}
 		$this->data['message'] = $message;
@@ -221,6 +221,11 @@ class Comment implements IComment {
 		if (!\is_string($verb) || !\trim($verb)) {
 			throw new \InvalidArgumentException('Non-empty String expected.');
 		}
+		$verb = \trim($verb);
+		if (\strlen($verb) > IComment::MAX_VERB_LENGTH) {
+			throw new \InvalidArgumentException('Comment verb must not exceed ' . IComment::MAX_VERB_LENGTH . ' characters');
+		}
+
 		$this->data['verb'] = \trim($verb);
 		return $this;
 	}
@@ -255,7 +260,7 @@ class Comment implements IComment {
 	 */
 	public function setActor($actorType, $actorId) {
 		if (
-			   !\is_string($actorType) || !\trim($actorType)
+			!\is_string($actorType) || !\trim($actorType)
 			|| !\is_string($actorId)   || !\trim($actorId)
 		) {
 			throw new \InvalidArgumentException('String expected.');
@@ -302,7 +307,7 @@ class Comment implements IComment {
 	/**
 	 * sets the date of the most recent child
 	 *
-	 * @param \DateTime $dateTime
+	 * @param \DateTime|null $dateTime
 	 * @return IComment
 	 * @since 9.0.0
 	 */
@@ -341,7 +346,7 @@ class Comment implements IComment {
 	 */
 	public function setObject($objectType, $objectId) {
 		if (
-			   !\is_string($objectType) || !\trim($objectType)
+			!\is_string($objectType) || !\trim($objectType)
 			|| !\is_string($objectId)   || !\trim($objectId)
 		) {
 			throw new \InvalidArgumentException('String expected.');

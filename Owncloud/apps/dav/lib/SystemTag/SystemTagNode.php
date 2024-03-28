@@ -36,7 +36,6 @@ use Sabre\DAV\Exception\NotFound;
  * DAV node representing a system tag, with the name being the tag id.
  */
 class SystemTagNode implements \Sabre\DAV\INode {
-
 	/**
 	 * @var ISystemTag
 	 */
@@ -111,11 +110,12 @@ class SystemTagNode implements \Sabre\DAV\INode {
 	 * @param string $name new tag name
 	 * @param bool $userVisible user visible
 	 * @param bool $userAssignable user assignable
+	 * @param bool $userEditable user editable
 	 * @throws NotFound whenever the given tag id does not exist
 	 * @throws Forbidden whenever there is no permission to update said tag
 	 * @throws Conflict whenever a tag already exists with the given attributes
 	 */
-	public function update($name, $userVisible, $userAssignable) {
+	public function update($name, $userVisible, $userAssignable, $userEditable = false) {
 		try {
 			if (!$this->tagManager->canUserSeeTag($this->tag, $this->user)) {
 				throw new NotFound('Tag with id ' . $this->tag->getId() . ' does not exist');
@@ -126,6 +126,12 @@ class SystemTagNode implements \Sabre\DAV\INode {
 
 			// only admin is able to change permissions, regular users can only rename
 			if (!$this->isAdmin) {
+				// renaming is forbidden for static tags for regular users
+				if (($userEditable === $this->tag->isUserEditable() && !$userEditable)
+					&& ($userAssignable === $this->tag->isUserAssignable())
+					&& !$this->tagManager->canUserUseStaticTagInGroup($this->tag, $this->user)) {
+					throw new Forbidden('No permission to update permissions for tag ' . $this->tag->getId());
+				}
 				// only renaming is allowed for regular users
 				if ($userVisible !== $this->tag->isUserVisible()
 					|| $userAssignable !== $this->tag->isUserAssignable()
@@ -134,7 +140,7 @@ class SystemTagNode implements \Sabre\DAV\INode {
 				}
 			}
 
-			$this->tagManager->updateTag($this->tag->getId(), $name, $userVisible, $userAssignable);
+			$this->tagManager->updateTag($this->tag->getId(), $name, $userVisible, $userAssignable, $userEditable);
 		} catch (TagNotFoundException $e) {
 			throw new NotFound('Tag with id ' . $this->tag->getId() . ' does not exist');
 		} catch (TagAlreadyExistsException $e) {
@@ -160,6 +166,14 @@ class SystemTagNode implements \Sabre\DAV\INode {
 			}
 			if (!$this->tagManager->canUserAssignTag($this->tag, $this->user)) {
 				throw new Forbidden('No permission to delete tag ' . $this->tag->getId());
+			}
+			if (!$this->isAdmin) {
+				// Deleting static tag by regular users is forbidden
+				if (!$this->tag->isUserEditable()
+					&& $this->tag->isUserAssignable()
+					&& !$this->tagManager->canUserUseStaticTagInGroup($this->tag, $this->user)) {
+					throw new Forbidden('No permission to delete tag ' . $this->tag->getId());
+				}
 			}
 
 			$this->tagManager->deleteTags($this->tag->getId());

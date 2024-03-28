@@ -39,7 +39,6 @@ use Sabre\DAV\Auth\Backend\AbstractBasic;
  * @package OCA\DAV\Connector
  */
 class PublicAuth extends AbstractBasic {
-
 	/** @var \OCP\Share\IShare */
 	private $share;
 
@@ -57,9 +56,11 @@ class PublicAuth extends AbstractBasic {
 	 * @param IManager $shareManager
 	 * @param ISession $session
 	 */
-	public function __construct(IRequest $request,
-								IManager $shareManager,
-								ISession $session) {
+	public function __construct(
+		IRequest $request,
+		IManager $shareManager,
+		ISession $session
+	) {
 		$this->request = $request;
 		$this->shareManager = $shareManager;
 		$this->session = $session;
@@ -85,6 +86,7 @@ class PublicAuth extends AbstractBasic {
 		try {
 			$share = $this->shareManager->getShareByToken($username);
 		} catch (ShareNotFound $e) {
+			\OC::$server->getLogger()->error("PublicAuth: share for found $username");
 			return false;
 		}
 
@@ -95,13 +97,13 @@ class PublicAuth extends AbstractBasic {
 		// check if the share is password protected
 		if ($share->getPassword() !== null) {
 			if ($share->getShareType() === \OCP\Share::SHARE_TYPE_LINK) {
-				if ($this->shareManager->checkPassword($share, $password)) {
-					return true;
-				} elseif ($this->session->exists('public_link_authenticated')
+				if ($this->session->exists('public_link_authenticated')
 					&& $this->session->get('public_link_authenticated') === (string)$share->getId()) {
 					return true;
+				} elseif ($this->shareManager->checkPassword($share, $password)) {
+					return true;
 				} else {
-					if (\in_array('XMLHttpRequest', \explode(',', $this->request->getHeader('X-Requested-With')))) {
+					if (\in_array('XMLHttpRequest', \explode(',', $this->request->getHeader('X-Requested-With') ?? ''), true)) {
 						// do not re-authenticate over ajax, use dummy auth name to prevent browser popup
 						\http_response_code(401);
 						\header('WWW-Authenticate', 'DummyBasic realm="' . $this->realm . '"');

@@ -30,11 +30,11 @@ use OC\Files\View;
 use OCP\Encryption\Keys\IStorage;
 use OCP\IUserSession;
 use OC\User\NoUserException;
+use OC_Util;
 
 class Storage implements IStorage {
-
 	// hidden file which indicate that the folder is a valid key storage
-	const KEY_STORAGE_MARKER = '.oc_key_storage';
+	public const KEY_STORAGE_MARKER = '.oc_key_storage';
 
 	/** @var View */
 	private $view;
@@ -89,7 +89,7 @@ class Storage implements IStorage {
 	 * @inheritdoc
 	 */
 	public function getFileKey($path, $keyId, $encryptionModuleId) {
-		$realFile = $this->util->stripPartialFileExtension($path);
+		$realFile = OC_Util::stripPartialFileExtension($path);
 		$keyDir = $this->getFileKeyDir($encryptionModuleId, $realFile);
 		$key = $this->getKey($keyDir . $keyId);
 
@@ -154,6 +154,7 @@ class Storage implements IStorage {
 			// user's home is gone and so are the keys
 			//
 			// So there is nothing to do, just ignore.
+			return true;
 		}
 	}
 
@@ -200,6 +201,7 @@ class Storage implements IStorage {
 
 			return false;
 		}
+		return false;
 	}
 
 	/**
@@ -298,12 +300,10 @@ class Storage implements IStorage {
 
 		if ($this->view->file_exists($sourcePath)) {
 			$this->keySetPreparation(\dirname($targetPath));
-			$this->view->rename($sourcePath, $targetPath);
-
-			return true;
+			return $this->view->rename($sourcePath, $targetPath);
 		}
 
-		return false;
+		return true;
 	}
 
 	/**
@@ -319,11 +319,10 @@ class Storage implements IStorage {
 
 		if ($this->view->file_exists($sourcePath)) {
 			$this->keySetPreparation(\dirname($targetPath));
-			$this->view->copy($sourcePath, $targetPath);
-			return true;
+			return $this->view->copy($sourcePath, $targetPath);
 		}
 
-		return false;
+		return true;
 	}
 
 	/**

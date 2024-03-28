@@ -55,6 +55,7 @@ if (!OC_User::isAdminUser(OC_User::getUser())
 }
 
 if ($targetUserObject === null) {
+	$l = \OC::$server->getL10N('core');
 	OC_JSON::error(['data' => ['message' => $l->t('Unknown user')]]);
 	exit();
 }
@@ -79,5 +80,28 @@ if (\OC::$server->getGroupManager()->inGroup($username, $group)) {
 	$targetGroupObject->addUser($targetUserObject);
 }
 
-// Return Success story
-OC_JSON::success(["data" => ["username" => $username, "action" => $action, "groupname" => $group]]);
+if ($action === "add" && \OC::$server->getGroupManager()->isInGroup($username, $group)) {
+	OC_JSON::success([
+		"data" => [
+			"username" => $username,
+			"action" => $action,
+			"group" => [
+				"gid" => $targetGroupObject->getGID(),
+				"name" => $targetGroupObject->getDisplayName(),
+			],
+		]
+	]);
+} elseif ($action === "remove" && !\OC::$server->getGroupManager()->isInGroup($username, $group)) {
+	OC_JSON::success([
+		"data" => [
+			"username" => $username,
+			"action" => $action,
+			"group" => [
+				"gid" => $targetGroupObject->getGID(),
+				"name" => $targetGroupObject->getDisplayName(),
+			],
+		]
+	]);
+} else {
+	OC_JSON::error();
+}

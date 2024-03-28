@@ -24,7 +24,7 @@ namespace OCA\DAV\Connector\Sabre\Exception;
 use Sabre\DAV\Exception;
 
 class InvalidPath extends Exception {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
 
 	/**
 	 * @var bool
@@ -58,7 +58,6 @@ class InvalidPath extends Exception {
 	 * @return void
 	 */
 	public function serialize(\Sabre\DAV\Server $server, \DOMElement $errorNode) {
-
 		// set ownCloud namespace
 		$errorNode->setAttribute('xmlns:o', self::NS_OWNCLOUD);
 

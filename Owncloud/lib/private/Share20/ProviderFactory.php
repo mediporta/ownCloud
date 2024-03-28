@@ -22,11 +22,8 @@
  */
 namespace OC\Share20;
 
-use OCA\FederatedFileSharing\AddressHandler;
-use OCA\FederatedFileSharing\DiscoveryManager;
+use OCA\FederatedFileSharing\AppInfo\Application;
 use OCA\FederatedFileSharing\FederatedShareProvider;
-use OCA\FederatedFileSharing\Notifications;
-use OCA\FederatedFileSharing\TokenHandler;
 use OCP\Share\IProviderFactory;
 use OC\Share20\Exception\ProviderException;
 use OCP\IServerContainer;
@@ -37,7 +34,6 @@ use OCP\IServerContainer;
  * @package OC\Share20
  */
 class ProviderFactory implements IProviderFactory {
-
 	/** @var IServerContainer */
 	private $serverContainer;
 	/** @var DefaultShareProvider */
@@ -60,6 +56,9 @@ class ProviderFactory implements IProviderFactory {
 	 */
 	protected function defaultShareProvider() {
 		if ($this->defaultProvider === null) {
+			// serverContainer really has to be more than just an IServerContainer
+			// because getLazyRootFolder() is only in \OC\Server
+			'@phan-var \OC\Server $this->serverContainer';
 			$this->defaultProvider = new DefaultShareProvider(
 				$this->serverContainer->getDatabaseConnection(),
 				$this->serverContainer->getUserManager(),
@@ -89,40 +88,18 @@ class ProviderFactory implements IProviderFactory {
 			/*
 			 * TODO: add factory to federated sharing app
 			 */
-			$l = $this->serverContainer->getL10N('federatedfilessharing');
-			$addressHandler = new AddressHandler(
-				$this->serverContainer->getURLGenerator(),
-				$l
-			);
-			$discoveryManager = new DiscoveryManager(
-				$this->serverContainer->getMemCacheFactory(),
-				$this->serverContainer->getHTTPClientService()
-			);
-			$notifications = new Notifications(
-				$addressHandler,
-				$this->serverContainer->getHTTPClientService(),
-				$discoveryManager,
-				$this->serverContainer->getJobList(),
-				$this->serverContainer->getConfig()
-			);
-			$tokenHandler = new TokenHandler(
-				$this->serverContainer->getSecureRandom()
-			);
-
-			$this->federatedProvider = new FederatedShareProvider(
-				$this->serverContainer->getDatabaseConnection(),
-				$addressHandler,
-				$notifications,
-				$tokenHandler,
-				$l,
-				$this->serverContainer->getLogger(),
-				$this->serverContainer->getLazyRootFolder(),
-				$this->serverContainer->getConfig(),
-				$this->serverContainer->getUserManager()
-			);
+			$federatedFileSharingApp = new Application();
+			$this->federatedProvider = $federatedFileSharingApp->getFederatedShareProvider();
 		}
 
 		return $this->federatedProvider;
+	}
+
+	public function getProviders() {
+		return [
+			$this->defaultShareProvider(),
+			$this->federatedShareProvider()
+		];
 	}
 
 	/**
@@ -153,7 +130,8 @@ class ProviderFactory implements IProviderFactory {
 			$shareType === \OCP\Share::SHARE_TYPE_GROUP ||
 			$shareType === \OCP\Share::SHARE_TYPE_LINK) {
 			$provider = $this->defaultShareProvider();
-		} elseif ($shareType === \OCP\Share::SHARE_TYPE_REMOTE) {
+		} elseif ($shareType === \OCP\Share::SHARE_TYPE_REMOTE ||
+			$shareType === \OCP\Share::SHARE_TYPE_REMOTE_GROUP) {
 			$provider = $this->federatedShareProvider();
 		}
 

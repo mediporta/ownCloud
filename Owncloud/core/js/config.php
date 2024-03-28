@@ -69,6 +69,32 @@ if ($defaultExpireDateEnabled) {
 $enforceLinkPasswordReadOnly = $config->getAppValue('core', 'shareapi_enforce_links_password_read_only', 'no') === 'yes';
 $enforceLinkPasswordReadWrite = $config->getAppValue('core', 'shareapi_enforce_links_password_read_write', 'no') === 'yes';
 $enforceLinkPasswordWriteOnly = $config->getAppValue('core', 'shareapi_enforce_links_password_write_only', 'no') === 'yes';
+
+$value = $config->getAppValue('core', 'shareapi_default_expire_date_user_share', 'no');
+$defaultExpireDateUserEnabled = ($value === 'yes') ? true :false;
+
+$defaultExpireDateUser = (int) $config->getAppValue('core', 'shareapi_expire_after_n_days_user_share', '7');
+
+$value = $config->getAppValue('core', 'shareapi_enforce_expire_date_user_share', 'no');
+$enforceDefaultExpireDateUser = ($value === 'yes') ? true : false;
+
+$value = $config->getAppValue('core', 'shareapi_default_expire_date_group_share', 'no');
+$defaultExpireDateGroupEnabled = ($value === 'yes') ? true :false;
+
+$defaultExpireDateGroup = (int) $config->getAppValue('core', 'shareapi_expire_after_n_days_group_share', '7');
+
+$value = $config->getAppValue('core', 'shareapi_enforce_expire_date_group_share', 'no');
+$enforceDefaultExpireDateGroup =  ($value === 'yes') ? true : false;
+
+$value = $config->getAppValue('core', 'shareapi_default_expire_date_remote_share', 'no');
+$defaultExpireDateRemoteEnabled = ($value === 'yes') ? true :false;
+
+$defaultExpireDateRemote = (int) $config->getAppValue('core', 'shareapi_expire_after_n_days_remote_share', '7');
+
+$value = $config->getAppValue('core', 'shareapi_enforce_expire_date_remote_share', 'no');
+$enforceDefaultExpireDateRemote =  ($value === 'yes') ? true : false;
+
+$enforceLinkPasswordReadWriteDelete = $config->getAppValue('core', 'shareapi_enforce_links_password_read_write_delete', 'no') === 'yes';
 $outgoingServer2serverShareEnabled = $config->getAppValue('files_sharing', 'outgoing_server2server_share_enabled', 'yes') === 'yes';
 
 $countOfDataLocation = 0;
@@ -79,6 +105,9 @@ $dataLocation = \str_replace(OC::$SERVERROOT .'/', '', $config->getSystemValue('
 if ($countOfDataLocation !== 1 || !OC_User::isAdminUser(OC_User::getUser())) {
 	$dataLocation = false;
 }
+
+$previewManager = \OC::$server->getPreviewManager();
+'@phan-var \OC\PreviewManager $previewManager';
 
 $array = [
 	"oc_debug" => $config->getSystemValue('debug', false) ? 'true' : 'false',
@@ -154,8 +183,9 @@ $array = [
 	),
 	"firstDay" => \json_encode($l->l('firstday', null)) ,
 	"oc_config" => [
-			'session_lifetime'	=> \min(\OCP\Config::getSystemValue('session_lifetime', OC::$server->getIniWrapper()->getNumeric('session.gc_maxlifetime')), OC::$server->getIniWrapper()->getNumeric('session.gc_maxlifetime')),
-			'session_keepalive'	=> \OCP\Config::getSystemValue('session_keepalive', true),
+			'session_lifetime'	=> \min(\OC::$server->getConfig()->getSystemValue('session_lifetime', OC::$server->getIniWrapper()->getNumeric('session.gc_maxlifetime')), OC::$server->getIniWrapper()->getNumeric('session.gc_maxlifetime')),
+			'session_keepalive'	=> \OC::$server->getConfig()->getSystemValue('session_keepalive', true),
+			'session_forced_logout_timeout'	=> \OC::$server->getConfig()->getSystemValue('session_forced_logout_timeout', 0),
 			'enable_avatars'	=> \OC::$server->getConfig()->getSystemValue('enable_avatars', true) === true,
 			'lost_password_link'	=> \OC::$server->getConfig()->getSystemValue('lost_password_link', null),
 			'modRewriteWorking'	=> (\getenv('front_controller_active') === 'true'),
@@ -168,13 +198,27 @@ $array = [
 				'defaultExpireDateEnforced' => $enforceDefaultExpireDate,
 				'enforceLinkPasswordReadOnly' => $enforceLinkPasswordReadOnly,
 				'enforceLinkPasswordReadWrite' => $enforceLinkPasswordReadWrite,
+				'enforceLinkPasswordReadWriteDelete' => $enforceLinkPasswordReadWriteDelete,
 				'enforceLinkPasswordWriteOnly' => $enforceLinkPasswordWriteOnly,
+
+				'defaultExpireDateUserEnabled' => $defaultExpireDateUserEnabled,
+				'defaultExpireDateUser' => $defaultExpireDateUser,
+				'enforceDefaultExpireDateUser' => $enforceDefaultExpireDateUser,
+
+				'defaultExpireDateGroupEnabled' => $defaultExpireDateGroupEnabled,
+				'defaultExpireDateGroup' => $defaultExpireDateGroup,
+				'enforceDefaultExpireDateGroup' => $enforceDefaultExpireDateGroup,
+
+				'defaultExpireDateRemoteEnabled' => $defaultExpireDateRemoteEnabled,
+				'defaultExpireDateRemote' => $defaultExpireDateRemote,
+				'enforceDefaultExpireDateRemote' => $enforceDefaultExpireDateRemote,
+
 				'sharingDisabledForUser' => \OCP\Util::isSharingDisabledForUser(),
 				'resharingAllowed' => \OCP\Share::isResharingAllowed(),
 				'remoteShareAllowed' => $outgoingServer2serverShareEnabled,
 				'allowGroupSharing' => \OC::$server->getShareManager()->allowGroupSharing(),
 				'previewsEnabled' => \OC::$server->getConfig()->getSystemValue('enable_previews', true) === true,
-				'enabledPreviewProviders' => \OC::$server->getPreviewManager()->getSupportedMimes()
+				'enabledPreviewProviders' => $previewManager->getSupportedMimes()
 			]
 		],
 	"oc_defaults" => [
@@ -198,7 +242,7 @@ $array = [
 ];
 
 if (\OC::$server->getUserSession() !== null && \OC::$server->getUserSession()->isLoggedIn()) {
-	$array['oc_appconfig']['federatedCloudShareDoc'] = \OC::$server->getURLGenerator()->linkToDocs('user-sharing-federated');
+	$array['oc_appconfig']['core']['federatedCloudShareDoc'] = \OC::$server->getURLGenerator()->linkToDocs('user-sharing-federated');
 	$array['oc_config']['version'] = \implode('.', \OCP\Util::getVersion());
 	$array['oc_config']['versionstring'] = OC_Util::getVersionString();
 	$array['oc_defaults']['docBaseUrl'] = $defaults->getDocBaseUrl();
@@ -210,10 +254,13 @@ if (\OC::$server->getUserSession() !== null && \OC::$server->getUserSession()->i
 
 	$user = \OC::$server->getUserSession()->getUser();
 	if ($user !== null) {
+		$groups = \OC::$server->getGroupManager()->getUserGroupIds($user);
+
 		$array['oc_user'] = \json_encode([
 			'uid' => $user->getUID(),
 			'displayName' => $user->getDisplayName(),
-			'email' => $user->getEMailAddress()
+			'email' => $user->getEMailAddress(),
+			'groups' => $groups,
 		]);
 	}
 }

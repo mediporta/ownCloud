@@ -30,7 +30,6 @@ use Sabre\DAV\Server;
 use Sabre\DAV\ServerPlugin;
 
 class BrowserErrorPagePlugin extends ServerPlugin {
-
 	/** @var Server */
 	private $server;
 
@@ -68,9 +67,9 @@ class BrowserErrorPagePlugin extends ServerPlugin {
 	}
 
 	/**
-	 * @param \Exception $ex
+	 * @param \Throwable $ex
 	 */
-	public function logException(\Exception $ex) {
+	public function logException(\Throwable $ex) {
 		if ($ex instanceof Exception) {
 			$httpCode = $ex->getHTTPCode();
 			$headers = $ex->getHTTPHeaders($this->server);
@@ -80,19 +79,22 @@ class BrowserErrorPagePlugin extends ServerPlugin {
 		}
 		$this->server->httpResponse->addHeaders($headers);
 		$this->server->httpResponse->setStatus($httpCode);
-		$body = $this->generateBody();
+		$body = $this->generateBody($ex);
 		$this->server->httpResponse->setBody($body);
+		$this->server->httpResponse->setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self';");
 		$this->sendResponse();
 	}
 
 	/**
 	 * @codeCoverageIgnore
+	 * @param \Throwable $ex
 	 * @return bool|string
 	 */
-	public function generateBody() {
+	public function generateBody(\Throwable $ex) {
 		$request = \OC::$server->getRequest();
 		$content = new OC_Template('dav', 'exception', 'guest');
 		$content->assign('title', $this->server->httpResponse->getStatusText());
+		$content->assign('hint', $ex->getMessage());
 		$content->assign('remoteAddr', $request->getRemoteAddress());
 		$content->assign('requestID', $request->getId());
 		return $content->fetchPage();

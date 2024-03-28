@@ -25,14 +25,11 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use OCP\ILogger;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class DataFingerprint extends Command {
-
 	/** @var IConfig */
 	private $config;
 	/** @var ITimeFactory */
@@ -40,9 +37,11 @@ class DataFingerprint extends Command {
 	/** @var ILogger */
 	private $logger;
 
-	public function __construct(IConfig $config,
-								ITimeFactory $timeFactory,
-								ILogger $logger) {
+	public function __construct(
+		IConfig $config,
+		ITimeFactory $timeFactory,
+		ILogger $logger
+	) {
 		$this->config = $config;
 		$this->timeFactory = $timeFactory;
 		$this->logger = $logger;
@@ -55,7 +54,7 @@ class DataFingerprint extends Command {
 			->setDescription('Update the systems data-fingerprint after a backup is restored.');
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$io = new SymfonyStyle($input, $output);
 		$warning = <<<EOD
 Setting the data fingerprint will notify desktop and mobile clients that a server backup has been restored. 
@@ -73,6 +72,8 @@ EOD;
 			$fingerprint = \md5($this->timeFactory->getTime());
 			$this->config->setSystemValue('data-fingerprint', $fingerprint);
 			$this->logger->info("Data fingerprint was set by $osUser@$server to $fingerprint");
+			return 0;
 		}
+		return 1;
 	}
 }

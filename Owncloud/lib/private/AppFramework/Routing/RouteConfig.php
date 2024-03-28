@@ -62,7 +62,6 @@ class RouteConfig {
 	 * The routes and resource will be registered to the \OCP\Route\IRouter
 	 */
 	public function register() {
-
 		// parse simple
 		$this->processSimpleRoutes($this->routes);
 
@@ -91,7 +90,10 @@ class RouteConfig {
 				$postFix = $ocsRoute['postfix'];
 			}
 
-			$url = $ocsRoute['url'];
+			$root = (isset($ocsRoute['root']))
+				? $ocsRoute['root']
+				: '/apps/' . $this->appName;
+			$url = $root . $ocsRoute['url'];
 			$verb = isset($ocsRoute['verb']) ? \strtoupper($ocsRoute['verb']) : 'GET';
 
 			$split = \explode('#', $name, 2);
@@ -196,7 +198,6 @@ class RouteConfig {
 
 		$resources = isset($routes['resources']) ? $routes['resources'] : [];
 		foreach ($resources as $resource => $config) {
-
 			// the url parameter used as id to the resource
 			foreach ($actions as $action) {
 				$url = $config['url'];
@@ -254,6 +255,7 @@ class RouteConfig {
 			function ($matches) {
 				return \strtoupper(\ltrim($matches[0], "_"));
 			},
-			$str);
+			$str
+		);
 	}
 }

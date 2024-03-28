@@ -31,7 +31,6 @@ use OCP\IUserManager;
 use OCP\Util;
 
 class HookManager {
-
 	/** @var IUserManager */
 	private $userManager;
 
@@ -56,11 +55,13 @@ class HookManager {
 	/** @var array */
 	private $addressBooksToDelete;
 
-	public function __construct(IUserManager $userManager,
-								SyncService $syncService,
-								CalDavBackend $calDav,
-								CardDavBackend $cardDav,
-								IL10N $l10n) {
+	public function __construct(
+		IUserManager $userManager,
+		SyncService $syncService,
+		CalDavBackend $calDav,
+		CardDavBackend $cardDav,
+		IL10N $l10n
+	) {
 		$this->userManager = $userManager;
 		$this->syncService = $syncService;
 		$this->calDav = $calDav;
@@ -69,22 +70,30 @@ class HookManager {
 	}
 
 	public function setup() {
-		Util::connectHook('OC_User',
+		Util::connectHook(
+			'OC_User',
 			'post_createUser',
 			$this,
-			'postCreateUser');
-		Util::connectHook('OC_User',
+			'postCreateUser'
+		);
+		Util::connectHook(
+			'OC_User',
 			'pre_deleteUser',
 			$this,
-			'preDeleteUser');
-		Util::connectHook('OC_User',
+			'preDeleteUser'
+		);
+		Util::connectHook(
+			'OC_User',
 			'post_deleteUser',
 			$this,
-			'postDeleteUser');
-		Util::connectHook('OC_User',
+			'postDeleteUser'
+		);
+		Util::connectHook(
+			'OC_User',
 			'changeUser',
 			$this,
-			'changeUser');
+			'changeUser'
+		);
 	}
 
 	public function postCreateUser($params) {
@@ -103,6 +112,10 @@ class HookManager {
 		$uid = $params['uid'];
 		if (isset($this->usersToDelete[$uid])) {
 			$this->syncService->deleteUser($this->usersToDelete[$uid]);
+		} else {
+			// the user wasn't found in the userManager. Assume it was deleted before
+			// and try to delete from the syncService if it's the only one.
+			$this->syncService->deleteUserByUidIfUnique($uid);  // not interested in the result
 		}
 
 		foreach ($this->calendarsToDelete as $calendar) {
@@ -128,7 +141,7 @@ class HookManager {
 				try {
 					$this->calDav->createCalendar($principal, 'personal', [
 						'{DAV:}displayname' => $this->l10n->t('Personal'),
-						'{http://apple.com/ns/ical/}calendar-color' => '#1d2d44']);
+						'{http://apple.com/ns/ical/}calendar-color' => '#041e42']);
 				} catch (\Exception $ex) {
 					\OC::$server->getLogger()->logException($ex);
 				}

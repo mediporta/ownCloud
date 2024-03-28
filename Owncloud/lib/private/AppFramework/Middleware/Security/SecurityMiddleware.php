@@ -33,13 +33,17 @@ use OC\AppFramework\Middleware\Security\Exceptions\NotAdminException;
 use OC\AppFramework\Middleware\Security\Exceptions\NotLoggedInException;
 use OC\AppFramework\Utility\ControllerMethodReflector;
 use OC\Core\Controller\LoginController;
+use OC\OCS\Result;
 use OC\Security\CSP\ContentSecurityPolicyManager;
+use OC\User\LoginException;
+use OCP\API;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Middleware;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\OCSController;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
 use OCP\IRequest;
@@ -86,15 +90,17 @@ class SecurityMiddleware extends Middleware {
 	 * @param bool $isAdminUser
 	 * @param ContentSecurityPolicyManager $contentSecurityPolicyManager
 	 */
-	public function __construct(IRequest $request,
-								ControllerMethodReflector $reflector,
-								INavigationManager $navigationManager,
-								IURLGenerator $urlGenerator,
-								ILogger $logger,
-								IUserSession $session,
-								$appName,
-								$isAdminUser,
-								ContentSecurityPolicyManager $contentSecurityPolicyManager) {
+	public function __construct(
+		IRequest $request,
+		ControllerMethodReflector $reflector,
+		INavigationManager $navigationManager,
+		IURLGenerator $urlGenerator,
+		ILogger $logger,
+		IUserSession $session,
+		$appName,
+		$isAdminUser,
+		ContentSecurityPolicyManager $contentSecurityPolicyManager
+	) {
 		$this->navigationManager = $navigationManager;
 		$this->request = $request;
 		$this->reflector = $reflector;
@@ -115,7 +121,6 @@ class SecurityMiddleware extends Middleware {
 	 * @throws SecurityException when a security check fails
 	 */
 	public function beforeController($controller, $methodName) {
-
 		// this will set the current navigation entry of the app, use this only
 		// for normal HTML requests and not for AJAX requests
 		$this->navigationManager->setActiveEntry($this->appName);
@@ -123,7 +128,7 @@ class SecurityMiddleware extends Middleware {
 		// security checks
 		$isPublicPage = $this->reflector->hasAnnotation('PublicPage');
 		if (!$isPublicPage) {
-			if (!$this->isLoggedIn()) {
+			if (!$this->session->isLoggedIn() && !\OC::handleLogin($this->request)) {
 				throw new NotLoggedInException();
 			}
 
@@ -137,7 +142,8 @@ class SecurityMiddleware extends Middleware {
 		// CSRF check - also registers the CSRF token since the session may be closed later
 		Util::callRegister();
 		if (!$this->reflector->hasAnnotation('NoCSRFRequired')) {
-			if (!$this->request->passesCSRFCheck()) {
+			$hasNoAuthHeader = ($this->request->getHeader("Authorization") === null || trim($this->request->getHeader("Authorization")) === '');
+			if (!$this->request->passesCSRFCheck() && $hasNoAuthHeader) {
 				throw new CrossSiteRequestForgeryException();
 			}
 		}
@@ -184,8 +190,29 @@ class SecurityMiddleware extends Middleware {
 	 * @return Response a Response object or null in case that the exception could not be handled
 	 */
 	public function afterException($controller, $methodName, \Exception $exception) {
+		$headers = [];
+		if ($controller instanceof OCSController) {
+			if ($this->request->getHeader('OC-RequestAppPassword') === 'true'
+					&& ($exception instanceof NotLoggedInException || $exception instanceof LoginException)) {
+				$headers['WWW-Authenticate'] = 'Basic realm="ownCloud App Authentication Requested"';
+			}
+			if ($exception instanceof NotLoggedInException) {
+				return $controller->buildResponse(new Result(null, API::RESPOND_UNAUTHORISED, 'Unauthorised', $headers));
+			}
+			if ($exception instanceof LoginException) {
+				return $controller->buildResponse(new Result(null, API::RESPOND_UNAUTHORISED, $exception->getMessage(), $headers));
+			}
+			if ($exception instanceof NotAdminException) {
+				return $controller->buildResponse(new Result(null, $exception->getCode(), $exception->getMessage(), $headers));
+			}
+			return $controller->buildResponse(new Result(null, API::RESPOND_SERVER_ERROR, $exception->getMessage(), $headers));
+		}
+
 		if ($exception instanceof SecurityException) {
-			if (\stripos($this->request->getHeader('Accept'), 'html') === false) {
+			$accept_header = $this->request->getHeader('Accept') ?? '';
+			if ($accept_header !== '*/*'
+				&& \stripos($accept_header, 'html') === false
+			) {
 				$response = new JSONResponse(
 					['message' => $exception->getMessage()],
 					$exception->getCode()
@@ -224,14 +251,5 @@ class SecurityMiddleware extends Middleware {
 		}
 
 		throw $exception;
-	}
-
-	private function isLoggedIn() {
-		static $loginCalled = false;
-		if (!$loginCalled && !$this->session->isLoggedIn()) {
-			\OC::handleLogin($this->request);
-			$loginCalled = true;
-		}
-		return $this->session->isLoggedIn();
 	}
 }

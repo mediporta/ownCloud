@@ -61,22 +61,24 @@ class Config extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$mountId = $input->getArgument('mount_id');
 		$key = $input->getArgument('key');
 		try {
 			$mount = $this->globalService->getStorage($mountId);
 		} catch (NotFoundException $e) {
 			$output->writeln('<error>Mount with id "' . $mountId . ' not found, check "occ files_external:list" to get available mounts"</error>');
-			return 404;
+			return 1;
 		}
 
 		$value = $input->getArgument('value');
-		if ($value) {
+
+		if ($value !== null) {
 			$this->setOption($mount, $key, $value, $output);
 		} else {
 			$this->getOption($mount, $key, $output);
 		}
+		return 0;
 	}
 
 	/**

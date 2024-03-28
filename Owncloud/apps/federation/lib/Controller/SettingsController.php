@@ -29,7 +29,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 
 class SettingsController extends Controller {
-
 	/** @var IL10N */
 	private $l;
 
@@ -42,10 +41,11 @@ class SettingsController extends Controller {
 	 * @param IL10N $l10n
 	 * @param TrustedServers $trustedServers
 	 */
-	public function __construct($AppName,
-								IRequest $request,
-								IL10N $l10n,
-								TrustedServers $trustedServers
+	public function __construct(
+		$AppName,
+		IRequest $request,
+		IL10N $l10n,
+		TrustedServers $trustedServers
 	) {
 		parent::__construct($AppName, $request);
 		$this->l = $l10n;
@@ -73,7 +73,7 @@ class SettingsController extends Controller {
 	}
 
 	/**
-	 * add server to the list of trusted ownClouds
+	 * remove server from the list of trusted ownCloud servers
 	 *
 	 * @param int $id
 	 * @return DataResponse

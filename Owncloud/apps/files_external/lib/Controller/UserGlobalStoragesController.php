@@ -83,11 +83,14 @@ class UserGlobalStoragesController extends StoragesController {
 	 * @NoAdminRequired
 	 */
 	public function index() {
-		$storages = $this->service->getUniqueStorages();
+		$service = $this->service;
+		'@phan-var \OCP\Files\External\Service\IUserGlobalStoragesService $service';
+		$storages = $service->getUniqueStorages();
 
 		// remove configuration data, this must be kept private
 		foreach ($storages as $storage) {
 			$this->sanitizeStorage($storage);
+			$this->replacePasswords($storage);
 		}
 
 		return new DataResponse(
@@ -129,6 +132,7 @@ class UserGlobalStoragesController extends StoragesController {
 		}
 
 		$this->sanitizeStorage($storage);
+		$this->replacePasswords($storage);
 
 		return new DataResponse(
 			$storage,
@@ -158,6 +162,7 @@ class UserGlobalStoragesController extends StoragesController {
 			$authMechanism = $storage->getAuthMechanism();
 			if ($authMechanism instanceof IUserProvided) {
 				$authMechanism->saveBackendOptions($this->userSession->getUser(), $id, $backendOptions);
+				'@phan-var \OCP\Files\External\Auth\AuthMechanism $authMechanism';
 				$authMechanism->manipulateStorageConfig($storage, $this->userSession->getUser());
 			} else {
 				return new DataResponse(
@@ -178,6 +183,9 @@ class UserGlobalStoragesController extends StoragesController {
 
 		$this->updateStorageStatus($storage, $testOnly);
 		$this->sanitizeStorage($storage);
+
+		// replace the password just before sending the response.
+		$this->replacePasswords($storage);
 
 		return new DataResponse(
 			$storage,

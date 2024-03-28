@@ -35,11 +35,11 @@ use OC\Server;
 use OC\AppFramework\Utility\TimeFactory;
 use OC\Settings\Controller\CorsController;
 use OC\Settings\Controller\SettingsPageController;
+use OC\Settings\Controller\AppConfigController;
 use OC\Settings\Controller\AppSettingsController;
 use OC\Settings\Controller\AuthSettingsController;
 use OC\Settings\Controller\CertificateController;
 use OC\Settings\Controller\CheckSetupController;
-use OC\Settings\Controller\EncryptionController;
 use OC\Settings\Controller\GroupsController;
 use OC\Settings\Controller\LegalSettingsController;
 use OC\Settings\Controller\LogSettingsController;
@@ -49,13 +49,11 @@ use OC\Settings\Middleware\SubadminMiddleware;
 use OCP\AppFramework\App;
 use OCP\IContainer;
 use OCP\Util;
-use OC\Files\View;
 
 /**
  * @package OC\Settings
  */
 class Application extends App {
-
 	/**
 	 * @param array $urlParams
 	 */
@@ -87,18 +85,6 @@ class Application extends App {
 				$c->query('Defaults'),
 				$c->query('Mailer'),
 				$c->query('DefaultMailAddress')
-			);
-		});
-		$container->registerService('EncryptionController', function (IContainer $c) {
-			return new EncryptionController(
-				$c->query('AppName'),
-				$c->query('Request'),
-				$c->query('L10N'),
-				$c->query('Config'),
-				$c->query('DatabaseConnection'),
-				$c->query('UserManager'),
-				new View(),
-				$c->query('Logger')
 			);
 		});
 		$container->registerService('AppSettingsController', function (IContainer $c) {
@@ -186,7 +172,6 @@ class Application extends App {
 				$c->query('Config'),
 				$c->query('ClientService'),
 				$c->query('URLGenerator'),
-				$c->query('Util'),
 				$c->query('L10N'),
 				$c->query('Checker')
 			);
@@ -198,7 +183,15 @@ class Application extends App {
 				$c->query('UserSession'),
 				$c->query('Logger'),
 				$c->query('URLGenerator'),
-				$c->query('Config')
+				$c->query('Config'),
+				$c->query('L10N')
+			);
+		});
+		$container->registerService('AppConfigController', function (IContainer $c) {
+			return new AppConfigController(
+				$c->query('AppName'),
+				$c->query('Request'),
+				$c->query('ServerContainer')->getAppConfig()
 			);
 		});
 

@@ -23,6 +23,7 @@
 
 namespace OCA\Files;
 
+use OCP\Activity\IEvent;
 use OCP\Activity\IExtension;
 use OCP\Activity\IManager;
 use OCP\IConfig;
@@ -32,15 +33,17 @@ use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 
 class Activity implements IExtension {
-	const APP_FILES = 'files';
-	const FILTER_FILES = 'files';
-	const FILTER_FAVORITES = 'files_favorites';
+	public const APP_FILES = 'files';
+	public const FILTER_FILES = 'files';
+	public const FILTER_FAVORITES = 'files_favorites';
 
-	const TYPE_SHARE_CREATED = 'file_created';
-	const TYPE_SHARE_CHANGED = 'file_changed';
-	const TYPE_SHARE_DELETED = 'file_deleted';
-	const TYPE_SHARE_RESTORED = 'file_restored';
-	const TYPE_FAVORITES = 'files_favorites';
+	public const TYPE_SHARE_CREATED = 'file_created';
+	public const TYPE_SHARE_CHANGED = 'file_changed';
+	public const TYPE_SHARE_DELETED = 'file_deleted';
+	public const TYPE_SHARE_RESTORED = 'file_restored';
+	public const TYPE_FAVORITES = 'files_favorites';
+	public const TYPE_FILE_RENAMED = 'file_renamed';
+	public const TYPE_FILE_MOVED = 'file_moved';
 
 	/** @var IL10N */
 	protected $l;
@@ -111,6 +114,8 @@ class Activity implements IExtension {
 			],
 			self::TYPE_SHARE_DELETED => (string) $l->t('A file or folder has been <strong>deleted</strong>'),
 			self::TYPE_SHARE_RESTORED => (string) $l->t('A file or folder has been <strong>restored</strong>'),
+			self::TYPE_FILE_RENAMED => (string) $l->t('A file or folder has been <strong>renamed</strong>'),
+			self::TYPE_FILE_MOVED => (string) $l->t('A file or folder has been <strong>moved</strong>'),
 		];
 	}
 
@@ -128,6 +133,8 @@ class Activity implements IExtension {
 			$settings[] = self::TYPE_SHARE_CHANGED;
 			$settings[] = self::TYPE_SHARE_DELETED;
 			$settings[] = self::TYPE_SHARE_RESTORED;
+			$settings[] = self::TYPE_FILE_RENAMED;
+			$settings[] = self::TYPE_FILE_MOVED;
 			return $settings;
 		}
 
@@ -184,11 +191,22 @@ class Activity implements IExtension {
 			case 'deleted_self':
 				return (string) $l->t('You deleted %1$s', $params);
 			case 'deleted_by':
+				if ($this->actorIsAutomation($params[1])) {
+					return (string) $l->t('%1$s was deleted due to automation rule', $params);
+				}
 				return (string) $l->t('%2$s deleted %1$s', $params);
 			case 'restored_self':
 				return (string) $l->t('You restored %1$s', $params);
 			case 'restored_by':
 				return (string) $l->t('%2$s restored %1$s', $params);
+			case 'renamed_self':
+				return (string) $l->t('You renamed %2$s to %1$s', $params);
+			case 'renamed_by':
+				return (string) $l->t('%2$s renamed %3$s to %1$s', $params);
+			case 'moved_self':
+				return (string) $l->t('You moved %2$s to %1$s', $params);
+			case 'moved_by':
+				return (string) $l->t('%2$s moved %3$s to %1$s', $params);
 
 			default:
 				return false;
@@ -209,6 +227,10 @@ class Activity implements IExtension {
 				return (string) $l->t('Deleted by %2$s', $params);
 			case 'restored_by':
 				return (string) $l->t('Restored by %2$s', $params);
+			case 'moved_self':
+				return (string) $l->t('You moved this file to %1$s', $params);
+			case 'moved_by':
+				return (string) $l->t('%2$s moved this file to %1$s', $params);
 
 			default:
 				return false;
@@ -230,13 +252,62 @@ class Activity implements IExtension {
 		if ($app === self::APP_FILES) {
 			switch ($text) {
 				case 'created_self':
+					return [
+						0 => 'file',
+					];
 				case 'created_by':
+					return [
+						0 => 'file',
+						1 => 'username',
+					];
 				case 'created_public':
+					return [
+						0 => 'file',
+					];
 				case 'changed_self':
+					return [
+						0 => 'file',
+					];
 				case 'changed_by':
+					return [
+						0 => 'file',
+						1 => 'username',
+					];
 				case 'deleted_self':
+					return [
+						0 => 'file',
+					];
 				case 'deleted_by':
+					return [
+						0 => 'file',
+						1 => 'username',
+					];
 				case 'restored_self':
+					return [
+						0 => 'file',
+					];
+				case 'renamed_self':
+					return [
+						0 => 'file',
+						1 => 'file',
+					];
+				case 'renamed_by':
+					return [
+						0 => 'file',
+						1 => 'username',
+						2 => 'file',
+					];
+				case 'moved_self':
+					return [
+						0 => 'file',
+						1 => 'file',
+					];
+				case 'moved_by':
+					return [
+						0 => 'file',
+						1 => 'username',
+						2 => 'file',
+					];
 				case 'restored_by':
 					return [
 						0 => 'file',
@@ -263,6 +334,10 @@ class Activity implements IExtension {
 				return 'icon-add-color';
 			case self::TYPE_SHARE_DELETED:
 				return 'icon-delete-color';
+			case self::TYPE_FILE_RENAMED:
+				return 'icon-rename';
+			case self::TYPE_FILE_MOVED:
+				return 'icon-move';
 
 			default:
 				return false;
@@ -421,5 +496,15 @@ class Activity implements IExtension {
 	 */
 	protected function userSettingFavoritesOnly($user) {
 		return (bool) $this->config->getUserValue($user, 'activity', 'notify_' . self::METHOD_STREAM . '_' . self::TYPE_FAVORITES, false);
+	}
+
+	/**
+	 * Check if the author is automation user
+	 *
+	 * @param string $user Parameter e.g. `<user display-name="admin">admin</user>`
+	 * @return bool
+	 */
+	protected function actorIsAutomation($user) {
+		return \strip_tags($user) === IEvent::AUTOMATION_AUTHOR;
 	}
 }

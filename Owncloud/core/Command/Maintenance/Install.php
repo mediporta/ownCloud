@@ -34,7 +34,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
 
 class Install extends Command {
-
 	/**
 	 * @var IConfig
 	 */
@@ -50,6 +49,7 @@ class Install extends Command {
 			->setName('maintenance:install')
 			->setDescription('Install ownCloud.')
 			->addOption('database', null, InputOption::VALUE_REQUIRED, 'Supported database type.', 'sqlite')
+			->addOption('database-connection-string', null, InputOption::VALUE_REQUIRED, 'Oracle specific connection string. As soon as this parameter is provided other parameters like database-host and database-name are not used and do not need to be provided')
 			->addOption('database-name', null, InputOption::VALUE_REQUIRED, 'Name of the database.')
 			->addOption('database-host', null, InputOption::VALUE_REQUIRED, 'Hostname of the database.', 'localhost')
 			->addOption('database-user', null, InputOption::VALUE_REQUIRED, 'User name to connect to the database.')
@@ -60,13 +60,17 @@ class Install extends Command {
 			->addOption('data-dir', null, InputOption::VALUE_REQUIRED, 'Path to the data directory.', \OC::$SERVERROOT."/data");
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
-
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		// validate the environment
 		$server = \OC::$server;
-		$setupHelper = new Setup($this->config, $server->getIniWrapper(),
-			$server->getL10N('lib'), new \OC_Defaults(), $server->getLogger(),
-			$server->getSecureRandom());
+		$setupHelper = new Setup(
+			$this->config,
+			$server->getIniWrapper(),
+			$server->getL10N('lib'),
+			new \OC_Defaults(),
+			$server->getLogger(),
+			$server->getSecureRandom()
+		);
 		$sysInfo = $setupHelper->getSystemInfo(true);
 		$errors = $sysInfo['errors'];
 		if (\count($errors) > 0) {
@@ -108,6 +112,7 @@ class Install extends Command {
 		$dbUser = $input->getOption('database-user');
 		$dbPass = $input->getOption('database-pass');
 		$dbName = $input->getOption('database-name');
+		$dbConnectionString = $input->getOption('database-connection-string');
 		if ($db === 'oci') {
 			// an empty hostname needs to be read from the raw parameters
 			$dbHost = $input->getParameterOption('--database-host', '');
@@ -130,12 +135,13 @@ class Install extends Command {
 			if ($dbUser === null) {
 				throw new InvalidArgumentException("Database user not provided.");
 			}
-			if ($dbName === null) {
-				throw new InvalidArgumentException("Database name not provided.");
+			if ($dbName === null && $dbConnectionString === null) {
+				throw new InvalidArgumentException('Database name and connection string not provided.');
 			}
 			if ($dbPass === null) {
 				/** @var $dialog \Symfony\Component\Console\Helper\QuestionHelper */
 				$dialog = $this->getHelperSet()->get('question');
+				'@phan-var \Symfony\Component\Console\Helper\QuestionHelper $dialog';
 				$q = new Question("<question>What is the password to access the database with user <$dbUser>?</question>", false);
 				$q->setHidden(true);
 				$dbPass = $dialog->ask($input, $output, $q);
@@ -145,6 +151,7 @@ class Install extends Command {
 		if ($adminPassword === null) {
 			/** @var $dialog \Symfony\Component\Console\Helper\QuestionHelper */
 			$dialog = $this->getHelperSet()->get('question');
+			'@phan-var \Symfony\Component\Console\Helper\QuestionHelper $dialog';
 			$q = new Question("<question>What is the password you like to use for the admin account <$adminLogin>?</question>", false);
 			$q->setHidden(true);
 			$adminPassword = $dialog->ask($input, $output, $q);
@@ -156,6 +163,7 @@ class Install extends Command {
 			'dbpass' => $dbPass,
 			'dbname' => $dbName,
 			'dbhost' => $dbHost,
+			'dbconnectionstring' => $dbConnectionString,
 			'dbtableprefix' => $dbTablePrefix,
 			'adminlogin' => $adminLogin,
 			'adminpass' => $adminPassword,

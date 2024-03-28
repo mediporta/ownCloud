@@ -24,10 +24,10 @@ namespace OCA\Notifications\Controller;
 use OC\OCS\Result;
 use OCA\Notifications\Handler;
 use OCP\AppFramework\Http;
-use OCP\AppFramework\Controller;
 use OCP\AppFramework\OCSController;
 use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Notification\IAction;
@@ -47,6 +47,9 @@ class EndpointController extends OCSController {
 	/** @var IConfig */
 	private $config;
 
+	/** @var IURLGenerator */
+	private $urlGenerator;
+
 	/**
 	 * @param string $appName
 	 * @param IRequest $request
@@ -54,14 +57,16 @@ class EndpointController extends OCSController {
 	 * @param IManager $manager
 	 * @param IConfig $config
 	 * @param IUserSession $session
+	 * @param IURLGenerator $urlGenerator
 	 */
-	public function __construct($appName, IRequest $request, Handler $handler, IManager $manager, IConfig $config, IUserSession $session) {
+	public function __construct($appName, IRequest $request, Handler $handler, IManager $manager, IConfig $config, IUserSession $session, IURLGenerator $urlGenerator) {
 		parent::__construct($appName, $request);
 
 		$this->handler = $handler;
 		$this->manager = $manager;
 		$this->config = $config;
 		$this->session = $session;
+		$this->urlGenerator = $urlGenerator;
 	}
 
 	/**
@@ -111,7 +116,7 @@ class EndpointController extends OCSController {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @param $id
+	 * @param int $id
 	 * @return Result
 	 */
 	public function getNotification($id) {
@@ -144,7 +149,7 @@ class EndpointController extends OCSController {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @param $id
+	 * @param int $id
 	 * @return Result
 	 */
 	public function deleteNotification($id) {
@@ -159,7 +164,7 @@ class EndpointController extends OCSController {
 	 * @return string
 	 */
 	protected function generateEtag(array $notifications) {
-		return md5(json_encode($notifications));
+		return \md5(\json_encode($notifications));
 	}
 
 	/**
@@ -177,10 +182,10 @@ class EndpointController extends OCSController {
 			'object_id' => $notification->getObjectId(),
 			'subject' => $notification->getParsedSubject(),
 			'message' => $notification->getParsedMessage(),
-			'link' => $notification->getLink(),
+			'link' => $this->getAbsoluteLink($notification->getLink()),
 			'actions' => [],
 		];
-		if (method_exists($notification, 'getIcon')) {
+		if (\method_exists($notification, 'getIcon')) {
 			$data['icon'] = $notification->getIcon();
 		}
 
@@ -198,7 +203,7 @@ class EndpointController extends OCSController {
 	protected function actionToArray(IAction $action) {
 		return [
 			'label' => $action->getParsedLabel(),
-			'link' => $action->getLink(),
+			'link' => $this->getAbsoluteLink($action->getLink()),
 			'type' => $action->getRequestType(),
 			'primary' => $action->isPrimary(),
 		];
@@ -214,5 +219,20 @@ class EndpointController extends OCSController {
 		}
 
 		return (string) $user;
+	}
+
+	/**
+	 * @param string $link
+	 * @return string
+	 */
+	protected function getAbsoluteLink(string $link) {
+		$urlComponents = \parse_url($link);
+
+		// Check if already absolute
+		if (!isset($urlComponents['host'])) {
+			$link = $this->urlGenerator->getAbsoluteURL($link);
+		}
+
+		return $link;
 	}
 }

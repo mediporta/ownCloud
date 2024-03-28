@@ -6,8 +6,6 @@ OC.L10N.register(
     "Username" : "Benotzernumm",
     "Password" : "Passwuert",
     "Save" : "Späicheren",
-    "Port" : "Port",
-    "Region" : "Regioun",
     "URL" : "URL",
     "Location" : "Uert",
     "ownCloud" : "ownCloud",

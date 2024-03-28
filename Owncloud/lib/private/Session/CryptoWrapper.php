@@ -24,6 +24,7 @@
 
 namespace OC\Session;
 
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
@@ -47,52 +48,139 @@ use OCP\Security\ISecureRandom;
  * @package OC\Session
  */
 class CryptoWrapper {
-	const COOKIE_NAME = 'oc_sessionPassphrase';
+	public const COOKIE_NAME = 'oc_sessionPassphrase';
 
 	/** @var ISession */
 	protected $session;
 
-	/** @var \OCP\Security\ICrypto */
+	/** @var ICrypto */
 	protected $crypto;
 
 	/** @var ISecureRandom */
 	protected $random;
 
+	/** @var string  */
+	private $passphrase;
+
+	/** @var IRequest  */
+	private $request;
+
+	/** @var ITimeFactory */
+	private $timeFactory;
+
 	/**
-	 * @param IConfig $config
 	 * @param ICrypto $crypto
 	 * @param ISecureRandom $random
 	 * @param IRequest $request
+	 * @param ITimeFactory $timeFactory
 	 */
-	public function __construct(IConfig $config,
-								ICrypto $crypto,
-								ISecureRandom $random,
-								IRequest $request) {
+	public function __construct(
+		ICrypto $crypto,
+		ISecureRandom $random,
+		IRequest $request,
+		ITimeFactory $timeFactory
+	) {
 		$this->crypto = $crypto;
-		$this->config = $config;
 		$this->random = $random;
+		$this->request = $request;
+		$this->timeFactory = $timeFactory;
+	}
 
-		if ($request->getCookie(self::COOKIE_NAME) !== null) {
-			$this->passphrase = $request->getCookie(self::COOKIE_NAME);
-		} else {
-			$this->passphrase = $this->random->generate(128);
-			$secureCookie = $request->getServerProtocol() === 'https';
-			// FIXME: Required for CI
-			if (!\defined('PHPUNIT_RUN')) {
-				$webRoot = \OC::$WEBROOT;
-				if ($webRoot === '') {
-					$webRoot = '/';
+	/**
+	 * This `sendCookie` method is mandatory before wrapping the session (`wrapSession` method).
+	 * A passphrase will be prepared in order to wrap the session.
+	 * If the target cookie hasn't been received from the request, a cookie containing the passphrase
+	 * will also be sent to the browser for the future.
+	 */
+	public function sendCookie(IConfig $config): void {
+		if ($this->request->getCookie(self::COOKIE_NAME) !== null) {
+			// just set the passphrase, don't send it to the browser.
+			$this->passphrase = $this->request->getCookie(self::COOKIE_NAME);
+			if ($this->request->getHeader('X-Requested-With') !== 'XMLHttpRequest') {
+				// refresh cookie expiration
+				if (!\defined('PHPUNIT_RUN')) {
+					$options = $this->prepareOptions($config);
+					$this->sendCookieToBrowser($this->passphrase, $options);
 				}
-				\setcookie(self::COOKIE_NAME, $this->passphrase, 0, $webRoot, '', $secureCookie, true);
 			}
+			return;
+		}
+
+		$this->passphrase = $this->random->generate(128);
+		// FIXME: Required for CI
+		if (!\defined('PHPUNIT_RUN')) {
+			$options = $this->prepareOptions($config);
+			$this->sendCookieToBrowser($this->passphrase, $options);
 		}
 	}
 
 	/**
-	 * @param ISession $session
-	 * @return ISession
+	 * Refresh the cookie expiration time
 	 */
-	public function wrapSession(ISession $session) {
+	public function refreshCookie(IConfig $config, $expire = null): void {
+		if ($this->request->getCookie(self::COOKIE_NAME) === null) {
+			return;
+		}
+
+		$this->passphrase = $this->request->getCookie(self::COOKIE_NAME);
+		// FIXME: Required for CI
+		if (!\defined('PHPUNIT_RUN')) {
+			$options = $this->prepareOptions($config);
+			if ($expire !== null) {
+				$options['expires'] = $this->timeFactory->getTime() + $expire;
+			}
+			$this->sendCookieToBrowser($this->passphrase, $options);
+		}
+	}
+
+	/**
+	 * Try to delete the cookie
+	 */
+	public function deleteCookie(): void {
+		// FIXME: Required for CI
+		if (!\defined('PHPUNIT_RUN')) {
+			$options = [
+				'expires' => \time() - 3600,
+				'path' => '',
+				'domain' => '',
+				'secure' => false,
+				'httponly' => false,
+				'samesite' => 'None',
+			];
+			$this->sendCookieToBrowser('', $options);
+		}
+	}
+
+	private function prepareOptions(IConfig $config): array {
+		$secureCookie = $this->request->getServerProtocol() === 'https';
+		$webRoot = \OC::$WEBROOT;
+		if ($webRoot === '') {
+			$webRoot = '/';
+		}
+
+		$sessionLifetime = $config->getSystemValue('session_lifetime', 60 * 20);
+		if ($sessionLifetime > 0) {
+			$sessionLifetime += $this->timeFactory->getTime();
+		} else {
+			$sessionLifetime = 0;
+		}
+
+		$samesite = $config->getSystemValue('http.cookie.samesite', 'Strict');
+		return [
+			'expires' => $sessionLifetime,
+			'path' => $webRoot,
+			'domain' => '',
+			'secure' => $secureCookie,
+			'httponly' => true,
+			'samesite' => $samesite,
+		];
+	}
+
+	private function sendCookieToBrowser(string $value, array $options): void {
+		\setcookie(self::COOKIE_NAME, $value, $options);
+	}
+
+	public function wrapSession(ISession $session): CryptoSessionData {
 		if (!($session instanceof CryptoSessionData)) {
 			return new CryptoSessionData($session, $this->crypto, $this->passphrase);
 		}

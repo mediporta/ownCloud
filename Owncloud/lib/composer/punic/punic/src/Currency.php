@@ -51,12 +51,12 @@ class Currency
      * Returns the name of a currency given its code.
      *
      * @param string $currencyCode The currency code
-     * @param null|number|string $quantity The quantity identifier. Allowed values:
-     * <ul>
-     *     <li>`null` to return the standard name, not associated to any quantity</li>
-     *     <li>`number` to return the name following the plural rule for the specified quantity</li>
-     *     <li>string `'zero'|'one'|'two'|'few'|'many'|'other'` the plural rule
-     * </ul>
+     * @param number|string|null $quantity The quantity identifier. Allowed values:
+     *                                     <ul>
+     *                                     <li>`null` to return the standard name, not associated to any quantity</li>
+     *                                     <li>`number` to return the name following the plural rule for the specified quantity</li>
+     *                                     <li>string `'zero'|'one'|'two'|'few'|'many'|'other'` the plural rule
+     *                                     </ul>
      * @param string $locale The locale to use. If empty we'll use the default locale set with {@link \Punic\Data::setDefaultLocale()}.
      *
      * @return string Returns an empty string if $currencyCode is not valid, the localized currency name otherwise
@@ -71,7 +71,7 @@ class Currency
                 if (in_array($quantity, array('zero', 'one', 'two', 'few', 'many', 'other'))) {
                     $pluralRule = $quantity;
                 } else {
-                    $pluralRule = Plural::getRule($quantity, $locale);
+                    $pluralRule = Plural::getRuleOfType($quantity, Plural::RULETYPE_CARDINAL, $locale);
                 }
                 if (!isset($data['pluralName'][$pluralRule])) {
                     $pluralRule = 'other';
@@ -124,17 +124,65 @@ class Currency
     }
 
     /**
+     * Returns the ISO 4217 code for a currency given its currency code.
+     *
+     * Historical currencies are not supported.
+     *
+     * @param string $currencyCode The 3-letter currency code
+     *
+     * @return string Returns the numeric ISO 427 code, or an empty string if $currencyCode is not valid
+     *
+     * @see http://unicode.org/reports/tr35/tr35-info.html#Supplemental_Code_Mapping
+     */
+    public static function getNumericCode($currencyCode)
+    {
+        $codeMappings = Data::getGeneric('codeMappings');
+        $currencies = $codeMappings['currencies'];
+
+        if (isset($currencies[$currencyCode]['numeric'])) {
+            return $currencies[$currencyCode]['numeric'];
+        }
+
+        return '';
+    }
+
+    /**
+     * Returns the currency code given its ISO 4217 code.
+     *
+     * Historical currencies are not supported.
+     *
+     * @param string $code The numeric ISO 427 code
+     *
+     * @return string Returns the 3-letter currency code, or an empty string if $code is not valid
+     *
+     * @see http://unicode.org/reports/tr35/tr35-info.html#Supplemental_Code_Mapping
+     */
+    public static function getByNumericCode($code)
+    {
+        $codeMappings = Data::getGeneric('codeMappings');
+        $currencies = $codeMappings['currencies'];
+
+        foreach ($currencies as $currencyCode => $currency) {
+            if (isset($currency['numeric']) && $currency['numeric'] == $code) {
+                return $currencyCode;
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Return the history for the currencies used in a territory.
      *
-     * @param string $territoryCode The territoy code
+     * @param string $territoryCode The territory code
      *
      * @return array Return a list of items with these keys:
-     * <ul>
-     *     <li>string `currency`: the currency code (always present)</li>
-     *     <li>string `from`: start date of the currency validity in the territory (not present if no start date) - Format is YYYY-MM-DD</li>
-     *     <li>string `to`: end date of the currency validity in the territory (not present if no end date) - Format is YYYY-MM-DD</li>
-     *     <li>bool `tender`: true if the currency was or is legal tender, false otherwise (always present)</li>
-     * </ul>
+     *               <ul>
+     *               <li>string `currency`: the currency code (always present)</li>
+     *               <li>string `from`: start date of the currency validity in the territory (not present if no start date) - Format is YYYY-MM-DD</li>
+     *               <li>string `to`: end date of the currency validity in the territory (not present if no end date) - Format is YYYY-MM-DD</li>
+     *               <li>bool `tender`: true if the currency was or is legal tender, false otherwise (always present)</li>
+     *               </ul>
      */
     public static function getCurrencyHistoryForTerritory($territoryCode)
     {
@@ -160,7 +208,7 @@ class Currency
     /**
      * Return the currency to be used in a territory.
      *
-     * @param string $territoryCode The territoy code
+     * @param string $territoryCode The territory code
      *
      * @return string Returns an empty string if $territoryCode is not valid or we don't have info about it, the currency code otherwise
      */

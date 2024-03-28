@@ -2,10 +2,14 @@ OC.L10N.register(
     "federatedfilesharing",
     {
     "Federated sharing" : "Stowarzyszone udostępnianie",
+    "Loading..." : "Ładowanie...",
     "Invalid Federated Cloud ID" : "Niewłaściwe ID stowarzyszonej chmury",
     "Sharing %s failed, because this item is already shared with %s" : "Współdzielenie %s nie powiodło się, ponieważ element jest już współdzielony z %s",
     "File is already shared with %s" : "Plik jest już współdzielony z %s",
     "Sharing %s failed, could not find %s, maybe the server is currently unreachable." : "Współdzielenie %s nie powiodło się, nie można odnaleźć %s. Prawdopobnie serwer nie jest teraz osiągalny.",
+    "\"%1$s\" shared \"%3$s\" with you (on behalf of \"%2$s\")" : "\"%1$s\" udostępnił Tobie \"%3$s\" (z upoważnienia \"%2$s\")",
+    "\"%1$s\" shared \"%3$s\" with you" : "\"%1$s\" udostępnił Tobie \"%3$s\"",
+    "\"%1$s\" invited you to view \"%3$s\"" : "\"%1$s\" zaprosił cię do podglądu \"%3$s\"",
     "Accept" : "Akceptuj",
     "Decline" : "Odmów",
     "Federated Cloud Sharing" : "Współdzielenie przez chmurę stowarzyszoną",
@@ -17,7 +21,6 @@ OC.L10N.register(
     "Share it:" : "Współdziel to:",
     "Add to your website" : "Dodaj do swojej strony",
     "Share with me via ownCloud" : "Współdziel ze mną przez ownCloud",
-    "HTML Code:" : "Kod HTML:",
-    "Add to your ownCloud" : "Dodaj do twojego ownCloud"
+    "HTML Code:" : "Kod HTML:"
 },
-"nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>=14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);");
+"nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);");

@@ -38,7 +38,6 @@ use Sabre\Xml\XmlSerializable;
  * @license http://sabre.io/license/ Modified BSD License
  */
 class Invite implements XmlSerializable {
-
 	/**
 	 * The list of users a calendar has been shared to.
 	 *
@@ -100,7 +99,7 @@ class Invite implements XmlSerializable {
 	 * Use the $writer argument to write its own xml serialization.
 	 *
 	 * An important note: do _not_ create a parent element. Any element
-	 * implementing XmlSerializble should only ever write what's considered
+	 * implementing XmlSerializable should only ever write what's considered
 	 * its 'inner xml'.
 	 *
 	 * The parent of the current element is responsible for writing a

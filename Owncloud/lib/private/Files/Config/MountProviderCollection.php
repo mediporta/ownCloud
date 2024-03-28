@@ -23,6 +23,9 @@
 
 namespace OC\Files\Config;
 
+use OC\Files\Filesystem;
+use OC\Files\Mount\MountPoint;
+use OC\Files\View;
 use OC\Hooks\Emitter;
 use OC\Hooks\EmitterTrait;
 use OCP\Files\Config\IHomeMountProvider;
@@ -35,6 +38,8 @@ use OCP\IUser;
 
 class MountProviderCollection implements IMountProviderCollection, Emitter {
 	use EmitterTrait;
+
+	public const DEFAULT_MOVE_ATTEMPTS_PER_MOUNTPOINT = 10;
 
 	/**
 	 * @var \OCP\Files\Config\IHomeMountProvider[]
@@ -79,9 +84,39 @@ class MountProviderCollection implements IMountProviderCollection, Emitter {
 		$mounts = \array_filter($mounts, function ($result) {
 			return \is_array($result);
 		});
-		return \array_reduce($mounts, function (array $mounts, array $providerMounts) {
-			return \array_merge($mounts, $providerMounts);
-		}, []);
+
+		$mergedMounts = [];
+		$takenMountpoints = [];
+		$maxMoveAttempts = $this->getMaxMoveAttempts();
+		foreach ($mounts as $providerMounts) {
+			foreach ($providerMounts as $mount) {
+				$mountpoint = $mount->getMountPoint();
+				if (\in_array($mountpoint, $takenMountpoints)) {
+					for ($i = 0; $i < $maxMoveAttempts; $i++) {
+						$newMountpoint = $this->generateUniqueTarget(
+							$mountpoint,
+							new View('/' . $user->getUID() . '/files'),
+							$takenMountpoints
+						);
+						/* @phan-suppress-next-line PhanUndeclaredMethod */
+						if ($mount->moveMount($newMountpoint) === true) {
+							$fsMountManager = Filesystem::getMountManager();
+							if ($fsMountManager->findIn($mountpoint)) {
+								$fsMountManager->moveMount($mountpoint, $newMountpoint);
+							}
+							break;
+						}
+						$takenMountpoints[] = $newMountpoint;
+					}
+					$takenMountpoints[] = $mount->getMountPoint(); // mount might not have been moved
+				} else {
+					$takenMountpoints[] = $mountpoint;
+				}
+				$mergedMounts[] = $mount;
+			}
+		}
+
+		return $mergedMounts;
 	}
 
 	/**
@@ -141,5 +176,31 @@ class MountProviderCollection implements IMountProviderCollection, Emitter {
 	 */
 	public function getMountCache() {
 		return $this->mountCache;
+	}
+
+	/**
+	 * @param string $path
+	 * @param View $view
+	 * @param MountPoint[] $mountpoints
+	 * @return mixed
+	 */
+	private function generateUniqueTarget($path, $view, array $mountpoints) {
+		$pathinfo = \pathinfo($path);
+		$ext = (isset($pathinfo['extension'])) ? '.' . $pathinfo['extension'] : '';
+		$name = $pathinfo['filename'];
+		$dir = $pathinfo['dirname'];
+
+		$i = 2;
+		while (\in_array($path, $mountpoints) || $view->file_exists($path)) {
+			$path = Filesystem::normalizePath($dir . '/' . $name . ' ('.$i.')' . $ext);
+			$i++;
+		}
+
+		return $path;
+	}
+
+	protected function getMaxMoveAttempts() {
+		return \OC::$server->getConfig()
+			->getSystemValue('filesystem.max_mountpoint_move_attempts', self::DEFAULT_MOVE_ATTEMPTS_PER_MOUNTPOINT);
 	}
 }

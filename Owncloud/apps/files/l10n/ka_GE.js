@@ -2,7 +2,6 @@ OC.L10N.register(
     "files",
     {
     "Unknown error" : "უცნობი შეცდომა",
-    "Home" : "სახლი",
     "Close" : "დახურვა",
     "Favorites" : "ფავორიტები",
     "Upload cancelled." : "ატვირთვა შეჩერებულ იქნა.",
@@ -16,6 +15,7 @@ OC.L10N.register(
     "Files" : "ფაილები",
     "Details" : "დეტალური ინფორმაცია",
     "Pending" : "მოცდის რეჟიმში",
+    "group" : "ჯგუფი",
     "Name" : "სახელი",
     "Size" : "ზომა",
     "Modified" : "შეცვლილია",
@@ -26,15 +26,13 @@ OC.L10N.register(
     "Favorite" : "ფავორიტი",
     "Folder" : "საქაღალდე",
     "New folder" : "ახალი ფოლდერი",
+    "Cancel" : "უარყოფა",
+    "Create" : "შექმნა",
     "Upload" : "ატვირთვა",
-    "File handling" : "ფაილის დამუშავება",
-    "Maximum upload size" : "მაქსიმუმ ატვირთის ზომა",
-    "max. possible: " : "მაქს. შესაძლებელი:",
-    "Save" : "შენახვა",
     "Settings" : "პარამეტრები",
     "WebDAV" : "WebDAV",
     "Upload too large" : "ასატვირთი ფაილი ძალიან დიდია",
     "The files you are trying to upload exceed the maximum size for file uploads on this server." : "ფაილის ზომა რომლის ატვირთვასაც თქვენ აპირებთ, აჭარბებს სერვერზე დაშვებულ მაქსიმუმს.",
     "Text file" : "ტექსტური ფაილი"
 },
-"nplurals=1; plural=0;");
+"nplurals=2; plural=(n!=1);");

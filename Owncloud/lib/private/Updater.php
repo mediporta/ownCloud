@@ -48,7 +48,6 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  *  - failure(string $message)
  */
 class Updater extends BasicEmitter {
-
 	/** @var ILogger $log */
 	private $log;
 	
@@ -57,6 +56,9 @@ class Updater extends BasicEmitter {
 
 	/** @var Checker */
 	private $checker;
+
+	/** @var bool */
+	private $forceMajorUpgrade = false;
 
 	private $logLevelNames = [
 		0 => 'Debug',
@@ -71,9 +73,11 @@ class Updater extends BasicEmitter {
 	 * @param Checker $checker
 	 * @param ILogger $log
 	 */
-	public function __construct(IConfig $config,
-								Checker $checker,
-								ILogger $log = null) {
+	public function __construct(
+		IConfig $config,
+		Checker $checker,
+		ILogger $log = null
+	) {
 		$this->log = $log;
 		$this->config = $config;
 		$this->checker = $checker;
@@ -81,7 +85,7 @@ class Updater extends BasicEmitter {
 
 	/**
 	 * runs the update actions in maintenance mode, does not upgrade the source files
-	 * except the main .htaccess file
+	 * except the main .htaccess file if it is writable
 	 *
 	 * @return bool true if the operation succeeded, false otherwise
 	 */
@@ -105,6 +109,7 @@ class Updater extends BasicEmitter {
 
 		$success = true;
 		try {
+			$this->checkAppsCompatibility();
 			$this->doUpgrade($currentVersion, $installedVersion);
 		} catch (\Exception $exception) {
 			$this->log->logException($exception, ['app' => 'core']);
@@ -188,8 +193,36 @@ class Updater extends BasicEmitter {
 	}
 
 	/**
+	 * @param $forceMajorUpgrade
+	 */
+	public function setForceMajorUpgrade($forceMajorUpgrade) {
+		$this->forceMajorUpgrade = $forceMajorUpgrade;
+	}
+
+	/**
+	 * Check if we have empty app folders or incompatible apps enabled
+	 */
+	private function checkAppsCompatibility() {
+		$dispatcher = \OC::$server->getEventDispatcher();
+		// App compatibility check
+		$repair = new Repair(
+			[
+				new Repair\Apps(
+					\OC::$server->getAppManager(),
+					$dispatcher,
+					$this->config,
+					new \OC_Defaults(),
+					$this->forceMajorUpgrade
+				),
+			],
+			$dispatcher
+		);
+		$repair->run();
+	}
+
+	/**
 	 * runs the update actions in maintenance mode, does not upgrade the source files
-	 * except the main .htaccess file
+	 * except the main .htaccess file if it is writable
 	 *
 	 * @param string $currentVersion current version to upgrade to
 	 * @param string $installedVersion previous version from which to upgrade from
@@ -205,7 +238,13 @@ class Updater extends BasicEmitter {
 
 		// Update .htaccess files
 		try {
-			Setup::updateHtaccess();
+			// check if we can write .htaccess
+			if (\is_file(Setup::pathToHtaccess())
+				&& \is_writable(Setup::pathToHtaccess())
+			) {
+				// Update .htaccess files
+				Setup::updateHtaccess();
+			}
 			Setup::protectDataDirectory();
 		} catch (\Exception $e) {
 			throw new \Exception($e->getMessage());

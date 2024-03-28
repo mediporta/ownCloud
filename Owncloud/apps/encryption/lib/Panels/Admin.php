@@ -2,7 +2,7 @@
 /**
  * @author Tom Needham <tom@owncloud.com>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -34,7 +34,6 @@ use OCP\ISession;
 use OCP\IUserSession;
 
 class Admin implements ISettings {
-
 	/** @var IConfig */
 	protected $config;
 	/** @var ILogger */
@@ -48,12 +47,14 @@ class Admin implements ISettings {
 	/** @var IL10N */
 	protected $l;
 
-	public function __construct(IConfig $config,
-								ILogger $logger,
-								IUserSession $userSession,
-								IUserManager $userManager,
-								ISession $session,
-								IL10N $l) {
+	public function __construct(
+		IConfig $config,
+		ILogger $logger,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		ISession $session,
+		IL10N $l
+	) {
 		$this->config = $config;
 		$this->logger = $logger;
 		$this->userSession = $userSession;
@@ -76,7 +77,8 @@ class Admin implements ISettings {
 			$this->logger,
 			$this->userSession,
 			$this->config,
-			$this->l);
+			$this->l
+		);
 		$util = new Util(
 			new View(),
 			$crypt,

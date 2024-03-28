@@ -36,7 +36,7 @@ use OCP\Files\External\IStorageConfig;
  * such as \OCP\IDB for database operations. This allows an authentication
  * mechanism to perform advanced operations based on provided information.
  *
- * An authenication scheme defines the parameter interface, common to the
+ * An authentication scheme defines the parameter interface, common to the
  * storage implementation, the backend and the authentication mechanism.
  * A storage implementation expects parameters according to the authentication
  * scheme, which are provided from the authentication mechanism.
@@ -52,15 +52,14 @@ use OCP\Files\External\IStorageConfig;
  * @since 10.0
  */
 abstract class AuthMechanism implements \JsonSerializable {
-
 	/** Standard authentication schemes */
-	const SCHEME_NULL = 'null';
-	const SCHEME_BUILTIN = 'builtin';
-	const SCHEME_PASSWORD = 'password';
-	const SCHEME_OAUTH1 = 'oauth1';
-	const SCHEME_OAUTH2 = 'oauth2';
-	const SCHEME_PUBLICKEY = 'publickey';
-	const SCHEME_OPENSTACK = 'openstack';
+	public const SCHEME_NULL = 'null';
+	public const SCHEME_BUILTIN = 'builtin';
+	public const SCHEME_PASSWORD = 'password';
+	public const SCHEME_OAUTH1 = 'oauth1';
+	public const SCHEME_OAUTH2 = 'oauth2';
+	public const SCHEME_PUBLICKEY = 'publickey';
+	public const SCHEME_OPENSTACK = 'openstack';
 
 	use VisibilityTrait;
 	use FrontendDefinitionTrait;
@@ -117,7 +116,8 @@ abstract class AuthMechanism implements \JsonSerializable {
 	public function validateStorage(IStorageConfig $storage) {
 		// does the backend actually support this scheme
 		$supportedSchemes = $storage->getBackend()->getAuthSchemes();
-		if (!isset($supportedSchemes[$this->getScheme()])) {
+		if (!isset($supportedSchemes[$this->getScheme()]) &&
+			!isset($supportedSchemes[$this->getIdentifier()])) {
 			return false;
 		}
 

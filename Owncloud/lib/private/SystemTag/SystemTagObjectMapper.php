@@ -33,7 +33,8 @@ use OCP\SystemTag\TagNotFoundException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class SystemTagObjectMapper implements ISystemTagObjectMapper {
-	const RELATION_TABLE = 'systemtag_object_mapping';
+	public const RELATION_TABLE = 'systemtag_object_mapping';
+	public const CHUNK_SIZE = 200;
 
 	/** @var ISystemTagManager */
 	protected $tagManager;
@@ -68,24 +69,29 @@ class SystemTagObjectMapper implements ISystemTagObjectMapper {
 		}
 
 		$query = $this->connection->getQueryBuilder();
-		$query->select(['systemtagid', 'objectid'])
-			->from(self::RELATION_TABLE)
-			->where($query->expr()->in('objectid', $query->createParameter('objectids')))
-			->andWhere($query->expr()->eq('objecttype', $query->createParameter('objecttype')))
-			->setParameter('objectids', $objIds, IQueryBuilder::PARAM_INT_ARRAY)
-			->setParameter('objecttype', $objectType)
-			->addOrderBy('objectid', 'ASC')
-			->addOrderBy('systemtagid', 'ASC');
 
+		$objectIdChunks = \array_chunk($objIds, self::CHUNK_SIZE);
 		$mapping = [];
+		//Initialize mapping array
 		foreach ($objIds as $objId) {
 			$mapping[$objId] = [];
 		}
 
-		$result = $query->execute();
-		while ($row = $result->fetch()) {
-			$objectId = $row['objectid'];
-			$mapping[$objectId][] = $row['systemtagid'];
+		foreach ($objectIdChunks as $objectIdChunk) {
+			$query->select(['systemtagid', 'objectid'])
+				->from(self::RELATION_TABLE)
+				->where($query->expr()->in('objectid', $query->createParameter('objectids')))
+				->andWhere($query->expr()->eq('objecttype', $query->createParameter('objecttype')))
+				->setParameter('objectids', $objectIdChunk, IQueryBuilder::PARAM_STR_ARRAY)
+				->setParameter('objecttype', $objectType)
+				->addOrderBy('objectid', 'ASC')
+				->addOrderBy('systemtagid', 'ASC');
+
+			$result = $query->execute();
+			while ($row = $result->fetch()) {
+				$objectId = $row['objectid'];
+				$mapping[$objectId][] = $row['systemtagid'];
+			}
 		}
 
 		$result->closeCursor();
@@ -159,12 +165,15 @@ class SystemTagObjectMapper implements ISystemTagObjectMapper {
 			}
 		}
 
-		$this->dispatcher->dispatch(MapperEvent::EVENT_ASSIGN, new MapperEvent(
-			MapperEvent::EVENT_ASSIGN,
-			$objectType,
-			$objId,
-			$tagIds
-		));
+		$this->dispatcher->dispatch(
+			new MapperEvent(
+				MapperEvent::EVENT_ASSIGN,
+				$objectType,
+				$objId,
+				$tagIds
+			),
+			MapperEvent::EVENT_ASSIGN
+		);
 	}
 
 	/**
@@ -187,12 +196,15 @@ class SystemTagObjectMapper implements ISystemTagObjectMapper {
 			->setParameter('tagids', $tagIds, IQueryBuilder::PARAM_INT_ARRAY)
 			->execute();
 
-		$this->dispatcher->dispatch(MapperEvent::EVENT_UNASSIGN, new MapperEvent(
-			MapperEvent::EVENT_UNASSIGN,
-			$objectType,
-			$objId,
-			$tagIds
-		));
+		$this->dispatcher->dispatch(
+			new MapperEvent(
+				MapperEvent::EVENT_UNASSIGN,
+				$objectType,
+				$objId,
+				$tagIds
+			),
+			MapperEvent::EVENT_UNASSIGN
+		);
 	}
 
 	/**
@@ -254,7 +266,10 @@ class SystemTagObjectMapper implements ISystemTagObjectMapper {
 			);
 			$missingTagIds = \array_diff($tagIds, $foundTagIds);
 			throw new TagNotFoundException(
-				'Tags not found', 0, null, $missingTagIds
+				'Tags not found',
+				0,
+				null,
+				$missingTagIds
 			);
 		}
 	}

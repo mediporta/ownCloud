@@ -22,9 +22,10 @@
 
 use Owncloud\Updater\Controller\IndexController;
 
-define ('IS_CLI', false);
+\define('IS_CLI', false);
 require __DIR__ . '/app/bootstrap.php';
 
+/* @phan-suppress-next-line PhanUndeclaredGlobalVariable */
 $controller = new IndexController($container);
 $response = $controller->dispatch();
 echo $response;

@@ -35,9 +35,11 @@ $eventDispatcher->addListener(
 		\OCP\Util::addScript('systemtags/systemtagsmappingcollection');
 		\OCP\Util::addScript('systemtags/systemtagscollection');
 		\OCP\Util::addScript('systemtags/systemtagsinputfield');
+		\OCP\Util::addScript('systemtags/systemtagslist');
 		\OCP\Util::addScript('systemtags', 'app');
 		\OCP\Util::addScript('systemtags', 'systemtagsfilelist');
 		\OCP\Util::addScript('systemtags', 'filesplugin');
+		\OCP\Util::addScript('systemtags', 'systemtagstabview');
 		\OCP\Util::addScript('systemtags', 'systemtagsinfoview');
 		\OCP\Util::addStyle('systemtags');
 		\OCP\Util::addStyle('systemtags', 'systemtagsfilelist');
@@ -52,7 +54,7 @@ $activityManager->registerExtension(function () {
 	return $extension;
 });
 
-$managerListener = function (ManagerEvent $event) use ($activityManager) {
+$managerListener = function (ManagerEvent $event) {
 	$application = new \OCP\AppFramework\App('systemtags');
 	/** @var \OCA\SystemTags\Activity\Listener $listener */
 	$listener = $application->getContainer()->query('OCA\SystemTags\Activity\Listener');
@@ -63,7 +65,7 @@ $eventDispatcher->addListener(ManagerEvent::EVENT_CREATE, $managerListener);
 $eventDispatcher->addListener(ManagerEvent::EVENT_DELETE, $managerListener);
 $eventDispatcher->addListener(ManagerEvent::EVENT_UPDATE, $managerListener);
 
-$mapperListener = function (MapperEvent $event) use ($activityManager) {
+$mapperListener = function (MapperEvent $event) {
 	$application = new \OCP\AppFramework\App('systemtags');
 	/** @var \OCA\SystemTags\Activity\Listener $listener */
 	$listener = $application->getContainer()->query('OCA\SystemTags\Activity\Listener');
@@ -73,13 +75,15 @@ $mapperListener = function (MapperEvent $event) use ($activityManager) {
 $eventDispatcher->addListener(MapperEvent::EVENT_ASSIGN, $mapperListener);
 $eventDispatcher->addListener(MapperEvent::EVENT_UNASSIGN, $mapperListener);
 
-\OCA\Files\App::getNavigationManager()->add(function () {
-	$l = \OC::$server->getL10N('systemtags');
-	return [
-		'id' => 'systemtagsfilter',
-		'appname' => 'systemtags',
-		'script' => 'list.php',
-		'order' => 25,
-		'name' => $l->t('Tags')
-	];
-});
+if (\class_exists('OCA\Files\App')) {
+	\OCA\Files\App::getNavigationManager()->add(function () {
+		$l = \OC::$server->getL10N('systemtags');
+		return [
+			'id' => 'systemtagsfilter',
+			'appname' => 'systemtags',
+			'script' => 'list.php',
+			'order' => 25,
+			'name' => $l->t('Tags')
+		];
+	});
+}

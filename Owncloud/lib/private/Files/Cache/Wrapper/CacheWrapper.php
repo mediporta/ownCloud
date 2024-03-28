@@ -191,13 +191,14 @@ class CacheWrapper extends Cache {
 	 * remove all entries for files that are stored on the storage from the cache
 	 */
 	public function clear() {
+		'@phan-var \OC\Files\Cache\Cache $this->cache';
 		$this->cache->clear();
 	}
 
 	/**
 	 * @param string $file
 	 *
-	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW or Cache::COMPLETE
+	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW, Cache::COMPLETE or Cache::NOT_SCANNED
 	 */
 	public function getStatus($file) {
 		return $this->cache->getStatus($file);
@@ -270,6 +271,7 @@ class CacheWrapper extends Cache {
 	 * @return int[]
 	 */
 	public function getAll() {
+		'@phan-var \OC\Files\Cache\Cache $this->cache';
 		return $this->cache->getAll();
 	}
 
@@ -303,17 +305,5 @@ class CacheWrapper extends Cache {
 	 */
 	public function getNumericStorageId() {
 		return $this->cache->getNumericStorageId();
-	}
-
-	/**
-	 * get the storage id of the storage for a file and the internal path of the file
-	 * unlike getPathById this does not limit the search to files on this storage and
-	 * instead does a global search in the cache table
-	 *
-	 * @param int $id
-	 * @return array first element holding the storage id, second the path
-	 */
-	public static function getById($id) {
-		return parent::getById($id);
 	}
 }

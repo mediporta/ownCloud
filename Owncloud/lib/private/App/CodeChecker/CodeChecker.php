@@ -24,7 +24,6 @@
 namespace OC\App\CodeChecker;
 
 use OC\Hooks\BasicEmitter;
-use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
 use PhpParser\Parser;
 use RecursiveCallbackFilterIterator;
@@ -34,14 +33,14 @@ use RegexIterator;
 use SplFileInfo;
 
 class CodeChecker extends BasicEmitter {
-	const CLASS_EXTENDS_NOT_ALLOWED = 1000;
-	const CLASS_IMPLEMENTS_NOT_ALLOWED = 1001;
-	const STATIC_CALL_NOT_ALLOWED = 1002;
-	const CLASS_CONST_FETCH_NOT_ALLOWED = 1003;
-	const CLASS_NEW_NOT_ALLOWED =  1004;
-	const OP_OPERATOR_USAGE_DISCOURAGED =  1005;
-	const CLASS_USE_NOT_ALLOWED =  1006;
-	const CLASS_METHOD_CALL_NOT_ALLOWED =  1007;
+	public const CLASS_EXTENDS_NOT_ALLOWED = 1000;
+	public const CLASS_IMPLEMENTS_NOT_ALLOWED = 1001;
+	public const STATIC_CALL_NOT_ALLOWED = 1002;
+	public const CLASS_CONST_FETCH_NOT_ALLOWED = 1003;
+	public const CLASS_NEW_NOT_ALLOWED =  1004;
+	public const OP_OPERATOR_USAGE_DISCOURAGED =  1005;
+	public const CLASS_USE_NOT_ALLOWED =  1006;
+	public const CLASS_METHOD_CALL_NOT_ALLOWED =  1007;
 
 	/** @var Parser */
 	private $parser;
@@ -51,7 +50,7 @@ class CodeChecker extends BasicEmitter {
 
 	public function __construct(ICheck $checkList) {
 		$this->checkList = $checkList;
-		$this->parser = new Parser(new Lexer);
+		$this->parser = (new \PhpParser\ParserFactory())->createForHostVersion();
 	}
 
 	/**
@@ -76,7 +75,7 @@ class CodeChecker extends BasicEmitter {
 
 		$excludes = \array_map(function ($item) use ($folder) {
 			return $folder . '/' . $item;
-		}, ['vendor', '3rdparty', '.git', 'l10n', 'tests', 'test']);
+		}, ['vendor', '.git', 'l10n', 'tests', 'test']);
 
 		$iterator = new RecursiveDirectoryIterator($folder, RecursiveDirectoryIterator::SKIP_DOTS);
 		$iterator = new RecursiveCallbackFilterIterator($iterator, function ($item) use ($folder, $excludes) {

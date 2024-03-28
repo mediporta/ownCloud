@@ -31,15 +31,14 @@ use OCP\Migration\ISchemaMigration;
  */
 
 class Version20170927201245 implements ISchemaMigration {
-
 	/**
 	 * @param Schema $schema
 	 * @param array $options
 	 */
 	public function changeSchema(Schema $schema, array $options) {
 		$prefix = $options['tablePrefix'];
-		if (!$schema->hasTable("${prefix}dav_properties")) {
-			$table = $schema->createTable("${prefix}dav_properties");
+		if (!$schema->hasTable("{$prefix}dav_properties")) {
+			$table = $schema->createTable("{$prefix}dav_properties");
 			$table->addColumn('id', Type::BIGINT, [
 				'autoincrement' => true,
 				'notnull' => true,

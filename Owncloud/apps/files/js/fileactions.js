@@ -180,13 +180,18 @@
 			this._actionFilters = [];
 		},
 		/**
-		 * Sets the default action for a given mime type.
+		 * Adds an app to the list of default actions for a given mime type.
 		 *
 		 * @param {String} mime mime type
 		 * @param {String} name action name
 		 */
 		setDefault: function (mime, name) {
-			this.defaults[mime] = name;
+			if (!this.defaults[mime]) {
+				this.defaults[mime] = [];
+			}
+			if (this.defaults[mime].indexOf(name) < 0) {
+				this.defaults[mime].push(name);
+			}
 			this._notifyUpdateListeners('setDefault', {defaultAction: {mime: mime, name: name}});
 		},
 
@@ -215,10 +220,11 @@
 		 * @param {string} type "dir" or "file"
 		 * @param {int} permissions permissions
 		 *
-		 * @return {Array.<OCA.Files.FileAction>} array of action specs
+		 * @return {Object.<OCA.Files.FileAction>} array of action specs
 		 */
 		getActions: function (mime, type, permissions) {
 			var actions = {};
+
 			if (this.actions.all) {
 				actions = $.extend(actions, this.actions.all);
 			}
@@ -254,7 +260,7 @@
 		 *
 		 * @return {OCA.Files.FileActions~actionHandler} action handler
 		 *
-		 * @deprecated use getDefaultFileAction instead
+		 * @deprecated use getDefaultFileActions instead
 		 */
 		getDefault: function (mime, type, permissions) {
 			var defaultActionSpec = this.getDefaultFileAction(mime, type, permissions);
@@ -265,7 +271,7 @@
 		},
 
 		/**
-		 * Returns the default file action handler for the given conditions
+		 * Returns the last default file action handler for the given conditions
 		 *
 		 * @param {string} mime mime type
 		 * @param {string} type "dir" or "file"
@@ -273,24 +279,62 @@
 		 *
 		 * @return {OCA.Files.FileActions~actionHandler} action handler
 		 * @since 8.2
+		 *
+		 * @deprecated use getDefaultFileActions instead
 		 */
 		getDefaultFileAction: function(mime, type, permissions) {
+			const defaultActions = this.getDefaultFileActions(mime, type, permissions);
+			if (!defaultActions.length) {
+				return undefined;
+			}
+			return defaultActions[defaultActions.length - 1];
+		},
+
+		/**
+		 * Returns all default file action handlers for the given conditions
+		 *
+		 * @param {string} mime mime type
+		 * @param {string} type "dir" or "file"
+		 * @param {int} permissions permissions
+		 *
+		 * @return {Array.<OCA.Files.FileActions~actionHandler>} action handlers
+		 * @since 10.9
+		 */
+		 getDefaultFileActions: function(mime, type, permissions) {
 			var mimePart;
 			if (mime) {
 				mimePart = mime.substr(0, mime.indexOf('/'));
 			}
-			var name = false;
+
+			var defaultNames = [];
 			if (mime && this.defaults[mime]) {
-				name = this.defaults[mime];
-			} else if (mime && this.defaults[mimePart]) {
-				name = this.defaults[mimePart];
-			} else if (type && this.defaults[type]) {
-				name = this.defaults[type];
-			} else {
-				name = this.defaults.all;
+				defaultNames = defaultNames.concat(this.defaults[mime]);
 			}
+
+			if (mimePart && this.defaults[mimePart]) {
+				defaultNames = defaultNames.concat(this.defaults[mimePart]);
+			}
+
+			if (type && this.defaults[type]) {
+				defaultNames = defaultNames.concat(this.defaults[type]);
+			}
+
+			if (!defaultNames.length) {
+				if (!this.defaults.all) {
+					return [];
+				}
+
+				defaultNames = this.defaults.all;
+			}
+
 			var actions = this.getActions(mime, type, permissions);
-			return actions[name];
+			var defaultActions = [];
+			_.each(actions, function (action) {
+				if (defaultNames.indexOf(action.name) >= 0) {
+					defaultActions.push(action)
+				}
+			});
+			return defaultActions;
 		},
 
 		/**
@@ -405,6 +449,7 @@
 					a: null
 				},
 				function(event) {
+					context.fileList._setCurrentRow(context.$file);
 					event.stopPropagation();
 					event.preventDefault();
 
@@ -541,15 +586,17 @@
 			nameLinks = parent.children('a.name');
 			nameLinks.find('.fileactions, .nametext .action').remove();
 			nameLinks.append('<span class="fileactions" />');
-			var defaultAction = this.getDefaultFileAction(
+			var defaultActions = this.getDefaultFileActions(
 				this.getCurrentMimeType(),
 				this.getCurrentType(),
 				this.getCurrentPermissions()
 			);
-
+			var defaultActionNames = _.map(defaultActions, function(actionSpec) {
+				return actionSpec.name;
+			});
 			var hasDropDownActions = false;
 			$.each(actions, function (name, actionSpec) {
-				var isDefault = !!(defaultAction && actionSpec.name === defaultAction.name);
+				var isDefault = defaultActionNames.indexOf(actionSpec.name) >= 0;
 				if (actionSpec.type && actionSpec.type === FileActions.TYPE_INLINE) {
 					self._renderInlineAction(
 						actionSpec,
@@ -585,47 +632,85 @@
 
 		/**
 		 * Register the actions that are used by default for the files app.
+		 * @param {['Download', 'Rename', 'Delete']|null} [excludeActions] exclude actions
 		 */
-		registerDefaultActions: function() {
-			this.registerAction({
-				name: 'Download',
-				displayName: t('files', 'Download'),
-				order: -20,
-				mime: 'all',
-				permissions: OC.PERMISSION_READ,
-				iconClass: 'icon-download',
-				actionHandler: function (filename, context) {
-					var dir = context.dir || context.fileList.getCurrentDirectory();
-					var isDir = context.$file.attr('data-type') === 'dir';
-					var url = context.fileList.getDownloadUrl(filename, dir, isDir);
+		registerDefaultActions: function (excludeActions) {
+			excludeActions = excludeActions || [];
 
-					var downloadFileaction = $(context.$file).find('.fileactions .action-download');
+			var self = this;
+			var defaultActions = [
+				{
+					name: 'Download',
+					displayName: t('files', 'Download'),
+					order: -20,
+					mime: 'all',
+					permissions: OC.PERMISSION_READ,
+					iconClass: 'icon-download',
+					actionHandler: function (filename, context) {
+						var dir = context.dir || context.fileList.getCurrentDirectory();
+						var isDir = context.$file.attr('data-type') === 'dir';
+						var url = context.fileList.getDownloadUrl(filename, dir, isDir);
 
-					// don't allow a second click on the download action
-					if(downloadFileaction.hasClass('disabled')) {
-						return;
+						var downloadFileaction = $(context.$file).find('.fileactions .action-download');
+
+						// don't allow a second click on the download action
+						if (downloadFileaction.hasClass('disabled')) {
+							return;
+						}
+
+						if (url) {
+							var disableLoadingState = function () {
+								context.fileList.showFileBusyState(filename, false);
+							};
+
+							context.fileList.showFileBusyState(filename, true);
+							OCA.Files.Files.handleDownload(url, disableLoadingState);
+						}
 					}
-
-					if (url) {
-						var disableLoadingState = function() {
-							context.fileList.showFileBusyState(filename, false);
-						};
-
-						context.fileList.showFileBusyState(filename, true);
-						OCA.Files.Files.handleDownload(url, disableLoadingState);
+				},
+				{
+					name: 'Rename',
+					displayName: t('files', 'Rename'),
+					mime: 'all',
+					order: -30,
+					permissions: OC.PERMISSION_UPDATE,
+					iconClass: 'icon-rename',
+					actionHandler: function (filename, context) {
+						context.fileList.rename(filename);
+					}
+				},
+				{
+					name: 'Delete',
+					displayName: function (context) {
+						var mountType = context.$file.attr('data-mounttype');
+						var deleteTitle = t('files', 'Delete');
+						if (mountType === 'external-root') {
+							deleteTitle = t('files', 'Disconnect storage');
+						} else if (mountType === 'shared-root') {
+							deleteTitle = t('files', 'Unshare');
+						}
+						return deleteTitle;
+					},
+					mime: 'all',
+					order: 1000,
+					// permission is READ because we show a hint instead if there is no permission
+					permissions: OC.PERMISSION_DELETE,
+					iconClass: 'icon-delete',
+					actionHandler: function (fileName, context) {
+						// if there is no permission to delete do nothing
+						if ((context.$file.data('permissions') & OC.PERMISSION_DELETE) === 0) {
+							return;
+						}
+						context.fileList.do_delete(fileName, context.dir);
+						$('.tipsy').remove();
 					}
 				}
-			});
+			];
 
-			this.registerAction({
-				name: 'Rename',
-				displayName: t('files', 'Rename'),
-				mime: 'all',
-				order: -30,
-				permissions: OC.PERMISSION_UPDATE,
-				iconClass: 'icon-rename',
-				actionHandler: function (filename, context) {
-					context.fileList.rename(filename);
+
+			defaultActions.forEach(function (action) {
+				if (excludeActions.indexOf(action.name) === -1) {
+					self.registerAction(action);
 				}
 			});
 
@@ -634,32 +719,6 @@
 				context.fileList.changeDirectory(OC.joinPaths(dir, filename), true, false, parseInt(context.$file.attr('data-id'), 10));
 			});
 
-			this.registerAction({
-				name: 'Delete',
-				displayName: function(context) {
-					var mountType = context.$file.attr('data-mounttype');
-					var deleteTitle = t('files', 'Delete');
-					if (mountType === 'external-root') {
-						deleteTitle = t('files', 'Disconnect storage');
-					} else if (mountType === 'shared-root') {
-						deleteTitle = t('files', 'Unshare');
-					}
-					return deleteTitle;
-				},
-				mime: 'all',
-				order: 1000,
-				// permission is READ because we show a hint instead if there is no permission
-				permissions: OC.PERMISSION_DELETE,
-				iconClass: 'icon-delete',
-				actionHandler: function(fileName, context) {
-					// if there is no permission to delete do nothing
-					if((context.$file.data('permissions') & OC.PERMISSION_DELETE) === 0) {
-						return;
-					}
-					context.fileList.do_delete(fileName, context.dir);
-					$('.tipsy').remove();
-				}
-			});
 
 			this.setDefault('dir', 'Open');
 		},
@@ -736,6 +795,7 @@
 	 * @property {Object} $file jQuery file row element
 	 * @property {OCA.Files.FileActions} fileActions file actions object
 	 * @property {OCA.Files.FileList} fileList file list object
+	 * @property {String} dir file dir
 	 */
 
 	/**

@@ -31,7 +31,6 @@ use Sabre\VObject\Reader;
 use Sabre\VObject\UUIDUtil;
 
 class AddressBookImpl implements IAddressBook {
-
 	/** @var CardDavBackend */
 	private $backend;
 
@@ -53,10 +52,11 @@ class AddressBookImpl implements IAddressBook {
 	 * @param IUrlGenerator $urlGenerator
 	 */
 	public function __construct(
-			AddressBook $addressBook,
-			array $addressBookInfo,
-			CardDavBackend $backend,
-			IURLGenerator $urlGenerator) {
+		AddressBook $addressBook,
+		array $addressBookInfo,
+		CardDavBackend $backend,
+		IURLGenerator $urlGenerator
+	) {
 		$this->addressBook = $addressBook;
 		$this->addressBookInfo = $addressBookInfo;
 		$this->backend = $backend;
@@ -91,7 +91,7 @@ class AddressBookImpl implements IAddressBook {
 	 * @since 5.0.0
 	 */
 	public function search($pattern, $searchProperties, $options, $limit = null, $offset = null) {
-		$results = $this->backend->search($this->getKey(), $pattern, $searchProperties, $limit, $offset);
+		$results = $this->backend->searchEx($this->getKey(), $pattern, $searchProperties, $options, $limit, $offset);
 
 		$vCards = [];
 		foreach ($results as $result) {
@@ -226,7 +226,8 @@ class AddressBookImpl implements IAddressBook {
 			$result[$property->name] = $property->getValue();
 			if ($property->name === 'PHOTO' && $property->getValueType() === 'BINARY') {
 				$url = $this->urlGenerator->getAbsoluteURL(
-					$this->urlGenerator->linkTo('', 'remote.php') . '/dav/');
+					$this->urlGenerator->linkTo('', 'remote.php') . '/dav/'
+				);
 				$url .= \implode('/', [
 					'addressbooks',
 					\substr($this->addressBookInfo['principaluri'], 11), //cut off 'principals/'

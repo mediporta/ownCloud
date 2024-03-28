@@ -29,9 +29,11 @@ use OC\Authentication\TwoFactorAuth\Manager;
 use OC\User\Session;
 use OC_App;
 use OC_Util;
+use OC_User;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\RedirectResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\License\ILicenseManager;
 use OCP\IConfig;
 use OCP\IRequest;
 use OCP\ISession;
@@ -40,7 +42,6 @@ use OCP\IUser;
 use OCP\IUserManager;
 
 class LoginController extends Controller {
-
 	/** @var IUserManager */
 	private $userManager;
 
@@ -59,6 +60,9 @@ class LoginController extends Controller {
 	/** @var Manager */
 	private $twoFactorManager;
 
+	/** @var ILicenseManager */
+	private $licenseManager;
+
 	/**
 	 * @param string $appName
 	 * @param IRequest $request
@@ -69,8 +73,17 @@ class LoginController extends Controller {
 	 * @param IURLGenerator $urlGenerator
 	 * @param Manager $twoFactorManager
 	 */
-	public function __construct($appName, IRequest $request, IUserManager $userManager, IConfig $config, ISession $session,
-		Session $userSession, IURLGenerator $urlGenerator, Manager $twoFactorManager) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IUserManager $userManager,
+		IConfig $config,
+		ISession $session,
+		Session $userSession,
+		IURLGenerator $urlGenerator,
+		Manager $twoFactorManager,
+		ILicenseManager $licenseManager
+	) {
 		parent::__construct($appName, $request);
 		$this->userManager = $userManager;
 		$this->config = $config;
@@ -78,6 +91,7 @@ class LoginController extends Controller {
 		$this->userSession = $userSession;
 		$this->urlGenerator = $urlGenerator;
 		$this->twoFactorManager = $twoFactorManager;
+		$this->licenseManager = $licenseManager;
 	}
 
 	/**
@@ -88,9 +102,7 @@ class LoginController extends Controller {
 	 */
 	public function logout() {
 		$loginToken = $this->request->getCookie('oc_token');
-		if ($loginToken !== null) {
-			$this->config->deleteUserValue($this->userSession->getUser()->getUID(), 'login_token', $loginToken);
-		}
+		$this->userSession->clearRememberMeTokensForLoggedInUser($loginToken);
 		$this->userSession->logout();
 
 		return new RedirectResponse($this->urlGenerator->linkToRouteAbsolute('core.login.showLoginForm'));
@@ -108,10 +120,34 @@ class LoginController extends Controller {
 	 * @return TemplateResponse|RedirectResponse
 	 */
 	public function showLoginForm($user, $redirect_url, $remember_login) {
-		if (\OC_User::handleApacheAuth() || $this->userSession->isLoggedIn()) {
-			return new RedirectResponse($this->getDefaultUrl());
+		// check if there is apache auth backend available and try to obtain session,
+		// if apache backend not registered or failed to login, proceed with show login form
+		if ($this->handleApacheAuth()) {
+			// apache auth was completed server-side and there is active session,
+			// initiate login success redirect on client-side
+			//
+			// NOTE: as of https://github.com/owncloud/core/pull/31054 to allow alternative login methods
+			// one needs to setup https://doc.owncloud.com/server/next/admin_manual/enterprise/user_management/user_auth_shibboleth.html#other-login-mechanisms
+			// so that on first login there is no valid apache session, and on click to alternative login from config 'login.alternatives'
+			// code reaches handleApacheAuth here after redirect from SSO/SAML provider
+			// NOTE: this redirect page is required to correctly preserve session on client, doing redirect using RedirectResponse could cause
+			// some apps not being able to load correctly (https://github.com/owncloud/enterprise/issues/5225).
+			return new TemplateResponse(
+				'core',
+				'apacheauthredirect',
+				[
+					'redirect_url' => $this->getDefaultUrl()
+				],
+				'guest'
+			);
 		}
 
+		// check if user logged in already and has active session
+		if ($this->userSession->isLoggedIn() || $this->userSession->tryRememberMeLogin($this->request)) {
+			// most likely user manually entered this page, redirect to default url
+			return new RedirectResponse($this->getDefaultUrl());
+		}
+		
 		$parameters = [];
 		$loginMessages = $this->session->get('loginMessages');
 		$errors = [];
@@ -126,7 +162,15 @@ class LoginController extends Controller {
 
 		$parameters['messages'] = $messages;
 		if ($user !== null && $user !== '') {
-			$parameters['loginName'] = $user;
+			// if the user exists, replace the userid with the username, e.g. for LDAP accounts
+			// that have the owncloud internal username set to a uuid.
+			$u = $this->userManager->get($user);
+			if ($u !== null) {
+				$parameters['loginName'] = $u->getUserName();
+			}
+			if (!\is_string($parameters['loginName']) || $parameters['loginName'] === '') {
+				$parameters['loginName'] = $user;
+			}
 			$parameters['user_autofocus'] = false;
 		} else {
 			$parameters['loginName'] = '';
@@ -175,13 +219,34 @@ class LoginController extends Controller {
 
 		if (!empty($redirect_url) && ($remember_login === null) &&
 			($this->userSession->isLoggedIn() === false) &&
-			(\strpos($this->urlGenerator->getAbsoluteURL(\urldecode($redirect_url)),
-					$this->urlGenerator->getAbsoluteURL('/index.php/f/')) !== false)) {
+			(\strpos(
+				$this->urlGenerator->getAbsoluteURL(\urldecode($redirect_url)),
+				$this->urlGenerator->getAbsoluteURL('/index.php/f/')
+			) !== false)) {
 			$parameters['accessLink'] = true;
 		}
 
+		$licenseMessageInfo = $this->licenseManager->getLicenseMessageFor('core');
+		// show license message only if there is a license
+		$licenseState = $licenseMessageInfo['license_state'];
+		if ($licenseState !== ILicenseManager::LICENSE_STATE_MISSING) {
+			// license type === 1 implies it's a demo license
+			if ($licenseMessageInfo['type'] === 1 ||
+				($licenseState !== ILicenseManager::LICENSE_STATE_VALID &&
+					$licenseState !== ILicenseManager::LICENSE_STATE_ABOUT_TO_EXPIRE)
+			) {
+				$parameters['licenseMessage'] = \implode('<br/>', $licenseMessageInfo['translated_message']);
+			}
+		}
+
+		$parameters['strictLoginEnforced'] = $this->config->getSystemValue('strict_login_enforced', false);
+
+		// start the login flow for auth backends (including alternative logins if registered)
 		return new TemplateResponse(
-			$this->appName, 'login', $parameters, 'guest'
+			$this->appName,
+			'login',
+			$parameters,
+			'guest'
 		);
 	}
 
@@ -193,15 +258,17 @@ class LoginController extends Controller {
 	 * @param string $password
 	 * @param string $redirect_url
 	 * @param string $timezone
+	 * @param string $remember_login "1" implies we should remember the login; not present (or null)
+	 * implies we shouldn't need to do anything
 	 * @return RedirectResponse
 	 * @throws \OCP\PreConditionNotMetException
 	 * @throws \OC\User\LoginException
 	 */
-	public function tryLogin($user, $password, $redirect_url, $timezone = null) {
+	public function tryLogin($user, $password, $redirect_url, $timezone = null, $remember_login = null) {
 		$originalUser = $user;
 		// TODO: Add all the insane error handling
 		$loginResult = $this->userSession->login($user, $password);
-		if ($loginResult !== true) {
+		if ($loginResult !== true && $this->config->getSystemValue('strict_login_enforced', false) !== true) {
 			$users = $this->userManager->getByEmail($user);
 			// we only allow login by email if unique
 			if (\count($users) === 1) {
@@ -229,6 +296,9 @@ class LoginController extends Controller {
 		// TODO: remove password checks from above and let the user session handle failures
 		// requires https://github.com/owncloud/core/pull/24616
 		$this->userSession->createSessionToken($this->request, $userObject->getUID(), $user, $password);
+		if ($remember_login) {
+			$this->userSession->setNewRememberMeTokenForLoggedInUser();
+		}
 
 		// User has successfully logged in, now remove the password reset link, when it is available
 		$this->config->deleteUserValue($userObject->getUID(), 'owncloud', 'lostpassword');
@@ -258,6 +328,13 @@ class LoginController extends Controller {
 		}
 
 		return new RedirectResponse($this->getDefaultUrl());
+	}
+
+	/**
+	 * @return boolean|null
+	 */
+	protected function handleApacheAuth() {
+		return OC_User::handleApacheAuth();
 	}
 
 	/**

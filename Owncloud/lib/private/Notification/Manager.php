@@ -77,7 +77,7 @@ class Manager implements IManager {
 	/**
 	 * @param \Closure $service The service must implement IApp, otherwise a
 	 *                          \InvalidArgumentException is thrown later
-	 * @return null
+	 * @return void
 	 * @since 8.2.0
 	 */
 	public function registerApp(\Closure $service) {
@@ -90,7 +90,7 @@ class Manager implements IManager {
 	 *                          \InvalidArgumentException is thrown later
 	 * @param \Closure $info    An array with the keys 'id' and 'name' containing
 	 *                          the app id and the app name
-	 * @return null
+	 * @return void
 	 * @since 8.2.0 - Parameter $info was added in 9.0.0
 	 */
 	public function registerNotifier(\Closure $service, \Closure $info) {
@@ -144,7 +144,7 @@ class Manager implements IManager {
 
 		$this->builtAppsHolder = [];
 		$registerAppEvent = new RegisterConsumerEventImpl($this);
-		$this->dispatcher->dispatch(RegisterConsumerEvent::NAME, $registerAppEvent);
+		$this->dispatcher->dispatch($registerAppEvent, RegisterConsumerEvent::NAME);
 		$this->apps = \array_merge($this->apps, $this->builtAppsHolder);
 
 		return $this->apps;
@@ -169,7 +169,7 @@ class Manager implements IManager {
 
 		$this->builtNotifiersHolder = [];
 		$registerNotifierEvent = new RegisterNotifierEventImpl($this);
-		$this->dispatcher->dispatch(RegisterNotifierEvent::NAME, $registerNotifierEvent);
+		$this->dispatcher->dispatch($registerNotifierEvent, RegisterNotifierEvent::NAME);
 		foreach ($this->builtNotifiersHolder as $notifierData) {
 			$this->notifiers[] = $notifierData['notifier'];
 		}
@@ -199,7 +199,7 @@ class Manager implements IManager {
 
 		$this->builtNotifiersHolder = [];
 		$registerNotifierEvent = new RegisterNotifierEventImpl($this);
-		$this->dispatcher->dispatch(RegisterNotifierEvent::NAME, $registerNotifierEvent);
+		$this->dispatcher->dispatch($registerNotifierEvent, RegisterNotifierEvent::NAME);
 		foreach ($this->builtNotifiersHolder as $id => $notifierData) {
 			$this->notifiersInfo[$id] = $notifierData['name'];
 		}
@@ -225,7 +225,7 @@ class Manager implements IManager {
 
 	/**
 	 * @param INotification $notification
-	 * @return null
+	 * @return void
 	 * @throws \InvalidArgumentException When the notification is not valid
 	 * @since 8.2.0
 	 */
@@ -275,7 +275,7 @@ class Manager implements IManager {
 
 	/**
 	 * @param INotification $notification
-	 * @return null
+	 * @return void
 	 */
 	public function markProcessed(INotification $notification) {
 		$apps = $this->getApps();

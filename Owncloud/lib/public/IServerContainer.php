@@ -53,8 +53,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
  * This container holds all ownCloud services
  * @since 6.0.0
  */
-interface IServerContainer {
-
+interface IServerContainer extends IContainer {
 	/**
 	 * The contacts manager will act as a broker between consumers for contacts information and
 	 * providers which actual deliver the contact information.
@@ -543,4 +542,16 @@ interface IServerContainer {
 	 * @since 10.0.10
 	 */
 	public function getShutdownHandler();
+
+	/**
+	 * @return \OCP\License\ILicenseManager
+	 * @since 10.5.0
+	 */
+	public function getLicenseManager();
+
+	/**
+	 * @return \OCP\Authentication\LoginPolicies\ILoginPolicyManager
+	 * @since 10.12.0
+	 */
+	public function getLoginPolicyManager();
 }

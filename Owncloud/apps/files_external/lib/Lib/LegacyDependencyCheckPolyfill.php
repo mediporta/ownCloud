@@ -28,7 +28,6 @@ use OC\Files\External\MissingDependency;
  * Polyfill for checking dependencies using legacy Storage::checkDependencies()
  */
 trait LegacyDependencyCheckPolyfill {
-
 	/**
 	 * @return string
 	 */
@@ -57,7 +56,7 @@ trait LegacyDependencyCheckPolyfill {
 						$module = $key;
 						$message = $value;
 					}
-					$value = new MissingDependency($module, $this);
+					$value = new MissingDependency($module);
 					$value->setMessage($message);
 				}
 				$ret[] = $value;

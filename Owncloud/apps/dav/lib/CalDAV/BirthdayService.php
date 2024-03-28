@@ -32,12 +32,19 @@ use Sabre\VObject\Document;
 use Sabre\VObject\InvalidDataException;
 use Sabre\VObject\Property\VCard\DateAndOrTime;
 use Sabre\VObject\Reader;
+use Sabre\VObject\UUIDUtil;
 
 class BirthdayService {
-	const BIRTHDAY_CALENDAR_URI = 'contact_birthdays';
+	public const BIRTHDAY_CALENDAR_URI = 'contact_birthdays';
 
 	/** @var GroupPrincipalBackend */
 	private $principalBackend;
+
+	/** @var CardDavBackend  */
+	private $cardDavBackEnd;
+
+	/** @var CalDavBackend  */
+	private $calDavBackEnd;
 
 	/**
 	 * BirthdayService constructor.
@@ -59,7 +66,7 @@ class BirthdayService {
 	 */
 	public function onCardChanged($addressBookId, $cardUri, $cardData) {
 		$targetPrincipals = $this->getAllAffectedPrincipals($addressBookId);
-		
+
 		$book = $this->cardDavBackEnd->getAddressBookById($addressBookId);
 		$targetPrincipals[] = $book['principaluri'];
 		$datesToSync = [
@@ -177,17 +184,19 @@ class BirthdayService {
 		$vCal->VERSION = '2.0';
 		$vEvent = $vCal->createComponent('VEVENT');
 		$vEvent->add('DTSTART');
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$vEvent->DTSTART->setDateTime(
 			$date
 		);
 		$vEvent->DTSTART['VALUE'] = 'DATE';
 		$vEvent->add('DTEND');
 		$date->add(new \DateInterval('P1D'));
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$vEvent->DTEND->setDateTime(
 			$date
 		);
 		$vEvent->DTEND['VALUE'] = 'DATE';
-		$vEvent->{'UID'} = $doc->UID;
+		$vEvent->{'UID'} = UUIDUtil::getUUID();
 		$vEvent->{'RRULE'} = 'FREQ=YEARLY';
 		$vEvent->{'SUMMARY'} = $summary;
 		$vEvent->{'TRANSP'} = 'TRANSPARENT';

@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -30,12 +30,13 @@ use OCP\Files\NotFoundException;
 /**
  * Class MetaFileIdNode - this class represents the file id part of the meta endpoint
  *
+ * /meta/fileid
+ *
  * @package OC\Files\Meta
  */
 class MetaFileIdNode extends AbstractFolder {
-
-	/** @var int */
-	private $fileId;
+	/** @var \OCP\Files\Node */
+	private $node;
 	/** @var MetaRootNode */
 	private $parentNode;
 	/** @var IRootFolder */
@@ -45,12 +46,27 @@ class MetaFileIdNode extends AbstractFolder {
 	 * MetaFileIdNode constructor.
 	 *
 	 * @param MetaRootNode $parentNode
-	 * @param int $fileId
+	 * @param IRootFolder $root
+	 * @param \OCP\Files\Node $node
 	 */
-	public function __construct(MetaRootNode $parentNode, IRootFolder $root, $fileId) {
+	public function __construct(MetaRootNode $parentNode, IRootFolder $root, \OCP\Files\Node $node) {
 		$this->parentNode = $parentNode;
-		$this->fileId = $fileId;
 		$this->root = $root;
+		$this->node = $node;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getName() {
+		return "{$this->node->getId()}";
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getPath() {
+		return "/meta/{$this->node->getId()}";
 	}
 
 	/**
@@ -79,7 +95,7 @@ class MetaFileIdNode extends AbstractFolder {
 	 */
 	public function getDirectoryListing() {
 		return [
-			new MetaVersionCollection($this->fileId, $this->root)
+			new MetaVersionCollection($this->root, $this->node)
 		];
 	}
 
@@ -90,7 +106,7 @@ class MetaFileIdNode extends AbstractFolder {
 		$pieces = \explode('/', $path);
 		if ($pieces[0] === 'v') {
 			\array_shift($pieces);
-			$node = new MetaVersionCollection($this->fileId, $this->root);
+			$node = new MetaVersionCollection($this->root, $this->node);
 			if (empty($pieces)) {
 				return $node;
 			}
@@ -109,15 +125,8 @@ class MetaFileIdNode extends AbstractFolder {
 	/**
 	 * @inheritdoc
 	 */
-	public function getPath() {
-		return $this->getInternalPath();
-	}
-
-	/**
-	 * @inheritdoc
-	 */
 	public function getInternalPath() {
-		return "/meta/{$this->fileId}";
+		return $this->getPath();
 	}
 
 	/**
@@ -160,12 +169,5 @@ class MetaFileIdNode extends AbstractFolder {
 	 */
 	public function getParent() {
 		return $this->parentNode;
-	}
-
-	/**
-	 * @inheritdoc
-	 */
-	public function getName() {
-		return "{$this->fileId}";
 	}
 }

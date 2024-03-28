@@ -25,9 +25,13 @@
 		'</ul>';
 
 	var TEMPLATE_FILENAME_FORM =
-		'<form class="filenameform">' +
+		'<form class="filenameform" autocapitalize="none">' +
 		'<label class="hidden-visually" for="{{cid}}-input-{{fileType}}">{{fileName}}</label>' +
-		'<input id="{{cid}}-input-{{fileType}}" type="text" value="{{fileName}}" autocomplete="off" autocapitalize="off">' +
+		'<input id="{{cid}}-input-{{fileType}}" type="text" value="{{fileName}}" autocomplete="off">' +
+		'<div class="action-menu">' +
+		'<button type="button" class="cancel"> {{cancelLabel}} </button>' +
+		'<button type="submit" class="create primary"> {{createLabel}} </button>' +
+		'</div>' +
 		'</form>';
 
 	/**
@@ -41,7 +45,7 @@
 		className: 'newFileMenu popovermenu bubble hidden open menu',
 
 		events: {
-			'click .menuitem': '_onClickAction'
+			'click .menuitem': '_onClickAction',
 		},
 
 		/**
@@ -90,6 +94,11 @@
 		 */
 		_onClickAction: function(event) {
 			var $target = $(event.target);
+
+			if($target.hasClass('cancel') || $target.hasClass('create')){
+				return;
+			}
+
 			if (!$target.hasClass('menuitem')) {
 				$target = $target.closest('.menuitem');
 			}
@@ -115,7 +124,7 @@
 			}
 
 			if ($target.find('form').length) {
-				$target.find('input').focus();
+				$target.find('input[type=text]').focus();
 				return;
 			}
 
@@ -130,18 +139,20 @@
 			var $form = $(OCA.Files.NewFileMenu._TEMPLATE_FORM({
 				fileName: newName,
 				cid: this.cid,
-				fileType: fileType
+				fileType: fileType,
+				cancelLabel: t('files', 'Cancel'),
+				createLabel: t('files', 'Create')
 			}));
 
 			//this.trigger('actionPerformed', action);
 			$target.append($form);
 
 			// here comes the OLD code
-			var $input = $form.find('input');
+			var $input = $form.find('input[type=text]');
 
 			var lastPos;
 			var checkInput = function () {
-				var filename = $input.val();
+				var filename = $input.val().trim();
 				try {
 					if (!Files.isFileNameValid(filename)) {
 						// Files.isFileNameValid(filename) throws an exception itself
@@ -160,8 +171,19 @@
 				return false;
 			};
 
+			var closeForm = function (){
+				$form.remove();
+				$target.find('.displayname').removeClass('hidden');
+			};
+
+
 			// verify filename on typing
-			$input.keyup(function() {
+			$input.keyup(function(e) {
+				if(e.key === 'Escape'){
+					closeForm();
+					return;
+				}
+
 				if (checkInput()) {
 					$input.tooltip('hide');
 					$input.removeClass('error');
@@ -176,12 +198,14 @@
 			}
 			$input.selectRange(0, lastPos);
 
+			$form.find('.cancel').click(closeForm);
+
 			$form.submit(function(event) {
 				event.stopPropagation();
 				event.preventDefault();
 
 				if (checkInput()) {
-					var newname = $input.val();
+					var newname = $input.val().trim();
 
 					/* Find the right actionHandler that should be called.
 					 * Actions is retrieved by using `actionSpec.id` */

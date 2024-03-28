@@ -26,6 +26,9 @@ class RedisFactory {
 	/** @var \Redis | \RedisCluster */
 	private $instance;
 
+	public const REDIS_MINIMAL_VERSION = '2.2.5';
+	public const REDIS_EXTRA_PARAMETERS_MINIMAL_VERSION = '5.3.0';
+
 	/** @var  SystemConfig */
 	private $config;
 
@@ -38,7 +41,12 @@ class RedisFactory {
 		$this->config = $config;
 	}
 
+	/**
+	 * @throws \UnexpectedValueException
+	 */
 	private function create() {
+		$isConnectionParametersSupported = $this->isConnectionParametersSupported();
+
 		if ($config = $this->config->getValue('redis.cluster', [])) {
 			if (!\class_exists('RedisCluster')) {
 				throw new \Exception('Redis Cluster support is not available');
@@ -54,13 +62,34 @@ class RedisFactory {
 			} else {
 				$readTimeout = null;
 			}
-			$this->instance = new \RedisCluster(null, $config['seeds'], $timeout, $readTimeout);
+			if (isset($config['connection_parameters'])) {
+				if (!$isConnectionParametersSupported) {
+					throw new \UnexpectedValueException(\sprintf(
+						'php-redis extension must be version %s or higher to support connection parameters',
+						self::REDIS_EXTRA_PARAMETERS_MINIMAL_VERSION
+					));
+				}
+				$connectionParameters = $config['connection_parameters'];
+			} else {
+				$connectionParameters = null;
+			}
+
+			$auth = null;
+
+			if (isset($config['password']) && $config['password'] !== '') {
+				$auth = $config['password'];
+			}
+
+			if ($connectionParameters && $isConnectionParametersSupported) {
+				$this->instance = new \RedisCluster(null, $config['seeds'], $timeout, $readTimeout, false, $auth, $connectionParameters); // @phan-suppress-current-line PhanParamTooManyInternal
+			} else {
+				$this->instance = new \RedisCluster(null, $config['seeds'], $timeout, $readTimeout, false, $auth);
+			}
 
 			if (isset($config['failover_mode'])) {
 				$this->instance->setOption(\RedisCluster::OPT_SLAVE_FAILOVER, $config['failover_mode']);
 			}
 		} else {
-			$this->instance = new \Redis();
 			$config = $this->config->getValue('redis', []);
 			if (isset($config['host'])) {
 				$host = $config['host'];
@@ -78,7 +107,26 @@ class RedisFactory {
 				$timeout = 0.0; // unlimited
 			}
 
-			@$this->instance->connect($host, $port, $timeout);
+			if (isset($config['connection_parameters'])) {
+				if (!$isConnectionParametersSupported) {
+					throw new \UnexpectedValueException(\sprintf(
+						'php-redis extension must be version %s or higher to support connection parameters',
+						self::REDIS_EXTRA_PARAMETERS_MINIMAL_VERSION
+					));
+				}
+				$connectionParameters = $config['connection_parameters'];
+			} else {
+				$connectionParameters = null;
+			}
+
+			$this->instance = new \Redis();
+
+			if ($connectionParameters && $isConnectionParametersSupported) {
+				@$this->instance->connect($host, $port, $timeout, null, 0, 0, $connectionParameters);  // @phan-suppress-current-line PhanParamTooManyInternal
+			} else {
+				@$this->instance->connect($host, $port, $timeout);
+			}
+
 			if (isset($config['password']) && $config['password'] !== '') {
 				$this->instance->auth($config['password']);
 			}
@@ -106,7 +154,18 @@ class RedisFactory {
 
 	public function isAvailable() {
 		return \extension_loaded('redis')
-		&& (\version_compare(\phpversion('redis'), '2.2.5', '>=')
-		|| \strcmp(\phpversion('redis'), 'develop')==0);
+			&& (\version_compare(\phpversion('redis'), self::REDIS_MINIMAL_VERSION, '>=')
+				|| \strcmp(\phpversion('redis'), 'develop') == 0);
+	}
+
+	/**
+	 * Php redis does support configurable extra parameters since version 5.3.0, see: https://github.com/phpredis/phpredis#connect-open.
+	 * We need to check if the current version supports extra connection parameters, otherwise the connect method will throw an exception
+	 *
+	 * @return boolean
+	 */
+	private function isConnectionParametersSupported(): bool {
+		return \extension_loaded('redis') &&
+			\version_compare(\phpversion('redis'), self::REDIS_EXTRA_PARAMETERS_MINIMAL_VERSION, '>=');
 	}
 }

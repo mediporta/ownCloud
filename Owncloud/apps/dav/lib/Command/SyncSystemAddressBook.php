@@ -27,7 +27,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SyncSystemAddressBook extends Command {
-
 	/** @var SyncService */
 	private $syncService;
 
@@ -48,8 +47,10 @@ class SyncSystemAddressBook extends Command {
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
+	 *
+	 * @return int 0 if everything went fine, or an exit code
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$output->writeln('Syncing users ...');
 		$progress = new ProgressBar($output);
 		$progress->start();
@@ -59,5 +60,6 @@ class SyncSystemAddressBook extends Command {
 
 		$progress->finish();
 		$output->writeln('');
+		return 0;
 	}
 }

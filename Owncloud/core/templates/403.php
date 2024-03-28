@@ -11,9 +11,9 @@ if (!isset($_)) {//also provide standalone error page
 ?>
 <ul>
 	<li class='error'>
-		<?php p($l->t('Access forbidden')); ?><br>
+		<?php p($l->t('Access forbidden')); ?><br/>
 		<p class='hint'><?php if (isset($_['file'])) {
-	p($_['file']);
-}?></p>
+			p($_['file']);
+		}?></p>
 	</li>
 </ul>

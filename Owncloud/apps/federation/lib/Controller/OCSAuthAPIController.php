@@ -43,7 +43,6 @@ use OCP\Security\ISecureRandom;
  * @package OCA\Federation\Controller
  */
 class OCSAuthAPIController extends OCSController {
-
 	/** @var ISecureRandom  */
 	private $secureRandom;
 
@@ -117,7 +116,8 @@ class OCSAuthAPIController extends OCSController {
 
 		// we ask for the shared secret so we no longer have to ask the other server
 		// to request the shared secret
-		$this->jobList->remove('OCA\Federation\BackgroundJob\RequestSharedSecret',
+		$this->jobList->remove(
+			'OCA\Federation\BackgroundJob\RequestSharedSecret',
 			[
 				'url' => $url,
 				'token' => $localToken

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
@@ -26,6 +27,16 @@ use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\TemplateResponse;
 
 class PageController extends Controller {
+	/**
+	 * @NoCSRFRequired
+	 *
+	 * Required for marketplace login to generate a callbackurl with
+	 * hash sign, or else login token will be attached before it resulting
+	 * in a broken url.
+	 */
+	public function indexHash() {
+		return $this->index();
+	}
 
 	/**
 	 * @NoCSRFRequired
@@ -34,9 +45,9 @@ class PageController extends Controller {
 		$templateResponse = new TemplateResponse($this->appName, 'index', []);
 		$policy = new ContentSecurityPolicy();
 		// live storage
-		$policy->addAllowedImageDomain('https://storage.marketplace.owncloud.com');
+		$policy->addAllowedImageDomain('https://marketplace-storage.owncloud.com');
 		// staging - for internal testing
-		$policy->addAllowedImageDomain('https://marketplace-storage.int.owncloud.com');
+		$policy->addAllowedImageDomain('https://marketplace-storage.staging.owncloud.services');
 		// local dev storage
 		$policy->addAllowedImageDomain('http://minio:9000');
 		$templateResponse->setContentSecurityPolicy($policy);

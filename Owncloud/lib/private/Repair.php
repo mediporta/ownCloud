@@ -29,11 +29,11 @@
 
 namespace OC;
 
-use OC\Repair\Apps;
 use OC\Repair\CleanTags;
 use OC\Repair\Collation;
 use OC\Repair\DisableExtraThemes;
 use OC\Repair\DropOldJobs;
+use OC\Repair\MoveAvatarIntoSubFolder;
 use OC\Repair\OldGroupMembershipShares;
 use OC\Repair\RemoveGetETagEntries;
 use OC\Repair\RemoveRootShares;
@@ -43,24 +43,22 @@ use OC\Repair\RepairSubShares;
 use OC\Repair\SharePropagation;
 use OC\Repair\SqliteAutoincrement;
 use OC\Repair\DropOldTables;
-use OC\Repair\FillETags;
 use OC\Repair\InnoDB;
 use OC\Repair\RepairMimeTypes;
 use OC\Repair\SearchLuceneTables;
-use OC\Repair\UpdateOutdatedOcsIds;
 use OC\Repair\RepairInvalidShares;
 use OC\Repair\RepairUnmergedShares;
 use OCP\AppFramework\QueryException;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use OC\Repair\MoveAvatarOutsideHome;
 
 class Repair implements IOutput {
 	/* @var IRepairStep[] */
 	private $repairSteps;
-	/** @var EventDispatcher */
+	/** @var EventDispatcherInterface */
 	private $dispatcher;
 	/** @var string */
 	private $currentStep;
@@ -69,9 +67,9 @@ class Repair implements IOutput {
 	 * Creates a new repair step runner
 	 *
 	 * @param IRepairStep[] $repairSteps array of RepairStep instances
-	 * @param EventDispatcher $dispatcher
+	 * @param EventDispatcherInterface $dispatcher
 	 */
-	public function __construct($repairSteps = [], EventDispatcher $dispatcher = null) {
+	public function __construct($repairSteps = [], EventDispatcherInterface $dispatcher = null) {
 		$this->repairSteps = $repairSteps;
 		$this->dispatcher = $dispatcher;
 	}
@@ -133,14 +131,16 @@ class Repair implements IOutput {
 				\OC::$server->getDatabaseConnection(),
 				\OC::$server->getMimeTypeLoader(),
 				\OC::$server->getLogger(),
-				\OC::$server->getConfig()),
-			new FillETags(\OC::$server->getDatabaseConnection()),
+				\OC::$server->getConfig()
+			),
 			new CleanTags(\OC::$server->getDatabaseConnection(), \OC::$server->getUserManager()),
 			new DropOldTables(\OC::$server->getDatabaseConnection()),
 			new DropOldJobs(\OC::$server->getJobList()),
 			new RemoveGetETagEntries(\OC::$server->getDatabaseConnection()),
-			new UpdateOutdatedOcsIds(\OC::$server->getConfig()),
 			new RepairInvalidShares(\OC::$server->getConfig(), \OC::$server->getDatabaseConnection()),
+			new RepairSubShares(
+				\OC::$server->getDatabaseConnection()
+			),
 			new SharePropagation(\OC::$server->getConfig()),
 			new MoveAvatarOutsideHome(
 				\OC::$server->getConfig(),
@@ -148,7 +148,16 @@ class Repair implements IOutput {
 				\OC::$server->getUserManager(),
 				\OC::$server->getAvatarManager(),
 				\OC::$server->getLazyRootFolder(),
-				\OC::$server->getL10N('core'),
+				\OC::$server->getL10N('lib'),
+				\OC::$server->getLogger()
+			),
+			new MoveAvatarIntoSubFolder(
+				\OC::$server->getConfig(),
+				\OC::$server->getDatabaseConnection(),
+				\OC::$server->getUserManager(),
+				\OC::$server->getAvatarManager(),
+				\OC::$server->getLazyRootFolder(),
+				\OC::$server->getL10N('lib'),
 				\OC::$server->getLogger()
 			),
 			new RemoveRootShares(\OC::$server->getDatabaseConnection(), \OC::$server->getUserManager(), \OC::$server->getLazyRootFolder()),
@@ -162,9 +171,6 @@ class Repair implements IOutput {
 				\OC::$server->getAppManager(),
 				\OC::$server->getConfig(),
 				\OC::$server->getAppConfig()
-			),
-			new RepairSubShares(
-				\OC::$server->getDatabaseConnection()
 			),
 		];
 	}
@@ -195,7 +201,6 @@ class Repair implements IOutput {
 			new SqliteAutoincrement($connection),
 			new RepairOrphanedSubshare($connection),
 			new SearchLuceneTables(),
-			new Apps(\OC::$server->getAppManager(), \OC::$server->getEventDispatcher(), \OC::$server->getConfig(), new \OC_Defaults()),
 		];
 
 		//There is no need to delete all previews on every single update
@@ -216,8 +221,10 @@ class Repair implements IOutput {
 	 */
 	public function emit($scope, $method, array $arguments = []) {
 		if ($this->dispatcher !== null) {
-			$this->dispatcher->dispatch("$scope::$method",
-				new GenericEvent("$scope::$method", $arguments));
+			$this->dispatcher->dispatch(
+				new GenericEvent("$scope::$method", $arguments),
+				"$scope::$method"
+			);
 		}
 	}
 

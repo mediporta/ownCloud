@@ -36,7 +36,6 @@ use Sabre\DAV\ICollection;
  * Collection containing tags by object id
  */
 class SystemTagsObjectMappingCollection implements ICollection {
-
 	/**
 	 * @var string
 	 */
@@ -95,6 +94,14 @@ class SystemTagsObjectMappingCollection implements ICollection {
 				throw new PreconditionFailed('Tag with id ' . $tagId . ' does not exist, cannot assign');
 			}
 			if (!$this->tagManager->canUserAssignTag($tag, $this->user)) {
+				throw new Forbidden('No permission to assign tag ' . $tagId);
+			}
+			/**
+			 * regular user who do not belong to whitelisted groups of static tags
+			 * can not assign static tags
+			 */
+			if ((!$tag->isUserEditable() && $tag->isUserAssignable())
+				&& !$this->tagManager->canUserUseStaticTagInGroup($tag, $this->user)) {
 				throw new Forbidden('No permission to assign tag ' . $tagId);
 			}
 

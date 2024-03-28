@@ -56,6 +56,10 @@ class OC_Image implements \OCP\IImage {
 	private $fileInfo;
 	/** @var \OCP\ILogger */
 	private $logger;
+	/** @var \OCP\IConfig */
+	private $config;
+	/** @var array|false */
+	private $exifData;
 
 	/**
 	 * Get mime type for an image file.
@@ -79,11 +83,17 @@ class OC_Image implements \OCP\IImage {
 	 * @param resource|string $imageRef The path to a local file, a base64 encoded string or a resource created by
 	 * an imagecreate* function.
 	 * @param \OCP\ILogger $logger
+	 * @param \OCP\IConfig $config
 	 */
-	public function __construct($imageRef = null, $logger = null) {
+	public function __construct($imageRef = null, $logger = null, $config = null) {
 		$this->logger = $logger;
 		if ($logger === null) {
 			$this->logger = \OC::$server->getLogger();
+		}
+
+		$this->config = $config;
+		if ($config === null) {
+			$this->config = \OC::$server->getConfig();
 		}
 
 		if (\OC_Util::fileInfoLoaded()) {
@@ -248,6 +258,9 @@ class OC_Image implements \OCP\IImage {
 				case 'image/jpeg':
 					$imageType = IMAGETYPE_JPEG;
 					break;
+				case 'image/webp':
+					$imageType = IMAGETYPE_WEBP;
+					break;
 				case 'image/png':
 					$imageType = IMAGETYPE_PNG;
 					break;
@@ -268,7 +281,10 @@ class OC_Image implements \OCP\IImage {
 				$retVal = \imagegif($this->resource, $filePath);
 				break;
 			case IMAGETYPE_JPEG:
-				$retVal = \imagejpeg($this->resource, $filePath);
+				$retVal = \imagejpeg($this->resource, $filePath, (int)$this->config->getSystemValue('previewJPEGImageDisplayQuality', -1));
+				break;
+			case IMAGETYPE_WEBP:
+				$retVal = \imagewebp($this->resource, $filePath);
 				break;
 			case IMAGETYPE_PNG:
 				$retVal = \imagepng($this->resource, $filePath);
@@ -347,33 +363,78 @@ class OC_Image implements \OCP\IImage {
 	 * (I'm open for suggestions on better method name ;)
 	 * Get the orientation based on EXIF data.
 	 *
-	 * @return int The orientation or -1 if no EXIF data is available.
+	 * @return int The orientation or -1 if no EXIF orientation data is available.
 	 */
 	public function getOrientation() {
-		if ($this->imageType !== IMAGETYPE_JPEG) {
-			$this->logger->debug('OC_Image->fixOrientation() Image is not a JPEG.', ['app' => 'core']);
-			return -1;
-		}
+		return $this->exifData['Orientation'] ?? -1;
+	}
+
+	/**
+	 * Loads EXIF data of a given image.
+	 * Only supported when the image is loaded via path or handle.
+	 *
+	 * @param resource|string $file
+	 */
+	private function loadExifData($file) {
 		if (!\is_callable('exif_read_data')) {
-			$this->logger->debug('OC_Image->fixOrientation() Exif module not enabled.', ['app' => 'core']);
-			return -1;
+			$this->logger->debug('OC_Image->loadExifData() Exif module not enabled.', ['app' => 'core']);
+			return;
 		}
-		if (!$this->valid()) {
-			$this->logger->debug('OC_Image->fixOrientation() No image loaded.', ['app' => 'core']);
-			return -1;
+
+		if (!\is_resource($file) && !\is_readable($file)) {
+			$this->logger->debug('OC_Image->loadExifData() No readable file or path set.', ['app' => 'core']);
+			return;
 		}
-		if ($this->filePath === null || !\is_readable($this->filePath)) {
-			$this->logger->debug('OC_Image->fixOrientation() No readable file path set.', ['app' => 'core']);
-			return -1;
+
+		$detectedType = false;
+		if (\is_resource($file)) {
+			$detectedType = $this->detectImageTypeFromStream($file);
+		} else {
+			// it should be a string pointing to a valid file
+			$detectedType = \exif_imagetype($file);
 		}
-		$exif = @\exif_read_data($this->filePath, 'IFD0');
-		if (!$exif) {
-			return -1;
+
+		if (\in_array($detectedType, [IMAGETYPE_JPEG, IMAGETYPE_TIFF_II, IMAGETYPE_TIFF_MM], true)) {
+			// as of 24/1/2023, "exif_read_data" only supports those image types
+			$this->exifData = \exif_read_data($file, 'IFD0');
+		} else {
+			// other image types aren't supported by the exif_read_data function, so
+			// the function should return false
+			$this->exifData = false;
 		}
-		if (!isset($exif['Orientation'])) {
-			return -1;
+	}
+
+	/**
+	 * Detect the image type from the stream.
+	 * The detection code is copied from the php source code,
+	 * from the exif extension. As such, it only detects jpeg
+	 * and tiff formats.
+	 * This is intended to be used only to check if the stream
+	 * can be used with the "exif_read_data" function or not.
+	 */
+	private function detectImageTypeFromStream($stream) {
+		$detectedType = false;
+
+		\rewind($stream);
+		$bytes = \fread($stream, 2);
+		switch ($bytes) {
+			case "\xff\xd8":
+				$detectedType = IMAGETYPE_JPEG;
+				break;
+			case "II":
+				$nextBytes = \fread($stream, 2);
+				if ($nextBytes === "\x2a\x00") {
+					$detectedType = IMAGETYPE_TIFF_II;
+				}
+				break;
+			case "MM":
+				$nextBytes = \fread($stream, 2);
+				if ($nextBytes === "\x00\x2a") {
+					$detectedType = IMAGETYPE_TIFF_MM;
+				}
+				break;
 		}
-		return $exif['Orientation'];
+		return $detectedType;
 	}
 
 	/**
@@ -481,9 +542,67 @@ class OC_Image implements \OCP\IImage {
 	public function loadFromFileHandle($handle) {
 		$contents = \stream_get_contents($handle);
 		if ($this->loadFromData($contents)) {
+			$this->adjustStreamChunkSize($handle);
+			$this->loadExifData($handle);
 			return $this->resource;
 		}
 		return false;
+	}
+
+	/**
+	 * Adjust the size of the chunks in the stream. This is required for
+	 * the "exif_read_data" native method to read a whole chunk of metadata
+	 * from the image in one go, otherwise there could be problems with
+	 * the function.
+	 *
+	 * The expected max size of a metadata chunk should be 64 kB, at least for JPEG
+	 * images.
+	 *
+	 * We'll adjust the chunk size only for custom wrappers (the stream_type
+	 * should be "user-space") because those are the ones having this problem.
+	 * Native streams seem to work without this workaround.
+	 *
+	 * This adjustment must be made in all the wrappers. This means that we must
+	 * have access to all the wrapped streams and adjust the chunk size of all
+	 * of them. A "getSource" method must be present in the custom wrapper
+	 * providing access to the underlying stream, otherwise a warning will be
+	 * logged because it could cause problems.
+	 */
+	private function adjustStreamChunkSize($handle) {
+		$stream = $handle;
+		$metadata = \stream_get_meta_data($stream);
+		while ($metadata['stream_type'] === 'user-space') {
+			\stream_set_chunk_size($stream, 64 * 1024);
+			if (isset($metadata['wrapper_data'])) {
+				$streamObj = $metadata['wrapper_data'];
+				if (\method_exists($streamObj, 'getSource')) {
+					// underlying stream must be adjusted too
+					$stream = $streamObj->getSource();
+					if (!$stream) {
+						// current streamObj doesn't wrap any other stream opened with `fopen`,
+						// or it's the last one of the chain
+						break;
+					}
+					$metadata = \stream_get_meta_data($stream);
+				} else {
+					// can't access to the underlying stream, so we'll stop here
+					$this->logger->warning(
+						"Cannot get the underlying stream of class " . \get_class($streamObj) .
+						" with uri {$metadata['uri']}. The " . \get_class($streamObj) .
+						" class should have a \"getSource\" method returning the underlying" .
+						" stream, or false / null if it isn't wrapping any other stream",
+						['app' => 'core']
+					);
+					break;
+				}
+			} else {
+				$this->logger->warning(
+					"No wrapper data found in the metadata of stream {$metadata['uri']}",
+					['app' => 'core']
+				);
+				break;
+			}
+		}
 	}
 
 	/**
@@ -516,6 +635,13 @@ class OC_Image implements \OCP\IImage {
 					$this->logger->debug('OC_Image->loadFromFile, JPG images not supported: ' . $imagePath, ['app' => 'core']);
 				}
 				break;
+			case IMAGETYPE_WEBP:
+				if (\imagetypes() & IMG_WEBP) {
+					$this->resource = \imagecreatefromwebp($imagePath);
+				} else {
+					$this->logger->debug('OC_Image->loadFromFile, WEBP images not supported: ' . $imagePath, ['app' => 'core']);
+				}
+				break;
 			case IMAGETYPE_PNG:
 				if (\imagetypes() & IMG_PNG) {
 					$this->resource = \imagecreatefrompng($imagePath);
@@ -543,30 +669,30 @@ class OC_Image implements \OCP\IImage {
 			case IMAGETYPE_BMP:
 				$this->resource = $this->imagecreatefrombmp($imagePath);
 				break;
-			/*
-			case IMAGETYPE_TIFF_II: // (intel byte order)
-				break;
-			case IMAGETYPE_TIFF_MM: // (motorola byte order)
-				break;
-			case IMAGETYPE_JPC:
-				break;
-			case IMAGETYPE_JP2:
-				break;
-			case IMAGETYPE_JPX:
-				break;
-			case IMAGETYPE_JB2:
-				break;
-			case IMAGETYPE_SWC:
-				break;
-			case IMAGETYPE_IFF:
-				break;
-			case IMAGETYPE_ICO:
-				break;
-			case IMAGETYPE_SWF:
-				break;
-			case IMAGETYPE_PSD:
-				break;
-			*/
+				/*
+				case IMAGETYPE_TIFF_II: // (intel byte order)
+					break;
+				case IMAGETYPE_TIFF_MM: // (motorola byte order)
+					break;
+				case IMAGETYPE_JPC:
+					break;
+				case IMAGETYPE_JP2:
+					break;
+				case IMAGETYPE_JPX:
+					break;
+				case IMAGETYPE_JB2:
+					break;
+				case IMAGETYPE_SWC:
+					break;
+				case IMAGETYPE_IFF:
+					break;
+				case IMAGETYPE_ICO:
+					break;
+				case IMAGETYPE_SWF:
+					break;
+				case IMAGETYPE_PSD:
+					break;
+				*/
 			default:
 
 				// this is mostly file created from encrypted file
@@ -576,6 +702,7 @@ class OC_Image implements \OCP\IImage {
 				break;
 		}
 		if ($this->valid()) {
+			$this->loadExifData($imagePath);
 			$this->imageType = $iType;
 			$this->mimeType = \image_type_to_mime_type($iType);
 			$this->filePath = $imagePath;

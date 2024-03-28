@@ -35,6 +35,7 @@ use OCP\ILogger;
 use OCP\IL10N;
 use OCP\IUserSession;
 use OCP\AppFramework\QueryException;
+use OCP\License\ILicenseManager;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\Defaults;
@@ -48,13 +49,16 @@ use OC\Settings\Panels\Personal\Version;
 use OC\Settings\Panels\Personal\Tokens;
 use OC\Settings\Panels\Personal\Cors;
 use OC\Settings\Panels\Personal\Quota;
+use OC\Settings\Panels\Admin\Enforce2fa;
 use OC\Settings\Panels\Admin\BackgroundJobs;
 use OC\Settings\Panels\Admin\Certificates;
 use OC\Settings\Panels\Admin\Encryption;
 use OC\Settings\Panels\Admin\FileSharing;
 use OC\Settings\Panels\Admin\Legal;
+use OC\Settings\Panels\Admin\License;
 use OC\Settings\Panels\Admin\Mail;
 use OC\Settings\Panels\Admin\Logging;
+use OC\Settings\Panels\Admin\PersistentLocking;
 use OC\Settings\Panels\Admin\SecurityWarning;
 use OC\Settings\Panels\Admin\Tips;
 use OC\Settings\Panels\Admin\Status;
@@ -63,7 +67,6 @@ use OC\Settings\Panels\Admin\Status;
  * @since 10.0
  */
 class SettingsManager implements ISettingsManager {
-
 	/** @var IL10N */
 	protected $l;
 	/** @var IAppManager */
@@ -92,6 +95,8 @@ class SettingsManager implements ISettingsManager {
 	protected $lockingProvider;
 	/** @var CertificateManager  */
 	protected $certificateManager;
+	/** @var ILicenseManager */
+	protected $licenseManager;
 
 	/**
 	 * Holds a cache of ISettings with keys for type
@@ -118,19 +123,22 @@ class SettingsManager implements ISettingsManager {
 	 * @param CertificateManager $certificateManager
 	 * @param IFactory $lfactory
 	 */
-	public function __construct(IL10N $l,
-								IAppManager $appManager,
-								IUserSession $userSession,
-								ILogger $logger,
-								IGroupManager $groupManager,
-								IConfig $config,
-								Defaults $defaults,
-								IURLGenerator $urlGenerator,
-								Helper $helper,
-								ILockingProvider $lockingProvider,
-								IDBConnection $dbconnection,
-								$certificateManager,
-								IFactory $lfactory) {
+	public function __construct(
+		IL10N $l,
+		IAppManager $appManager,
+		IUserSession $userSession,
+		ILogger $logger,
+		IGroupManager $groupManager,
+		IConfig $config,
+		Defaults $defaults,
+		IURLGenerator $urlGenerator,
+		Helper $helper,
+		ILockingProvider $lockingProvider,
+		IDBConnection $dbconnection,
+		ILicenseManager $licenseManager,
+		$certificateManager,
+		IFactory $lfactory
+	) {
 		$this->l = $l;
 		$this->appManager = $appManager;
 		$this->userSession = $userSession;
@@ -142,6 +150,7 @@ class SettingsManager implements ISettingsManager {
 		$this->helper = $helper;
 		$this->lockingProvider = $lockingProvider;
 		$this->dbconnection = $dbconnection;
+		$this->licenseManager = $licenseManager;
 		$this->certificateManager = $certificateManager;
 		$this->lfactory = $lfactory;
 	}
@@ -203,7 +212,7 @@ class SettingsManager implements ISettingsManager {
 				new Section('authentication', $this->l->t('User Authentication'), 87, 'user'),
 				new Section('encryption', $this->l->t('Encryption'), 85, 'password'),
 				new Section('workflow', $this->l->t('Workflows & Tags'), 85, 'workflows'),
-				new Section('sharing', $this->l->t('Sharing'), 80, 'share'),
+				new Section('sharing', $this->l->t('Sharing'), 80, 'shared'),
 				new Section('search', $this->l->t('Search'), 75, 'search'),
 				new Section('help', $this->l->t('Help & Tips'), -5, 'info'),
 				new Section('additional', $this->l->t('Additional'), -10, 'more'),
@@ -217,6 +226,7 @@ class SettingsManager implements ISettingsManager {
 				new Section('additional', $this->l->t('Additional'), -10, 'more'),
 			];
 		}
+		return [];
 	}
 
 	/**
@@ -227,6 +237,7 @@ class SettingsManager implements ISettingsManager {
 	private function getBuiltInPanels($type) {
 		if ($type === 'admin') {
 			return [
+				Enforce2fa::class,
 				LegacyAdmin::class,
 				BackgroundJobs::class,
 				Logging::class,
@@ -236,8 +247,10 @@ class SettingsManager implements ISettingsManager {
 				FileSharing::class,
 				Encryption::class,
 				Certificates::class,
+				PersistentLocking::class,
 				Apps::class,
 				Legal::class,
+				License::class,
 				Status::class
 			];
 		} elseif ($type === 'personal') {
@@ -251,6 +264,7 @@ class SettingsManager implements ISettingsManager {
 				Quota::class
 			];
 		}
+		return [];
 	}
 
 	/**
@@ -275,27 +289,32 @@ class SettingsManager implements ISettingsManager {
 			Cors::class => new Cors(
 				$this->userSession,
 				$this->urlGenerator,
-				$this->config),
+				$this->config
+			),
 			Quota::class => new Quota($this->helper),
 			// Admin
 			BackgroundJobs::class => new BackgroundJobs($this->config),
 			Certificates::class => new Certificates(
 				$this->config,
 				$this->urlGenerator,
-				$this->certificateManager),
+				$this->certificateManager
+			),
 			Encryption::class => new Encryption(),
-			FileSharing::class => new FileSharing($this->config, $this->helper, $this->l),
+			FileSharing::class => new FileSharing($this->config, $this->helper, $this->lfactory),
 			Logging::class => new Logging($this->config, $this->urlGenerator, $this->helper),
-			Mail::class => new Mail($this->config, $this->helper),
+			Mail::class => new Mail($this->config, $this->helper, $this->userSession),
+			PersistentLocking::class => new PersistentLocking($this->config),
 			SecurityWarning::class => new SecurityWarning(
 				$this->l,
 				$this->config,
 				$this->dbconnection,
 				$this->helper,
-				$this->lockingProvider),
+				$this->lockingProvider
+			),
 			Tips::class => new Tips(),
 			LegacyAdmin::class => new LegacyAdmin($this->helper),
 			Apps::class => new Apps($this->config),
+			License::class => new License($this->licenseManager),
 			Legal::class => new Legal($this->config)
 		];
 		if (isset($panels[$className])) {
@@ -362,7 +381,7 @@ class SettingsManager implements ISettingsManager {
 	 * Attempts to load a ISettings using the class name
 	 * @param string $className
 	 * @throws QueryException
-	 * @return ISettings
+	 * @return ISettings|false
 	 */
 	protected function loadPanel($className) {
 		try {
@@ -372,7 +391,9 @@ class SettingsManager implements ISettingsManager {
 			if (!$panel instanceof ISettings) {
 				$this->log->error(
 					'Class: {class} not an instance of OCP\Settings\ISettings',
-					['class' => $className]);
+					['class' => $className]
+				);
+				return false;
 			} else {
 				return $panel;
 			}
@@ -382,7 +403,8 @@ class SettingsManager implements ISettingsManager {
 				[
 					'class' => $className,
 					'error' => $e->getMessage()
-				]);
+				]
+			);
 			throw $e;
 		}
 	}
@@ -407,10 +429,11 @@ class SettingsManager implements ISettingsManager {
 			// Attempt to load the panel
 			try {
 				$panel = $this->loadPanel($panelClassName);
-				$section = $this->loadSection($type, $panel->getSectionID());
-				$this->panels[$type][$section->getID()][] = $panel;
-				$this->sections[$type][$section->getID()] = $section;
-				// Now try and initialise the ISection from the panel
+				if ($panel !== false) {
+					$section = $this->loadSection($type, $panel->getSectionID());
+					$this->panels[$type][$section->getID()][] = $panel;
+					$this->sections[$type][$section->getID()] = $section;
+				}
 			} catch (QueryException $e) {
 				// Just skip this panel, either its section or panel could not be loaded
 			}
@@ -452,14 +475,15 @@ class SettingsManager implements ISettingsManager {
 
 	/**
 	 * Sort the array of ISettings or ISections by their priority attribute
-	 * @param array $objects (ISections of ISettings)
+	 * A lower priority number means that the item should appear first.
+	 * @param array $objects (ISections or ISettings)
 	 * @return array
 	 */
 	protected function sortOrder($objects) {
 		\usort($objects, function ($a, $b) {
 			/** @var ISection | ISettings $a */
 			/** @var ISection | ISettings $b */
-			return $a->getPriority() < $b->getPriority();
+			return $b->getPriority() - $a->getPriority();
 		});
 		return $objects;
 	}

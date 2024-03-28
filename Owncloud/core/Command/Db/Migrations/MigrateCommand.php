@@ -30,7 +30,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class MigrateCommand extends Command {
-
 	/** @var IDBConnection */
 	private $connection;
 
@@ -52,11 +51,12 @@ class MigrateCommand extends Command {
 		parent::configure();
 	}
 
-	public function execute(InputInterface $input, OutputInterface $output) {
+	public function execute(InputInterface $input, OutputInterface $output): int {
 		$appName = $input->getArgument('app');
 		$ms = new MigrationService($appName, $this->connection, new ConsoleOutput($output));
 		$version = $input->getArgument('version');
 
 		$ms->migrate($version);
+		return 0;
 	}
 }

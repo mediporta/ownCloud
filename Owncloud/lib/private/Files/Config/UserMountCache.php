@@ -23,12 +23,12 @@
 
 namespace OC\Files\Config;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Config\ICachedMountInfo;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\Mount\IMountPoint;
 use OCP\Files\NotFoundException;
-use OCP\ICache;
 use OCP\IDBConnection;
 use OCP\ILogger;
 use OCP\IUser;
@@ -36,7 +36,7 @@ use OCP\IUserManager;
 use OC\Cache\CappedMemoryCache;
 
 /**
- * Cache mounts points per user in the cache so we can easilly look them up
+ * Cache mounts points per user in the cache so we can easily look them up
  */
 class UserMountCache implements IUserMountCache {
 	/**
@@ -53,7 +53,7 @@ class UserMountCache implements IUserMountCache {
 	 * Cached mount info.
 	 * Map of $userId to ICachedMountInfo.
 	 *
-	 * @var ICache
+	 * @var CappedMemoryCache
 	 **/
 	private $mountsForUsers;
 
@@ -63,7 +63,7 @@ class UserMountCache implements IUserMountCache {
 	private $logger;
 
 	/**
-	 * @var ICache
+	 * @var CappedMemoryCache
 	 */
 	private $cacheInfoCache;
 
@@ -129,15 +129,34 @@ class UserMountCache implements IUserMountCache {
 
 	private function addToCache(ICachedMountInfo $mount) {
 		if ($mount->getStorageId() !== -1) {
-			$this->connection->insertIfNotExist('*PREFIX*mounts', [
-				'storage_id' => $mount->getStorageId(),
-				'root_id' => $mount->getRootId(),
-				'user_id' => $mount->getUser()->getUID(),
-				'mount_point' => $mount->getMountPoint()
-			], ['root_id', 'user_id']);
+			try {
+				$rows = $this->connection->insertIfNotExist(
+					'*PREFIX*mounts',
+					[
+						'storage_id' => $mount->getStorageId(),
+						'root_id' => $mount->getRootId(),
+						'user_id' => $mount->getUser()->getUID(),
+						'mount_point' => $mount->getMountPoint()
+					],
+					['root_id', 'user_id'] // NOTE: see *PREFIX*mounts/mounts_user_root_index
+				);
+
+				if ($rows === 0) {
+					// likely to happen when called multiple times
+					$this->logger->debug(
+						"Mount {$mount->getRootId()}/{$mount->getUser()->getUID()} already exists"
+					);
+				}
+			} catch (UniqueConstraintViolationException $e) {
+				// most likely race condition but make sure to log the error in case it is application level error
+				$this->logger->error(
+					"Attempt to add mount {$mount->getRootId()}/{$mount->getUser()->getUID()} cache failed"
+				);
+				$this->logger->logException($e);
+			}
 		} else {
 			// in some cases this is legitimate, like orphaned shares
-			$this->logger->debug('Could not get storage info for mount at ' . $mount->getMountPoint());
+			$this->logger->warning('Could not get storage info for mount at ' . $mount->getMountPoint());
 		}
 	}
 
@@ -256,7 +275,7 @@ class UserMountCache implements IUserMountCache {
 			if (\is_array($row)) {
 				$this->cacheInfoCache[$fileId] = [
 					(int)$row['storage'],
-					$row['path']
+					(string)$row['path']
 				];
 			} else {
 				throw new NotFoundException('File with id "' . $fileId . '" not found');

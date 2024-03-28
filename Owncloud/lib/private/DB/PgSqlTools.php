@@ -29,7 +29,6 @@ use OCP\IConfig;
 * Various PostgreSQL specific helper functions.
 */
 class PgSqlTools {
-
 	/** @var \OCP\IConfig */
 	private $config;
 
@@ -44,7 +43,7 @@ class PgSqlTools {
 	* @brief Resynchronizes all sequences of a database after using INSERTs
 	*        without leaving out the auto-incremented column.
 	* @param \OC\DB\Connection $conn
-	* @return null
+	* @return void
 	*/
 	public function resynchronizeDatabaseSequences(Connection $conn) {
 		$filterExpression = '/^' . \preg_quote($this->config->getSystemValue('dbtableprefix', 'oc_')) . '/';

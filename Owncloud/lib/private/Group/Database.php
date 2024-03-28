@@ -43,20 +43,27 @@ namespace OC\Group;
  * Class for group management in a SQL Database (e.g. MySQL, SQLite)
  */
 class Database extends \OC\Group\Backend {
-
 	/** @var string[] */
 	private $groupCache = [];
 
 	/** @var \OCP\IDBConnection */
 	private $dbConn;
 
+	/** @var \OCP\IConfig */
+	private $config;
+
 	/**
 	 * \OC\Group\Database constructor.
 	 *
 	 * @param \OCP\IDBConnection|null $dbConn
+	 * @param \OCP\IConfig|null $config
 	 */
-	public function __construct(\OCP\IDBConnection $dbConn = null) {
+	public function __construct(
+		\OCP\IDBConnection $dbConn = null,
+		\OCP\IConfig $config = null
+	) {
 		$this->dbConn = $dbConn;
+		$this->config = $config;
 	}
 
 	/**
@@ -65,6 +72,9 @@ class Database extends \OC\Group\Backend {
 	private function fixDI() {
 		if ($this->dbConn === null) {
 			$this->dbConn = \OC::$server->getDatabaseConnection();
+		}
+		if ($this->config === null) {
+			$this->config = \OC::$server->getConfig();
 		}
 	}
 
@@ -231,10 +241,18 @@ class Database extends \OC\Group\Backend {
 	 * Returns a list with all groups
 	 */
 	public function getGroups($search = '', $limit = null, $offset = null) {
+		$this->fixDI();
+
 		$parameters = [];
 		$searchLike = '';
 		if ($search !== '') {
-			$parameters[] = '%' . $search . '%';
+			$search = $this->dbConn->escapeLikeParameter($search);
+			$allowMedialSearches = $this->config->getSystemValue("groups.enable_medial_search", true);
+			if ($allowMedialSearches) {
+				$parameters[] = '%' . $search . '%';
+			} else {
+				$parameters[] = $search . '%';
+			}
 			$searchLike = ' WHERE LOWER(`gid`) LIKE LOWER(?)';
 		}
 
@@ -284,6 +302,8 @@ class Database extends \OC\Group\Backend {
 	 * @return array an array of user ids
 	 */
 	public function usersInGroup($gid, $search = '', $limit = null, $offset = null) {
+		$this->fixDI();
+
 		$parameters = [$gid];
 		$searchLike = '';
 		if ($search !== '') {
@@ -291,9 +311,11 @@ class Database extends \OC\Group\Backend {
 			$searchLike = ' AND `uid` LIKE ?';
 		}
 
-		$stmt = \OC_DB::prepare('SELECT `uid` FROM `*PREFIX*group_user` WHERE `gid` = ?' . $searchLike . ' ORDER BY `uid` ASC',
+		$stmt = \OC_DB::prepare(
+			'SELECT `uid` FROM `*PREFIX*group_user` WHERE `gid` = ?' . $searchLike . ' ORDER BY `uid` ASC',
 			$limit,
-			$offset);
+			$offset
+		);
 		$result = $stmt->execute($parameters);
 		$users = [];
 		while ($row = $result->fetchRow()) {
@@ -310,6 +332,8 @@ class Database extends \OC\Group\Backend {
 	 * @throws \OC\DatabaseException
 	 */
 	public function countUsersInGroup($gid, $search = '') {
+		$this->fixDI();
+
 		$parameters = [$gid];
 		$searchLike = '';
 		if ($search !== '') {

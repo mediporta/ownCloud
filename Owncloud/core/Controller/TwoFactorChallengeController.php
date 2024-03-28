@@ -38,7 +38,6 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 
 class TwoFactorChallengeController extends Controller {
-
 	/** @var Manager */
 	private $twoFactorManager;
 
@@ -59,8 +58,14 @@ class TwoFactorChallengeController extends Controller {
 	 * @param ISession $session
 	 * @param IURLGenerator $urlGenerator
 	 */
-	public function __construct($appName, IRequest $request, Manager $twoFactorManager, IUserSession $userSession,
-		ISession $session, IURLGenerator $urlGenerator) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		Manager $twoFactorManager,
+		IUserSession $userSession,
+		ISession $session,
+		IURLGenerator $urlGenerator
+	) {
 		parent::__construct($appName, $request);
 		$this->twoFactorManager = $twoFactorManager;
 		$this->userSession = $userSession;
@@ -73,6 +78,13 @@ class TwoFactorChallengeController extends Controller {
 	 */
 	protected function getLogoutAttribute() {
 		return \OC_User::getLogoutAttribute();
+	}
+
+	/**
+	 * @return string
+	 */
+	protected function getDefaultPageUrl() {
+		return \OC_Util::getDefaultPageUrl();
 	}
 
 	/**
@@ -127,7 +139,7 @@ class TwoFactorChallengeController extends Controller {
 		if ($this->session->exists('two_factor_auth_error')) {
 			$this->session->remove('two_factor_auth_error');
 			$error = true;
-			$error_message = $this->session->get("two_factor_auth_error_message");
+			$error_message = $this->session->get('two_factor_auth_error_message');
 			$this->session->remove('two_factor_auth_error_message');
 		} else {
 			$error = false;
@@ -173,7 +185,7 @@ class TwoFactorChallengeController extends Controller {
 				if ($redirect_url !== null) {
 					return new RedirectResponse($this->urlGenerator->getAbsoluteURL(\urldecode($redirect_url)));
 				}
-				return new RedirectResponse($this->urlGenerator->linkToRoute('files.view.index'));
+				return new RedirectResponse($this->getDefaultPageUrl());
 			}
 		} catch (TwoFactorException $e) {
 			/*
@@ -181,8 +193,10 @@ class TwoFactorChallengeController extends Controller {
 			 * information to the user. The exception text is stored in the
 			 * session to be used in showChallenge()
 			 */
-			$this->session->set('two_factor_auth_error_message',
-				$e->getMessage());
+			$this->session->set(
+				'two_factor_auth_error_message',
+				$e->getMessage()
+			);
 		}
 
 		$this->session->set('two_factor_auth_error', true);

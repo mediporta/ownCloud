@@ -21,7 +21,6 @@
 
 namespace OCA\Market;
 
-
 use OCP\App\IAppManager;
 use OCP\L10N\IFactory;
 use OCP\Notification\IManager;
@@ -29,7 +28,6 @@ use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
 
 class Notifier implements INotifier {
-
 	/** @var IManager */
 	protected $notificationManager;
 
@@ -67,6 +65,9 @@ class Notifier implements INotifier {
 		}
 
 		$l = $this->l10NFactory->get('market', $languageCode);
+		/**
+		 * @var array|null $appInfo
+		 */
 		$appInfo = $this->getAppInfo($notification->getObjectType());
 		$appName = ($appInfo === null) ? $notification->getObjectType() : $appInfo['name'];
 		$appVersions = $this->getAppVersions();
@@ -96,7 +97,7 @@ class Notifier implements INotifier {
 	protected function updateAlreadyInstalledCheck(INotification $notification, $installedVersion) {
 		if (
 			$this->appManager->getAppPath($notification->getObjectType()) === false
-			|| version_compare($notification->getObjectId(), $installedVersion, '<=')
+			|| \version_compare($notification->getObjectId(), $installedVersion, '<=')
 		) {
 			$this->notificationManager->markProcessed($notification);
 			throw new \InvalidArgumentException();

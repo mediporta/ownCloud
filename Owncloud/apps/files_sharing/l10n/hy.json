@@ -3,6 +3,7 @@
     "Shared with others" : "Կիսված այլոց հետ",
     "Shared by link" : "Կիսված հղմամբ",
     "Cancel" : "Չեղարկել",
+    "Add" : "Ավելացնել",
     "Share" : "Կիսվել",
     "%2$s shared %1$s via link" : "%2$s կիսվել է %1$sով հղման միջոցով",
     "You shared %1$s via link" : "Դու կիսվեցիր %1$sով հղման միջոցով",
@@ -17,8 +18,8 @@
     "Shared via link by %2$s" : "Կիսված է հղման միջոցով %2$s կողմից",
     "Shared by %2$s" : "Կիսված է %2$sի կողմից",
     "Shares" : "Կիսումներ",
-    "The password is wrong. Try again." : "Գաղտնաբառը սխալ է: Կրկին փորձիր:",
     "Password" : "Գաղտնաբառ",
+    "The password is wrong. Try again." : "Գաղտնաբառը սխալ է: Կրկին փորձիր:",
     "No entries found in this folder" : "Պանակում մուտքին համապատասխանող ոչինչ չգտնվեց",
     "Name" : "Անուն",
     "Share time" : "Կիսման ժամանակ",
@@ -28,7 +29,6 @@
     "the item was removed" : "նյութը հեռացվել է",
     "the link expired" : "հղումը ժամկետանց է",
     "For more info, please ask the person who sent this link." : "Լրացուցիչ տեղեկության համար խնդրում ենք կապվել հղումը ուղարկողի հետ:",
-    "Add to your ownCloud" : "Ավելացնել քո ownCloudին",
     "Download" : "Ներբեռնել",
     "Download %s" : "Ներբեռնել %s"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"

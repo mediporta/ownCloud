@@ -47,12 +47,11 @@ use Sabre\DAV\PropFind;
 use Sabre\DAV\PropPatch;
 
 class TagsPlugin extends \Sabre\DAV\ServerPlugin {
-
 	// namespace
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
-	const TAGS_PROPERTYNAME = '{http://owncloud.org/ns}tags';
-	const FAVORITE_PROPERTYNAME = '{http://owncloud.org/ns}favorite';
-	const TAG_FAVORITE = '_$!<Favorite>!$_';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const TAGS_PROPERTYNAME = '{http://owncloud.org/ns}tags';
+	public const FAVORITE_PROPERTYNAME = '{http://owncloud.org/ns}favorite';
+	public const TAG_FAVORITE = '_$!<Favorite>!$_';
 
 	/**
 	 * Reference to main server object
@@ -107,7 +106,7 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin {
 	 * @return void
 	 */
 	public function initialize(\Sabre\DAV\Server $server) {
-		$server->xml->namespacesMap[self::NS_OWNCLOUD] = 'oc';
+		$server->xml->namespaceMap[self::NS_OWNCLOUD] = 'oc';
 		$server->xml->elementMap[self::TAGS_PROPERTYNAME] = 'OCA\\DAV\\Connector\\Sabre\\TagList';
 
 		$this->server = $server;
@@ -213,13 +212,15 @@ class TagsPlugin extends \Sabre\DAV\ServerPlugin {
 		// need prefetch ?
 		if ($node instanceof \OCA\DAV\Connector\Sabre\Directory
 			&& $propFind->getDepth() !== 0
-			&& ($propFind->getStatus(self::TAGS_PROPERTYNAME) !== null
+			&& (
+				$propFind->getStatus(self::TAGS_PROPERTYNAME) !== null
 			|| $propFind->getStatus(self::FAVORITE_PROPERTYNAME) !== null
-		)) {
+			)) {
 			// note: pre-fetching only supported for depth <= 1
 			$folderContent = $node->getChildren();
 			$fileIds[] = (int)$node->getId();
 			foreach ($folderContent as $info) {
+				'@phan-var \OCA\DAV\Connector\Sabre\Node $info';
 				$fileIds[] = (int)$info->getId();
 			}
 			$tags = $this->getTagger()->getTagsForObjects($fileIds);

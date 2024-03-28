@@ -37,6 +37,8 @@
  */
 namespace OC;
 
+use OCP\License\ILicenseManager;
+
 class TemplateLayout extends \OC_Template {
 	private static $versionHash = '';
 
@@ -50,7 +52,6 @@ class TemplateLayout extends \OC_Template {
 	 * @param string $appId application id
 	 */
 	public function __construct($renderAs, $appId = '') {
-
 		// yes - should be injected ....
 		$this->config = \OC::$server->getConfig();
 
@@ -67,6 +68,23 @@ class TemplateLayout extends \OC_Template {
 			$integrityChecker = \OC::$server->getIntegrityCodeChecker();
 			if (\OC_User::isAdminUser(\OC_User::getUser()) && $integrityChecker->isCodeCheckEnforced() && !$integrityChecker->hasPassedCheck()) {
 				\OCP\Util::addScript('core', 'integritycheck-failed-notification');
+			}
+
+			// grace period notification
+			$shouldShowGracePopup = $this->config->getSystemValue('grace_period.demo_key.show_popup', true);
+			$licenseManager = \OC::$server->getLicenseManager();
+			$gracePeriod = $licenseManager->getGracePeriod();
+			$isGracePeriodActive = $gracePeriod && \time() < $gracePeriod['end'];
+			if ($shouldShowGracePopup && \OC_User::isAdminUser(\OC_User::getUser()) && $isGracePeriodActive) {
+				\OCP\Util::addScript('core', 'license-trial-notification');
+			}
+
+			// license state notification (only if the license isn't valid and isn't missing)
+			$licenseState = $licenseManager->getLicenseStateFor('core');
+			$shouldShowLicenseState = $licenseState !== ILicenseManager::LICENSE_STATE_VALID &&
+				$licenseState !== ILicenseManager::LICENSE_STATE_MISSING;
+			if (\OC_User::isAdminUser(\OC_User::getUser()) && $shouldShowLicenseState) {
+				\OCP\Util::addScript('core', 'license-state-notification');
 			}
 
 			// Add navigation entry
@@ -163,7 +181,8 @@ class TemplateLayout extends \OC_Template {
 			\OC_Util::getTheme(),
 			\OC::$server->getAppManager(),
 			\OC::$server->getLogger(),
-			[\OC::$SERVERROOT => \OC::$WEBROOT]);
+			[\OC::$SERVERROOT => \OC::$WEBROOT]
+		);
 		$locator->find($styles);
 		return $locator->getResources();
 	}
@@ -177,7 +196,8 @@ class TemplateLayout extends \OC_Template {
 			\OC_Util::getTheme(),
 			\OC::$server->getAppManager(),
 			\OC::$server->getLogger(),
-			[\OC::$SERVERROOT => \OC::$WEBROOT]);
+			[\OC::$SERVERROOT => \OC::$WEBROOT]
+		);
 		$locator->find($scripts);
 		return $locator->getResources();
 	}

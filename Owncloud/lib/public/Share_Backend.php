@@ -29,9 +29,9 @@ namespace OCP;
 /**
  * Interface that apps must implement to share content.
  * @since 5.0.0
+ * @deprecated since 10.0.11 and will be removed in 11.0, please use the share manager instead
  */
 interface Share_Backend {
-
 	/**
 	 * Check if this $itemSource exist for the user
 	 * @param string $itemSource
@@ -81,7 +81,7 @@ interface Share_Backend {
 	public function formatItems($items, $format, $parameters = null);
 
 	/**
-	 * Check if a given share type is allowd by the back-end
+	 * Check if a given share type is allowed by the back-end
 	 *
 	 * @param int $shareType share type
 	 * @return boolean

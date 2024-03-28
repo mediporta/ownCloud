@@ -29,6 +29,7 @@ use OCP\Files\External\Backend\InvalidBackend;
 use OCP\Files\External\IStorageConfig;
 use OCP\Files\External\Service\IGlobalStoragesService;
 use OCP\Files\External\Service\IUserStoragesService;
+use OCP\Files\External\DefinitionParameter;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Symfony\Component\Console\Helper\Table;
@@ -58,7 +59,7 @@ class ListCommand extends Base {
 	 */
 	protected $userManager;
 
-	const ALL = -1;
+	public const ALL = -1;
 
 	public function __construct(IGlobalStoragesService $globalService, IUserStoragesService $userService, IUserSession $userSession, IUserManager $userManager) {
 		parent::__construct();
@@ -75,27 +76,42 @@ class ListCommand extends Base {
 			->addArgument(
 				'user_id',
 				InputArgument::OPTIONAL,
-				'user id to list the personal mounts for, if no user is provided admin mounts will be listed'
+				'User id to list the personal mounts for, if no user is provided admin mounts will be listed'
 			)->addOption(
 				'show-password',
 				null,
 				InputOption::VALUE_NONE,
-				'show passwords and secrets'
+				'Show passwords and secrets'
+			)->addOption(
+				'mount-options',
+				null,
+				InputOption::VALUE_NONE,
+				'Show all mount options independent if they are set to their default value or not'
 			)->addOption(
 				'full',
 				null,
 				InputOption::VALUE_NONE,
-				'don\'t truncate long values in table output'
+				'Don\'t truncate long values in table output'
 			)->addOption(
 				'all',
 				'a',
 				InputOption::VALUE_NONE,
-				'show both system wide mounts and all personal mounts'
+				'Show mounts for all users. All has precedence over user_id'
+			)->addOption(
+				'short',
+				's',
+				InputOption::VALUE_NONE,
+				'Show only a reduced mount info'
+			)->addOption(
+				'importable-format',
+				'i',
+				InputOption::VALUE_NONE,
+				'Provide output values in a format compatible with files_external:import'
 			);
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if ($input->getOption('all')) {
 			/** @var  $mounts IStorageConfig[] */
 			$mounts = $this->globalService->getStorageForAllUsers();
@@ -109,6 +125,7 @@ class ListCommand extends Base {
 		}
 
 		$this->listMounts($userId, $mounts, $input, $output);
+		return 0;
 	}
 
 	/**
@@ -119,6 +136,11 @@ class ListCommand extends Base {
 	 */
 	public function listMounts($userId, array $mounts, InputInterface $input, OutputInterface $output) {
 		$outputType = $input->getOption('output');
+		$outputIsJson = ($outputType === self::OUTPUT_FORMAT_JSON) || ($outputType === self::OUTPUT_FORMAT_JSON_PRETTY);
+		$shortView = $input->getOption('short');
+		$importableView = $input->getOption('importable-format');
+
+		// check if there are any mounts present
 		if (\count($mounts) === 0) {
 			if ($outputType === self::OUTPUT_FORMAT_JSON || $outputType === self::OUTPUT_FORMAT_JSON_PRETTY) {
 				$output->writeln('[]');
@@ -134,143 +156,198 @@ class ListCommand extends Base {
 			return;
 		}
 
-		$headers = ['Mount ID', 'Mount Point', 'Storage', 'Authentication Type', 'Configuration', 'Options'];
+		// set minimum columns used based on options
+		if ($shortView) {
+			$headers = ['Mount ID', 'Mount Point', 'Auth', 'Type'];
+			// if there is no userId or option --all is set, insert additional columns
+			if (!$userId || $userId === self::ALL) {
+				\array_splice($headers, 2, 0, 'Applicable Users');
+				\array_splice($headers, 3, 0, 'Applicable Groups');
+			}
+		} else {
+			$headers = ['Mount ID', 'Mount Point', 'Storage', 'Authentication Type', 'Configuration', 'Options'];
 
-		if (!$userId || $userId === self::ALL) {
-			$headers[] = 'Applicable Users';
-			$headers[] = 'Applicable Groups';
-		}
-		if ($userId === self::ALL) {
-			$headers[] = 'Type';
-		}
+			if (!$userId || $userId === self::ALL) {
+				$headers[] = 'Applicable Users';
+				$headers[] = 'Applicable Groups';
+			}
 
-		if (!$input->getOption('show-password')) {
-			$hideKeys = ['password', 'refresh_token', 'token', 'client_secret', 'public_key', 'private_key'];
-			foreach ($mounts as $mount) {
-				$config = $mount->getBackendOptions();
-				foreach ($config as $key => $value) {
-					if (\in_array($key, $hideKeys)) {
-						$mount->setBackendOption($key, '***');
+			if (!$input->getOption('show-password')) {
+				$hideKeys = ['refresh_token', 'token', 'public_key', 'private_key'];
+				foreach ($mounts as $mount) {
+					$config = $mount->getBackendOptions();
+					foreach ($config as $key => $value) {
+						if (\in_array($key, $hideKeys, true) || $this->shouldHideKey($mount, $key)) {
+							$mount->setBackendOption($key, '***');
+						}
 					}
 				}
 			}
 		}
 
-		if ($outputType === self::OUTPUT_FORMAT_JSON || $outputType === self::OUTPUT_FORMAT_JSON_PRETTY) {
+		// default output style
+		$full = $input->getOption('full');
+		$showMountOptions = $input->getOption('mount-options');
+
+		$defaultMountOptions = [
+			'encrypt' => true,
+			'previews' => true,
+			'filesystem_check_changes' => 1,
+			'read_only' => false,
+			'enable_sharing' => false,
+			'encoding_compatibility' => false
+		];
+		$countInvalid = 0;
+		// In case adding array elements, add them only after the first two (Mount ID / Mount Point)
+		// and before the last one entry (Type). Necessary for option -s
+		$rows = \array_map(function (IStorageConfig $config) use ($outputIsJson, $shortView, $importableView, $userId, $defaultMountOptions, $full, $showMountOptions, &$countInvalid) {
+			if ($config->getBackend() instanceof InvalidBackend || $config->getAuthMechanism() instanceof InvalidAuth) {
+				$countInvalid++;
+			}
+			$storageConfig = $config->getBackendOptions();
+			$keys = \array_keys($storageConfig);
+			$values = \array_values($storageConfig);
+
+			if (!$full) {
+				$values = \array_map(function ($value) {
+					if (\is_string($value) && \strlen($value) > 32) {
+						return \substr($value, 0, 6) . '...' . \substr($value, -6, 6);
+					} else {
+						return $value;
+					}
+				}, $values);
+			}
+
+			$configStrings = \array_map(function ($key, $value) {
+				return $key . ': ' . \json_encode($value);
+			}, $keys, $values);
+			$configString = \implode(', ', $configStrings);
+
+			$mountOptions = $config->getMountOptions();
+			$mountOptions = \array_merge($defaultMountOptions, $mountOptions);
+			// hide defaults
+			if (!$showMountOptions) {
+				foreach ($mountOptions as $key => $value) {
+					if ($value === $defaultMountOptions[$key]) {
+						unset($mountOptions[$key]);
+					}
+				}
+			}
+			$keys = \array_keys($mountOptions);
+			$values = \array_values($mountOptions);
+
+			$optionsStrings = \array_map(function ($key, $value) {
+				return $key . ': ' . \json_encode($value);
+			}, $keys, $values);
+			$optionsString = \implode(', ', $optionsStrings);
+
+			// output dependent on option shortview
+			if ($shortView) {
+				$values = [
+					$config->getId(),
+					$config->getMountPoint()
+				];
+			} else {
+				$configValue = $configString;
+				if ($importableView) {
+					$storageValue = $config->getBackend()->getStorageClass();
+					$authValue = $config->getAuthMechanism()->getIdentifier();
+					if ($outputIsJson) {
+						$configValue = $storageConfig;
+					}
+				} else {
+					$storageValue = $config->getBackend()->getText();
+					$authValue = $config->getAuthMechanism()->getText();
+				}
+				$values = [
+					$config->getId(),
+					$config->getMountPoint(),
+					$storageValue,
+					$authValue,
+					$configValue,
+					$optionsString
+				];
+			}
+
+			// output independent of option shortview
+			if (!$userId || $userId === self::ALL) {
+				if ($importableView && $outputIsJson) {
+					$applicableUsers = $config->getApplicableUsers();
+					$applicableGroups = $config->getApplicableGroups();
+				} else {
+					$applicableUsers = \implode(', ', $config->getApplicableUsers());
+					$applicableGroups = \implode(', ', $config->getApplicableGroups());
+					if ($applicableUsers === '' && $applicableGroups === '') {
+						$applicableUsers = 'All';
+					}
+				}
+				$values[] = $applicableUsers;
+				$values[] = $applicableGroups;
+			}
+			// This MUST stay the last entry
+			if ($shortView) {
+				// query the auth type
+				if (\stristr($config->getBackend()->getText(), 'session') === true) {
+					$values[] =  'Session';
+				} else {
+					$values[] = 'User';
+				}
+				// get the mount type
+				$values[] = $config->getType() === IStorageConfig::MOUNT_TYPE_ADMIN ? 'Admin' : 'Personal';
+			}
+
+			return $values;
+		}, $mounts);
+
+		if ($outputIsJson) {
 			$keys = \array_map(function ($header) {
 				return \strtolower(\str_replace(' ', '_', $header));
 			}, $headers);
 
-			$pairs = \array_map(function (IStorageConfig $config) use ($keys, $userId) {
-				$values = [
-					$config->getId(),
-					$config->getMountPoint(),
-					$config->getBackend()->getStorageClass(),
-					$config->getAuthMechanism()->getIdentifier(),
-					$config->getBackendOptions(),
-					$config->getMountOptions()
-				];
-				if (!$userId || $userId === self::ALL) {
-					$values[] = $config->getApplicableUsers();
-					$values[] = $config->getApplicableGroups();
-				}
-				if ($userId === self::ALL) {
-					$values[] = $config->getType() === IStorageConfig::MOUNT_TYPE_ADMIN ? 'admin' : 'personal';
-				}
+			$pairs = [];
+			foreach ($rows as $array_1) {
+				$pairs[] = \array_combine($keys, $array_1);
+			}
 
-				return \array_combine($keys, $values);
-			}, $mounts);
 			if ($outputType === self::OUTPUT_FORMAT_JSON) {
 				$output->writeln(\json_encode(\array_values($pairs)));
 			} else {
 				$output->writeln(\json_encode(\array_values($pairs), JSON_PRETTY_PRINT));
 			}
 		} else {
-			$full = $input->getOption('full');
-			$defaultMountOptions = [
-				'encrypt' => true,
-				'previews' => true,
-				'filesystem_check_changes' => 1,
-				'enable_sharing' => false,
-				'encoding_compatibility' => false
-			];
-			$countInvalid = 0;
-			$rows = \array_map(function (IStorageConfig $config) use ($userId, $defaultMountOptions, $full, &$countInvalid) {
-				if ($config->getBackend() instanceof InvalidBackend || $config->getAuthMechanism() instanceof InvalidAuth) {
-					$countInvalid++;
-				}
-				$storageConfig = $config->getBackendOptions();
-				$keys = \array_keys($storageConfig);
-				$values = \array_values($storageConfig);
-
-				if (!$full) {
-					$values = \array_map(function ($value) {
-						if (\is_string($value) && \strlen($value) > 32) {
-							return \substr($value, 0, 6) . '...' . \substr($value, -6, 6);
-						} else {
-							return $value;
-						}
-					}, $values);
-				}
-
-				$configStrings = \array_map(function ($key, $value) {
-					return $key . ': ' . \json_encode($value);
-				}, $keys, $values);
-				$configString = \implode(', ', $configStrings);
-
-				$mountOptions = $config->getMountOptions();
-				// hide defaults
-				foreach ($mountOptions as $key => $value) {
-					if ($value === $defaultMountOptions[$key]) {
-						unset($mountOptions[$key]);
-					}
-				}
-				$keys = \array_keys($mountOptions);
-				$values = \array_values($mountOptions);
-
-				$optionsStrings = \array_map(function ($key, $value) {
-					return $key . ': ' . \json_encode($value);
-				}, $keys, $values);
-				$optionsString = \implode(', ', $optionsStrings);
-
-				$values = [
-					$config->getId(),
-					$config->getMountPoint(),
-					$config->getBackend()->getText(),
-					$config->getAuthMechanism()->getText(),
-					$configString,
-					$optionsString
-				];
-
-				if (!$userId || $userId === self::ALL) {
-					$applicableUsers = \implode(', ', $config->getApplicableUsers());
-					$applicableGroups = \implode(', ', $config->getApplicableGroups());
-					if ($applicableUsers === '' && $applicableGroups === '') {
-						$applicableUsers = 'All';
-					}
-					$values[] = $applicableUsers;
-					$values[] = $applicableGroups;
-				}
-				if ($userId === self::ALL) {
-					$values[] = $config->getType() === IStorageConfig::MOUNT_TYPE_ADMIN ? 'Admin' : 'Personal';
-				}
-
-				return $values;
-			}, $mounts);
-
 			$table = new Table($output);
 			$table->setHeaders($headers);
 			$table->setRows($rows);
 			$table->render();
-
-			if ($countInvalid > 0) {
-				$output->writeln(
-					"<error>Number of invalid storages found: $countInvalid.\n" .
-					"The listed configuration details are likely incomplete.\n" .
-					"Please make sure that all related apps that provide these storages are enabled or delete these.</error>"
-				);
-			}
 		}
+
+		if ($countInvalid > 0) {
+			$output->writeln(
+				"<error>Number of invalid storages found: $countInvalid.\n" .
+				"The listed configuration details are likely incomplete.\n" .
+				"Please make sure that all related apps that provide these storages are enabled or delete these.</error>"
+			);
+		}
+	}
+
+	private function shouldHideKey(IStorageConfig $mount, $key) {
+		$backend = $mount->getBackend();
+		$backendParameters = $backend->getParameters();
+
+		$auth = $mount->getAuthMechanism();
+		$authParameters = $auth->getParameters();
+		if (
+			(
+				isset($backendParameters[$key]) &&
+				$backendParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			) || (
+				isset($authParameters[$key]) &&
+				$authParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			)
+		) {
+			return true;
+		}
+		return false;
 	}
 
 	protected function getStorageService($userId) {

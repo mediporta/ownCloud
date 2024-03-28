@@ -5,17 +5,32 @@
 		},
 
 		onClickSetPassword : function(event){
-			event.preventDefault();
+			$('#set-password #submit').addClass('icon-loading-small');
+
 			var passwordObj = $('#password');
-			if (passwordObj.val()){
+			var retypePasswordObj = $('#retypepassword');
+			passwordObj.parent().removeClass('shake');
+			event.preventDefault();
+			if (passwordObj.val() === retypePasswordObj.val()) {
 				$.post(
 					passwordObj.parents('form').attr('action'),
-					{password : passwordObj.val()}
+					{password: passwordObj.val()}
 				).done(function (result) {
 					OCA.UserManagement.SetPassword._resetDone(result);
 				}).fail(function (result) {
 					OCA.UserManagement.SetPassword._onSetPasswordFail(result);
+					$('#set-password #submit').removeClass('icon-loading-small');
 				});
+			} else {
+				$('#set-password #submit').removeClass('icon-loading-small');
+				//Password mismatch happened
+				passwordObj.val('');
+				retypePasswordObj.val('');
+				passwordObj.parent().addClass('shake');
+				$('#message').addClass('warning');
+				$('#message').text(t('settings', 'Passwords do not match'));
+				$('#message').show();
+				passwordObj.focus();
 			}
 		},
 
@@ -27,11 +42,13 @@
 			var errorMessage;
 			errorMessage = responseObj.message;
 
-			if (errorMessage) {
-				errorObject.text(errorMessage);
-				errorObject.show();
-				$('#submit').prop('disabled', true);
+			if (!errorMessage) {
+				errorMessage = t('settings', 'Failed to set password. Please contact your administrator.');
 			}
+
+			errorObject.text(errorMessage);
+			errorObject.show();
+			$('#submit').prop('disabled', false);
 		},
 
 		_resetDone : function(result){
@@ -57,4 +74,14 @@
 
 $(document).ready(function () {
 	OCA.UserManagement.SetPassword.init();
+	$('#password').keypress(function () {
+		/*
+		 The warning message should be shown only during password mismatch.
+		 Else it should not.
+		 */
+		if (($('#password').val().length >= 0) && ($('#retypepassword').val().length === 0)) {
+			$('#message').removeClass('warning');
+			$('#message').text('');
+		}
+	});
 });

@@ -50,7 +50,8 @@ input#webdav {
 #displaynameform,
 #groups,
 #language,
-#lostpassword,
+#emailform,
+#username,
 #passwordform {
 	display: inline-block;
 	margin-bottom: 0;
@@ -198,32 +199,43 @@ table.nostyle td {
 }
 
 .isgroup .groupname {
-	width: 85%;
-	display: block;
+	max-width: 80%;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	float: left;
 }
 .isgroup.active .groupname {
-	width: 65%;
+	max-width: 80%;
 }
 
-.usercount { float: left; margin: 5px; }
-li.active span.utils .delete {
+li.active span.utils .delete,
+li:hover span.utils .delete {
 	float: left; position: relative; opacity: 0.5;
 	top: -7px; left: 7px; width: 44px; height: 44px;
 }
-li.active .rename {
+
+li.active span.utils .rename,
+li:hover span.utils .rename {
 	padding: 8px 14px 20px 14px;
 	top: 0px; position: absolute; width: 16px; height: 16px;
 	opacity: 0.5;
 	display: inline-block !important;
 }
-li.active span.utils .delete img { margin: 14px; }
-li.active .rename { opacity: 0.5; }
-li.active span.utils .delete:hover, li.active .rename:hover { opacity: 1; }
+
+li.active span.utils .delete img,
+li:hover span.utils .delete img { margin: 14px; }
+
+li.active .rename,
+li:hover .rename { opacity: 0.5; }
+
+li:hover span.utils .delete:hover, li.active .rename:hover { opacity: 1; }
+
 span.utils .delete, .rename { display: none; }
+
 #app-navigation ul li.active > span.utils .delete,
-#app-navigation ul li.active > span.utils .rename { display: block; }
+#app-navigation ul li:hover > span.utils .delete,
+#app-navigation ul li:hover > span.utils .delete,
+#app-navigation ul li:hover > span.utils .rename { display: block; }
 #usersearchform {
 	position: absolute;
 	top: 2px;
@@ -245,16 +257,22 @@ td.name, td.password { padding-left:.8em; }
 td.password>img,td.displayName>img, td.remove>a, td.quota>img { visibility:hidden; }
 td.password, td.quota, td.displayName { width:12em; cursor:pointer; }
 td.password>span, td.quota>span, rd.displayName>span { margin-right: 1.2em; color: #C7C7C7; }
+span.usersCreationTimeTooltip { white-space: nowrap; }
 span.usersLastLoginTooltip { white-space: nowrap; }
 
 /* dropdowns will be relative to this element */
 #userlist {
 	position: relative;
 }
+#userlist .password,
+#userlist .quota,
 #userlist .mailAddress,
 #userlist .enabled,
 #userlist .storageLocation,
 #userlist .userBackend,
+#userlist .creationTime {
+         display : none;
+},
 #userlist .lastLogin {
 	display : none;
 }
@@ -274,6 +292,10 @@ span.usersLastLoginTooltip { white-space: nowrap; }
 
 #newuser .groups {
 	display: inline;
+}
+
+#newuser .groups li.creator {
+	cursor: pointer;
 }
 
 #newuser .groupsListContainer.hidden,
@@ -547,7 +569,7 @@ table.grid td.date {
 }
 
 #shareAPI input#shareapiExpireAfterNDays {
-	width: 25px;
+	width: 40px;
 }
 
 #shareAPI .nocheckbox {
@@ -600,6 +622,10 @@ table.grid td.date {
 
 #mail_smtpport {
 	width: 40px;
+}
+
+#mail_to_address {
+	width: 197px;
 }
 
 .cronlog {
@@ -662,19 +688,6 @@ doesnotexist:-o-prefocus {
 
 /* HELP */
 
-.help-includes {
-	overflow: hidden !important;
-}
-
-.help-iframe {
-	width: 100%;
-	height: 100%;
-	margin: 0;
-	padding: 0;
-	border: 0;
-	overflow: auto;
-}
-
 #postsetupchecks .loading {
 	height: 50px;
 	background-position: left center;
@@ -715,8 +728,8 @@ li > a.icon-search {
 	background-image: url("../../core/img/actions/search.svg");
 }
 
-li > a.icon-share {
-	background-image: url("../../core/img/actions/share.svg");
+li > a.icon-shared {
+	background-image: url("../../core/img/actions/shared.svg");
 }
 
 li > a.icon-folder {
@@ -757,4 +770,28 @@ li > a.icon-settings {
 
 div.app-settings .section {
 	margin-bottom: 0;
+}
+
+.action.resendInvitationEmail img {
+	vertical-align: text-bottom;
+}
+
+.usercount {
+	margin-left: 5px;
+}
+
+.usercount.tag {
+	display: inline-block;
+	padding: .25em .4em;
+	font-size: 90%;
+	font-weight: 700;
+	line-height: 1;
+	text-align: center;
+	white-space: nowrap;
+	vertical-align: baseline;
+	border-radius: .25rem;
+	color: #fff;
+	background-color: #041e42;
+	cursor: pointer;
+	clear: both;
 }

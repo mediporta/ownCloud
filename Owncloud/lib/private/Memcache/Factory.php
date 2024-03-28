@@ -33,7 +33,7 @@ use \OCP\ICacheFactory;
 use \OCP\ILogger;
 
 class Factory implements ICacheFactory {
-	const NULL_CACHE = '\\OC\\Memcache\\NullCache';
+	public const NULL_CACHE = '\\OC\\Memcache\\NullCache';
 
 	/**
 	 * @var string $globalPrefix
@@ -67,8 +67,13 @@ class Factory implements ICacheFactory {
 	 * @param string|null $distributedCacheClass
 	 * @param string|null $lockingCacheClass
 	 */
-	public function __construct($globalPrefix, ILogger $logger,
-		$localCacheClass = null, $distributedCacheClass = null, $lockingCacheClass = null) {
+	public function __construct(
+		$globalPrefix,
+		ILogger $logger,
+		$localCacheClass = null,
+		$distributedCacheClass = null,
+		$lockingCacheClass = null
+	) {
 		$this->logger = $logger;
 		$this->globalPrefix = $globalPrefix;
 
@@ -84,7 +89,7 @@ class Factory implements ICacheFactory {
 		if (!$localCacheClass::isAvailable()) {
 			if (\OC::$CLI && !\defined('PHPUNIT_RUN')) {
 				// CLI should not hard-fail on broken memcache
-				$this->logger->info($missingCacheMessage, [
+				$this->logger->debug($missingCacheMessage, [
 					'class' => $localCacheClass,
 					'use' => 'local',
 					'app' => 'cli'
@@ -99,7 +104,7 @@ class Factory implements ICacheFactory {
 		if (!$distributedCacheClass::isAvailable()) {
 			if (\OC::$CLI && !\defined('PHPUNIT_RUN')) {
 				// CLI should not hard-fail on broken memcache
-				$this->logger->info($missingCacheMessage, [
+				$this->logger->debug($missingCacheMessage, [
 					'class' => $distributedCacheClass,
 					'use' => 'distributed',
 					'app' => 'cli'

@@ -5,7 +5,6 @@ use Doctrine\DBAL\Schema\Schema;
 use OCP\Migration\ISchemaMigration;
 
 class Version20180119080933 implements ISchemaMigration {
-
 	/**
 	 * @param Schema $schema
 	 * @param array $options
@@ -18,5 +17,5 @@ class Version20180119080933 implements ISchemaMigration {
 		$column->setNotnull(false);
 		$column = $table->getColumn('link');
 		$column->setNotnull(false);
-    }
+	}
 }

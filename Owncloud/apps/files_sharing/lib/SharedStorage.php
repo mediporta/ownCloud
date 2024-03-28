@@ -41,12 +41,12 @@ use OCP\Files\Cache\ICacheEntry;
 use OCP\Files\NotFoundException;
 use OCP\Files\Storage\IStorage;
 use OCP\Lock\ILockingProvider;
+use OCP\Lock\Persistent\ILock;
 
 /**
  * Convert target path to source path and pass the function call to the correct storage provider
  */
 class SharedStorage extends \OC\Files\Storage\Wrapper\Jail implements ISharedStorage {
-
 	/** @var \OCP\Share\IShare */
 	private $superShare;
 
@@ -261,9 +261,9 @@ class SharedStorage extends \OC\Files\Storage\Wrapper\Jail implements ISharedSto
 	public function rename($path1, $path2) {
 		$isPartFile = \pathinfo($path1, PATHINFO_EXTENSION) === 'part';
 		$targetExists = $this->file_exists($path2);
-		$sameFodler = \dirname($path1) === \dirname($path2);
+		$sameFolder = \dirname($path1) === \dirname($path2);
 
-		if ($targetExists || ($sameFodler && !$isPartFile)) {
+		if ($targetExists || ($sameFolder && !$isPartFile)) {
 			if (!$this->isUpdatable('')) {
 				return false;
 			}
@@ -455,5 +455,29 @@ class SharedStorage extends \OC\Files\Storage\Wrapper\Jail implements ISharedSto
 		$this->init();
 
 		return $this->sourceStorage;
+	}
+
+	public function getLocks($internalPath, $returnChildLocks = false) {
+		$locks = parent::getLocks($this->getSourcePath($internalPath), $returnChildLocks);
+		return \array_map(function (ILock $lock) {
+			// TODO: if path starts with rootpath
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
+			$mountedPath = \substr($lock->getPath(), \strlen($this->rootPath)+1);
+			// FixMe: setDavUserId does not seem to exist anywhere
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
+			$lock->setDavUserId($this->user);
+			// FixMe: setAbsoluteDavPath does not seem to exist anywhere
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
+			$lock->setAbsoluteDavPath($this->getMountPoint() . '/' .$mountedPath);
+			return $lock;
+		}, $locks);
+	}
+
+	public function lockNodePersistent($internalPath, array $lockInfo) {
+		return parent::lockNodePersistent($this->getSourcePath($internalPath), $lockInfo);
+	}
+
+	public function unlockNodePersistent($internalPath, array $lockInfo) {
+		return parent::unlockNodePersistent($this->getSourcePath($internalPath), $lockInfo);
 	}
 }

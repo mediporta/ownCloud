@@ -8,8 +8,8 @@ OC.L10N.register(
     "Select" : "دیاریکردنی",
     "Name" : "ناو",
     "Folder" : "بوخچه",
+    "Cancel" : "لابردن",
     "Upload" : "بارکردن",
-    "Save" : "پاشکه‌وتکردن",
     "Settings" : "ڕێکخستنه‌کان"
 },
 "nplurals=2; plural=(n != 1);");

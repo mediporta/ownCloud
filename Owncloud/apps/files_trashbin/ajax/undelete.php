@@ -41,7 +41,7 @@ if (isset($_POST['allfiles']) && (string)$_POST['allfiles'] === 'true') {
 	if ($dir === '' || $dir === '/') {
 		$dirListing = false;
 	}
-	foreach (OCA\Files_Trashbin\Helper::getTrashFiles($dir, \OCP\User::getUser()) as $file) {
+	foreach (OCA\Files_Trashbin\Helper::getTrashFiles($dir, \OCP\User::getUser(), '', false, false) as $file) {
 		$fileName = $file['name'];
 		if (!$dirListing) {
 			$fileName .= '.d' . $file['mtime'];
@@ -57,24 +57,17 @@ $success = [];
 
 $i = 0;
 foreach ($list as $file) {
-	$path = $dir . '/' . $file;
-	if ($dir === '/') {
-		$file = \ltrim($file, '/');
-		$delimiter = \strrpos($file, '.d');
-		$filename = \substr($file, 0, $delimiter);
-		$timestamp =  \substr($file, $delimiter+2);
-	} else {
-		$path_parts = \pathinfo($file);
-		$filename = $path_parts['basename'];
-		$timestamp = null;
-	}
+	$file = \ltrim($file, '/');
+	$filename = $dir . $file;  // dir already contains a trailing "/"
 
-	if (!OCA\Files_Trashbin\Trashbin::restore($path, $filename, $timestamp)) {
+	// "restore" will require the whole path inside the trashbin including
+	// the deletion timestamp in the filename, such as "/file.txt.d12345"
+	// or "/folder.d12345/file.txt"
+	if (!OCA\Files_Trashbin\Trashbin::restore($filename)) {
 		$error[] = $filename;
-		\OCP\Util::writeLog('trashbin', 'can\'t restore ' . $filename, \OCP\Util::DEBUG);
+		\OCP\Util::writeLog('files_trashbin', 'can\'t restore ' . $filename, \OCP\Util::DEBUG);
 	} else {
 		$success[$i]['filename'] = $file;
-		$success[$i]['timestamp'] = $timestamp;
 		$i++;
 	}
 }

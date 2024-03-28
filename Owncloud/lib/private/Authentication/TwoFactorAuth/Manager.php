@@ -29,11 +29,14 @@ use OC_App;
 use OCP\AppFramework\QueryException;
 use OCP\Authentication\TwoFactorAuth\IProvider;
 use OCP\IConfig;
+use OCP\IRequest;
+use OCP\ILogger;
 use OCP\ISession;
 use OCP\IUser;
+use OCP\IGroupManager;
 
 class Manager {
-	const SESSION_UID_KEY = 'two_factor_auth_uid';
+	public const SESSION_UID_KEY = 'two_factor_auth_uid';
 
 	/** @var AppManager */
 	private $appManager;
@@ -41,18 +44,33 @@ class Manager {
 	/** @var ISession */
 	private $session;
 
+	/** @var IGroupManager */
+	private $groupManager;
+
 	/** @var IConfig */
 	private $config;
+
+	/** @var IRequest */
+	private $request;
+
+	/** @var ILogger */
+	private $logger;
 
 	/**
 	 * @param AppManager $appManager
 	 * @param ISession $session
+	 * @param IGroupManager $groupManager
 	 * @param IConfig $config
+	 * @param IRequest $request
+	 * @param ILogger $logger
 	 */
-	public function __construct(AppManager $appManager, ISession $session, IConfig $config) {
+	public function __construct(AppManager $appManager, ISession $session, IGroupManager $groupManager, IConfig $config, IRequest $request, ILogger $logger) {
 		$this->appManager = $appManager;
 		$this->session = $session;
+		$this->groupManager = $groupManager;
 		$this->config = $config;
+		$this->request = $request;
+		$this->logger = $logger;
 	}
 
 	/**
@@ -62,8 +80,27 @@ class Manager {
 	 * @return boolean
 	 */
 	public function isTwoFactorAuthenticated(IUser $user) {
+		if ($this->isTwoFactorEnforcedForUser($user)) {
+			return \count($this->getProviders($user)) > 0;
+		}
 		$twoFactorEnabled = ((int) $this->config->getUserValue($user->getUID(), 'core', 'two_factor_auth_disabled', 0)) === 0;
 		return $twoFactorEnabled && \count($this->getProviders($user)) > 0;
+	}
+
+	public function isTwoFactorEnforcedForUser(IUser $user) {
+		if ($this->config->getAppValue('core', 'enforce_2fa', 'no') !== 'yes') {
+			return false;
+		}
+
+		$enforce2faExcludedGroups = \json_decode($this->config->getAppValue('core', 'enforce_2fa_excluded_groups', '[]'), true);
+		if (!empty($enforce2faExcludedGroups)) {
+			foreach ($enforce2faExcludedGroups as $group) {
+				if ($this->groupManager->isInGroup($user->getUID(), $group)) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -123,6 +160,14 @@ class Manager {
 			}
 		}
 
+		// if 2-factor is enforced, we must not filter out providers that
+		// might not be enabled or configured. The providers are expected
+		// to handle this problem on their own, usually by allowing
+		// configuration (at least partially) in the challenge page.
+		if ($this->isTwoFactorEnforcedForUser($user)) {
+			return $providers;
+		}
+
 		return \array_filter($providers, function ($provider) use ($user) {
 			/* @var $provider IProvider */
 			return $provider->isTwoFactorAuthEnabledForUser($user);
@@ -157,6 +202,11 @@ class Manager {
 		$result = $provider->verifyChallenge($user, $challenge);
 		if ($result) {
 			$this->session->remove(self::SESSION_UID_KEY);
+		} else {
+			$this->logger->warning(
+				"Two factor verify failed: '{$user->getUserName()}' (Remote IP: '{$this->request->getRemoteAddress()}')",
+				['app' => 'core']
+			);
 		}
 		return $result;
 	}

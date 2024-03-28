@@ -31,9 +31,9 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Manage extends Command {
-	const DEFAULT_BACKEND = 'owncloud';
-	const DEFAULT_LOG_LEVEL = 2;
-	const DEFAULT_TIMEZONE = 'UTC';
+	public const DEFAULT_BACKEND = 'owncloud';
+	public const DEFAULT_LOG_LEVEL = 2;
+	public const DEFAULT_TIMEZONE = 'UTC';
 
 	/** @var IConfig */
 	protected $config;
@@ -68,7 +68,7 @@ class Manage extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		// collate config setting to the end, to avoid partial configuration
 		$toBeSet = [];
 
@@ -109,6 +109,7 @@ class Manage extends Command {
 
 		$timezone = $this->config->getSystemValue('logtimezone', self::DEFAULT_TIMEZONE);
 		$output->writeln('Log timezone: '.$timezone);
+		return 0;
 	}
 
 	/**
@@ -123,10 +124,14 @@ class Manage extends Command {
 
 	/**
 	 * @param string $timezone
-	 * @throws \Exception
+	 * @throws \InvalidArgumentException
 	 */
 	protected function validateTimezone($timezone) {
-		new \DateTimeZone($timezone);
+		try {
+			new \DateTimeZone($timezone);
+		} catch (\Exception $e) {
+			throw new \InvalidArgumentException("Invalid timezone ($timezone)");
+		}
 	}
 
 	/**
@@ -137,18 +142,18 @@ class Manage extends Command {
 	protected function convertLevelString($level) {
 		$level = \strtolower($level);
 		switch ($level) {
-		case 'debug':
-			return 0;
-		case 'info':
-			return 1;
-		case 'warning':
-		case 'warn':
-			return 2;
-		case 'error':
-		case 'err':
-			return 3;
-		case 'fatal':
-			return 4;
+			case 'debug':
+				return 0;
+			case 'info':
+				return 1;
+			case 'warning':
+			case 'warn':
+				return 2;
+			case 'error':
+			case 'err':
+				return 3;
+			case 'fatal':
+				return 4;
 		}
 		throw new \InvalidArgumentException('Invalid log level string');
 	}
@@ -160,16 +165,16 @@ class Manage extends Command {
 	 */
 	protected function convertLevelNumber($levelNum) {
 		switch ($levelNum) {
-		case 0:
-			return 'Debug';
-		case 1:
-			return 'Info';
-		case 2:
-			return 'Warning';
-		case 3:
-			return 'Error';
-		case 4:
-			return 'Fatal';
+			case 0:
+				return 'Debug';
+			case 1:
+				return 'Info';
+			case 2:
+				return 'Warning';
+			case 3:
+				return 'Error';
+			case 4:
+				return 'Fatal';
 		}
 		throw new \InvalidArgumentException('Invalid log level number');
 	}

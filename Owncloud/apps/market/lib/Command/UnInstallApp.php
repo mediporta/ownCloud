@@ -28,7 +28,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class UnInstallApp extends Command {
-
 	/** @var MarketService */
 	private $marketService;
 
@@ -44,23 +43,24 @@ class UnInstallApp extends Command {
 		$this
 			->setName('market:uninstall')
 			->setDescription('Un-Install apps.')
-			->addArgument('ids',
+			->addArgument(
+				'ids',
 				InputArgument::OPTIONAL | InputArgument::IS_ARRAY,
 				'Ids of the apps'
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if (!$this->marketService->canInstall()) {
 			throw new \Exception("Un-Installing apps is not supported because the app folder is not writable.");
 		}
 
 		$appIds = $input->getArgument('ids');
-		$appIds = array_unique($appIds);
+		$appIds = \array_unique($appIds);
 
-		if (!count($appIds)){
+		if (!\count($appIds)) {
 			$output->writeln("No appIds specified. Nothing to do.");
-			return;
+			return 0;
 		}
 
 		foreach ($appIds as $appId) {

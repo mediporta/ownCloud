@@ -38,7 +38,7 @@ class SMB extends ExternalBackend {
 			->setIdentifier('smb')
 			->addIdentifierAlias('\OC\Files\Storage\SMB') // legacy compat
 			->setStorageClass('\OCA\Files_External\Lib\Storage\SMB')
-			->setText($l->t('SMB / CIFS'))
+			->setText($l->t('SMB Personal (unique file IDs)'))
 			->addParameters([
 				(new DefinitionParameter('host', $l->t('Host'))),
 				(new DefinitionParameter('share', $l->t('Share'))),
@@ -56,9 +56,9 @@ class SMB extends ExternalBackend {
 	 * @param IUser $user
 	 */
 	public function manipulateStorageConfig(IStorageConfig &$storage, IUser $user = null) {
-		$user = $storage->getBackendOption('user');
+		$userFromBackendOption = $storage->getBackendOption('user');
 		if ($domain = $storage->getBackendOption('domain')) {
-			$storage->setBackendOption('user', $domain.'\\'.$user);
+			$storage->setBackendOption('user', $domain.'\\'.$userFromBackendOption);
 		}
 	}
 }

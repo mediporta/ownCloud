@@ -36,7 +36,6 @@ use OCP\Mail\IMailer;
  * @package OC\Settings\Controller
  */
 class MailSettingsController extends Controller {
-
 	/** @var \OCP\IL10N */
 	private $l10n;
 	/** @var \OCP\IConfig */
@@ -60,14 +59,16 @@ class MailSettingsController extends Controller {
 	 * @param IMailer $mailer
 	 * @param string $defaultMailAddress
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IL10N $l10n,
-								IConfig $config,
-								Session $userSession,
-								\OC_Defaults $defaults,
-								IMailer $mailer,
-								$defaultMailAddress) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IL10N $l10n,
+		IConfig $config,
+		Session $userSession,
+		\OC_Defaults $defaults,
+		IMailer $mailer,
+		$defaultMailAddress
+	) {
 		parent::__construct($appName, $request);
 		$this->l10n = $l10n;
 		$this->config = $config;
@@ -89,14 +90,16 @@ class MailSettingsController extends Controller {
 	 * @param string $mail_smtpport
 	 * @return array
 	 */
-	public function setMailSettings($mail_domain,
-									$mail_from_address,
-									$mail_smtpmode,
-									$mail_smtpsecure,
-									$mail_smtphost,
-									$mail_smtpauthtype,
-									$mail_smtpauth,
-									$mail_smtpport) {
+	public function setMailSettings(
+		$mail_domain,
+		$mail_from_address,
+		$mail_smtpmode,
+		$mail_smtpsecure,
+		$mail_smtphost,
+		$mail_smtpauthtype,
+		$mail_smtpauth,
+		$mail_smtpport
+	) {
 		$params = \get_defined_vars();
 		$configs = [];
 		foreach ($params as $key => $value) {
@@ -153,7 +156,12 @@ class MailSettingsController extends Controller {
 	 * @return array
 	 */
 	public function sendTestMail() {
-		$email = $this->userSession->getUser()->getEMailAddress();
+		$email = $this->request->getParam('mail_to_address');
+
+		if (empty($email)) {
+			$email = $this->userSession->getUser()->getEMailAddress();
+		}
+
 		if (!empty($email)) {
 			try {
 				$message = $this->mailer->createMessage();

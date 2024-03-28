@@ -22,18 +22,30 @@ style('settings', 'setpassword');
 script('settings', 'setpassword');
 ?>
 
-<label id="error-message" class="warning" style="display:none"></label>
-<form action="<?php print_unescaped($_['link']) ?>" id="set-password" method="post">
-	<fieldset>
-		<p>
-			<label for="password" class="infield"><?php p($l->t('New password')); ?></label>
-			<input type="password" name="password" id="password" value=""
-				   placeholder="<?php p($l->t('New Password')); ?>"
-				   autocomplete="off" autocapitalize="off" autocorrect="off"
-				   required autofocus />
-		</p>
-		<input type="submit" id="submit" value="<?php
-			p($l->t('Please set your password'));
-		?>" />
-	</fieldset>
+<form action="<?php print_unescaped($_['link']) ?>" id="set-password" method="post" autocapitalize="none">
+	<div class="grouptop<?php if (!empty($_['invalidpassword'])) {
+		echo ' shake';
+	} ?>">
+		<label for="password"><?php p($l->t('New password')); ?></label>
+		<input type="password" name="password" id="password" value=""
+				autocomplete="new-password" autocorrect="off"
+				aria-label="<?php p($l->t('New password')); ?>"
+				placeholder="<?php p($l->t('New password')); ?>"
+				required autofocus />
+	</div>
+	<div class="groupbottom<?php if (!empty($_['invalidpassword'])) {?> shake<?php } ?>">
+		<label for="retypepassword"><?php p($l->t('Confirm Password')); ?></label>
+		<input type="password" name="retypepassword" id="retypepassword" value=""
+				aria-label="<?php p($l->t('Confirm Password')); ?>"
+				placeholder="<?php p($l->t('Confirm Password')); ?>"
+				autocomplete="new-password" autocorrect="off"/>
+	</div>
+	<div class="submit-wrap">
+		<span id="message"></span>
+		<label id="error-message" class="warning" style="display:none"></label>
+		<button type="submit" id="submit">
+			<span><?php p($l->t('Set password')); ?></span>
+			<div class="loading-spinner"><div></div><div></div><div></div><div></div></div>
+		</button>
+	</div>
 </form>

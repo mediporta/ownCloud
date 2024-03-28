@@ -7,8 +7,8 @@ function changeEmailAddress () {
 		return;
 	}
 	emailInfo.defaultValue = emailInfo.val();
-	OC.msg.startSaving('#lostpassword .msg');
-	var post = $("#lostpassword").serializeArray();
+	OC.msg.startSaving('#emailform .msg');
+	var post = $("#emailform").serializeArray();
 	$.ajax({
 		type: 'PUT',
 		url: OC.generateUrl('/settings/users/{id}/mailAddress', {id: OC.currentUser}),
@@ -19,9 +19,9 @@ function changeEmailAddress () {
 		// I know the following 4 lines look weird, but that is how it works
 		// in jQuery -  for success the first parameter is the result
 		//              for failure the first parameter is the result object
-		OC.msg.finishedSaving('#lostpassword .msg', result);
+		OC.msg.finishedSaving('#emailform .msg', result);
 	}).fail(function(result){
-		OC.msg.finishedSaving('#lostpassword .msg', result.responseJSON);
+		OC.msg.finishedSaving('#emailform .msg', result.responseJSON);
 	});
 }
 
@@ -96,7 +96,7 @@ function showAvatarCropper () {
 			aspectRatio: 1,
 			boxHeight: 500,
 			boxWidth: 500,
-			setSelect: [0, 0, 100000, 100000]  /* set to a very large value since 
+			setSelect: [0, 0, 100000, 100000]  /* set to a very large value since
 			this will automatically take the minimum with width and height of
 			parent image and aspect ratio is already one, ensuring a square cropper */
 		});
@@ -312,11 +312,11 @@ $(document).ready(function () {
 	$('#pass2').strengthify({
 		zxcvbn: OC.linkTo('core','vendor/zxcvbn/dist/zxcvbn.js'),
 		titles: [
-			t('core', 'Very weak password'),
-			t('core', 'Weak password'),
-			t('core', 'So-so password'),
-			t('core', 'Good password'),
-			t('core', 'Strong password')
+			t('settings', 'Very weak password'),
+			t('settings', 'Weak password'),
+			t('settings', 'So-so password'),
+			t('settings', 'Good password'),
+			t('settings', 'Strong password')
 		],
 		drawTitles: true
 	});

@@ -38,16 +38,17 @@ class Helper {
 	 * @param string $user
 	 * @param string $sortAttribute attribute to sort on or empty to disable sorting
 	 * @param bool $sortDescending true for descending sort, false otherwise
+	 * @param bool $addExtraData if true, file info will include original path
 	 * @return \OCP\Files\FileInfo[]
 	 */
-	public static function getTrashFiles($dir, $user, $sortAttribute = '', $sortDescending = false) {
+	public static function getTrashFiles($dir, $user, $sortAttribute = '', $sortDescending = false, $addExtraData = true) {
 		$result = [];
 		$timestamp = null;
 
 		$view = new \OC\Files\View('/' . $user . '/files_trashbin/files');
 
 		if (\ltrim($dir, '/') !== '' && !$view->is_dir($dir)) {
-			throw new \Exception('Directory does not exists');
+			throw new \Exception('Directory does not exist');
 		}
 
 		$mount = $view->getMount($dir);
@@ -55,9 +56,10 @@ class Helper {
 		$absoluteDir = $view->getAbsolutePath($dir);
 		$internalPath = $mount->getInternalPath($absoluteDir);
 
-		$originalLocations = \OCA\Files_Trashbin\Trashbin::getLocations($user);
+		$originalLocationsCache = null;
 		$dirContent = $storage->getCache()->getFolderContents($mount->getInternalPath($view->getAbsolutePath($dir)));
 		foreach ($dirContent as $entry) {
+			// construct base fileinfo entries
 			$entryName = $entry->getName();
 			$id = $entry->getId();
 			$name = $entryName;
@@ -70,14 +72,7 @@ class Helper {
 				$parts = \explode('/', \ltrim($dir, '/'));
 				$timestamp = \substr(\pathinfo($parts[0], PATHINFO_EXTENSION), 1);
 			}
-			$originalPath = '';
-			$originalName = \substr($entryName, 0, -\strlen($timestamp)-2);
-			if (isset($originalLocations[$originalName][$timestamp])) {
-				$originalPath = $originalLocations[$originalName][$timestamp];
-				if (\substr($originalPath, -1) === '/') {
-					$originalPath = \substr($originalPath, 0, -1);
-				}
-			}
+
 			$i = [
 				'name' => $name,
 				'mtime' => $timestamp,
@@ -88,15 +83,33 @@ class Helper {
 				'etag' => '',
 				'permissions' => Constants::PERMISSION_ALL - Constants::PERMISSION_SHARE
 			];
-			if ($originalPath) {
-				$i['extraData'] = $originalPath . '/' . $originalName;
+
+			// if original file path of the trashed file required, add in extraData
+			if ($addExtraData) {
+				if (!$originalLocationsCache) {
+					$originalLocationsCache = \OCA\Files_Trashbin\Trashbin::getLocations($user);
+				}
+
+				$originalName = \substr($entryName, 0, -\strlen($timestamp)-2);
+				if (isset($originalLocationsCache[$originalName][$timestamp])) {
+					$originalPath = $originalLocationsCache[$originalName][$timestamp];
+					if (\substr($originalPath, -1) === '/') {
+						$originalPath = \substr($originalPath, 0, -1);
+					}
+
+					$i['extraData'] = $originalPath . '/' . $originalName;
+				}
 			}
+
+			// set FileInfo object on the constructed fileinfo array
 			$result[] = new FileInfo($absoluteDir . '/' . $i['name'], $storage, $internalPath . '/' . $i['name'], $i, $mount);
 		}
 
+		// if sorting enabled use selected sorting algorithm
 		if ($sortAttribute !== '') {
 			return \OCA\Files\Helper::sortFiles($result, $sortAttribute, $sortDescending);
 		}
+
 		return $result;
 	}
 

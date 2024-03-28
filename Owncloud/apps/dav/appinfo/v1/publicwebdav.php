@@ -27,6 +27,18 @@
  */
 
 // load needed apps
+use OC\Files\Filesystem;
+use OC\Files\Storage\Wrapper\PermissionsMask;
+use OC\Files\View;
+use OCA\DAV\Connector\Sabre\AutorenamePlugin;
+use OCA\DAV\Files\Sharing\PublicLinkCheckPlugin;
+use OCA\DAV\Files\Sharing\PublicLinkEventsPlugin;
+use OCA\FederatedFileSharing\AppInfo\Application;
+use OCP\Constants;
+use OCP\Files\NotFoundException;
+use Sabre\DAV\Exception\NotAuthenticated;
+use Sabre\DAV\Exception\NotFound;
+
 $RUNTIME_APPTYPES = ['filesystem', 'authentication', 'logging'];
 
 OC_App::loadApps($RUNTIME_APPTYPES);
@@ -48,20 +60,22 @@ $serverFactory = new OCA\DAV\Connector\Sabre\ServerFactory(
 	\OC::$server->getUserSession(),
 	\OC::$server->getMountManager(),
 	\OC::$server->getTagManager(),
-	\OC::$server->getRequest()
+	\OC::$server->getRequest(),
+	\OC::$server->getTimeFactory()
 );
 
 $requestUri = \OC::$server->getRequest()->getRequestUri();
 
-$linkCheckPlugin = new \OCA\DAV\Files\Sharing\PublicLinkCheckPlugin();
+$linkCheckPlugin = new PublicLinkCheckPlugin();
+$linkEventsPlugin = new PublicLinkEventsPlugin(\OC::$server->getEventDispatcher());
 
-$server = $serverFactory->createServer($baseuri, $requestUri, $authBackend, function (\Sabre\DAV\Server $server) use ($authBackend, $linkCheckPlugin) {
+$server = $serverFactory->createServer($baseuri, $requestUri, $authBackend, function () use ($authBackend, $linkCheckPlugin) {
 	$isAjax = (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest');
-	$federatedSharingApp = new \OCA\FederatedFileSharing\AppInfo\Application('federatedfilesharing');
+	$federatedSharingApp = new Application();
 	$federatedShareProvider = $federatedSharingApp->getFederatedShareProvider();
 	if ($federatedShareProvider->isOutgoingServer2serverShareEnabled() === false && !$isAjax) {
-		// this is what is thrown when trying to access a non-existing share
-		throw new \Sabre\DAV\Exception\NotAuthenticated();
+		// this is what is thrown when trying to access a nonexistent share
+		throw new NotAuthenticated();
 	}
 
 	$share = $authBackend->getShare();
@@ -69,27 +83,44 @@ $server = $serverFactory->createServer($baseuri, $requestUri, $authBackend, func
 	$fileId = $share->getNodeId();
 
 	// FIXME: should not add storage wrappers outside of preSetup, need to find a better way
-	$previousLog = \OC\Files\Filesystem::logWarningWhenAddingStorageWrapper(false);
-	\OC\Files\Filesystem::addStorageWrapper('sharePermissions', function ($mountPoint, $storage) use ($share) {
-		return new \OC\Files\Storage\Wrapper\PermissionsMask(['storage' => $storage, 'mask' => $share->getPermissions() | \OCP\Constants::PERMISSION_SHARE]);
+	$previousLog = Filesystem::logWarningWhenAddingStorageWrapper(false);
+	Filesystem::addStorageWrapper('sharePermissions', function ($mountPoint, $storage) use ($share) {
+		return new PermissionsMask(['storage' => $storage, 'mask' => $share->getPermissions() | Constants::PERMISSION_SHARE]);
 	});
-	\OC\Files\Filesystem::logWarningWhenAddingStorageWrapper($previousLog);
+	Filesystem::logWarningWhenAddingStorageWrapper($previousLog);
 
-	OC_Util::setupFS($owner);
-	$ownerView = \OC\Files\Filesystem::getView();
+	# in case any fs is already mounted: tear it down
+	OC_Util::tearDownFS();
+
+	# setup fs for the share owner
+	if (!OC_Util::setupFS($owner)) {
+		# in absolute rare cases setting up the file system for a user might fail
+		\OC::$server->getLogger()->error("Could not setup file system for $owner");
+		throw new \Sabre\DAV\Exception();
+	}
+	$ownerView = Filesystem::getView();
 	try {
 		$path = $ownerView->getPath($fileId);
-	} catch (\OCP\Files\NotFoundException $e) {
-		throw new \Sabre\DAV\Exception\NotFound();
+	} catch (NotFoundException $e) {
+		\OC::$server->getLogger()->error("Could not get path for $fileId in files of user $owner");
+		throw new NotFound();
 	}
 	$fileInfo = $ownerView->getFileInfo($path);
 	$linkCheckPlugin->setFileInfo($fileInfo);
 
-	return new \OC\Files\View($ownerView->getAbsolutePath($path));
-});
+	\OC::$server->getEventDispatcher()->addListener(
+		'public.user.resolve',
+		function ($event) use ($share) {
+			$event->setArgument('user', $share->getSharedWith());
+		}
+	);
 
-$server->addPlugin(new \OCA\DAV\Connector\Sabre\AutorenamePlugin());
+	return new View($ownerView->getAbsolutePath($path));
+}, true);
+
+$server->addPlugin(new AutorenamePlugin());
 $server->addPlugin($linkCheckPlugin);
+$server->addPlugin($linkEventsPlugin);
 
 // And off we go!
-$server->exec();
+$server->start();

@@ -26,6 +26,7 @@
 
 namespace OCA\Files_Sharing\Controller;
 
+use OC\Helper\UserTypeHelper;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCSController;
@@ -40,10 +41,11 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\Share;
+use OCA\Files_Sharing\AppInfo\Application;
 use OCA\Files_Sharing\SharingBlacklist;
+use OCP\Util\UserSearch;
 
 class ShareesController extends OCSController {
-
 	/** @var IGroupManager */
 	protected $groupManager;
 
@@ -70,6 +72,9 @@ class ShareesController extends OCSController {
 
 	/** @var \OCP\Share\IManager */
 	protected $shareManager;
+
+	/** @var UserSearch*/
+	protected $userSearch;
 
 	/** @var bool */
 	protected $shareWithGroupOnly = false;
@@ -112,27 +117,33 @@ class ShareesController extends OCSController {
 	protected $sharingBlacklist;
 
 	/**
+	 * @param $appName
+	 * @param IRequest $request
 	 * @param IGroupManager $groupManager
 	 * @param IUserManager $userManager
 	 * @param IManager $contactsManager
 	 * @param IConfig $config
 	 * @param IUserSession $userSession
 	 * @param IURLGenerator $urlGenerator
-	 * @param IRequest $request
 	 * @param ILogger $logger
 	 * @param \OCP\Share\IManager $shareManager
+	 * @param SharingBlacklist $sharingBlacklist
+	 * @param UserSearch $userSearch
 	 */
-	public function __construct($appName,
-			IRequest $request,
-			IGroupManager $groupManager,
-			IUserManager $userManager,
-			IManager $contactsManager,
-			IConfig $config,
-			IUserSession $userSession,
-			IURLGenerator $urlGenerator,
-			ILogger $logger,
-			\OCP\Share\IManager $shareManager,
-			SharingBlacklist $sharingBlacklist) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IGroupManager $groupManager,
+		IUserManager $userManager,
+		IManager $contactsManager,
+		IConfig $config,
+		IUserSession $userSession,
+		IURLGenerator $urlGenerator,
+		ILogger $logger,
+		\OCP\Share\IManager $shareManager,
+		SharingBlacklist $sharingBlacklist,
+		UserSearch $userSearch
+	) {
 		parent::__construct($appName, $request);
 
 		$this->groupManager = $groupManager;
@@ -145,6 +156,7 @@ class ShareesController extends OCSController {
 		$this->logger = $logger;
 		$this->shareManager = $shareManager;
 		$this->sharingBlacklist = $sharingBlacklist;
+		$this->userSearch = $userSearch;
 		$this->additionalInfoField = $this->config->getAppValue('core', 'user_additional_info_field', '');
 	}
 
@@ -153,6 +165,11 @@ class ShareesController extends OCSController {
 	 */
 	protected function getUsers($search) {
 		$this->result['users'] = $this->result['exact']['users'] = $users = [];
+
+		if (\strlen(\trim($search)) === 0 && $this->userSearch->getSearchMinLength() > 0) {
+			$this->result['users'] = [];
+			return;
+		}
 
 		$userGroups = [];
 		if ($this->shareWithGroupOnly || $this->shareeEnumerationGroupMembers) {
@@ -179,13 +196,22 @@ class ShareesController extends OCSController {
 
 		$foundUserById = false;
 		$lowerSearch = \strtolower($search);
-		foreach ($users as $uid => $user) {
+		$userTypeHelper = new UserTypeHelper();
+
+		foreach ($users as $user) {
+			/**
+			 * Php parses numeric UID strings as integer in array key,
+			 * because of that, we need to learn uid from User object
+			 */
+			$uid = $user->getUID();
+
 			/* @var $user IUser */
 			$entry = [
 				'label' => $user->getDisplayName(),
 				'value' => [
 					'shareType' => Share::SHARE_TYPE_USER,
 					'shareWith' => $uid,
+					'userType' => $userTypeHelper->getUserType($uid),
 				],
 			];
 			$additionalInfo = $this->getAdditionalUserInfo($user);
@@ -194,20 +220,32 @@ class ShareesController extends OCSController {
 			}
 
 			if (
-				// Check if the uid is the same
-				\strtolower($uid) === $lowerSearch
-				// Check if exact display name
-				|| \strtolower($user->getDisplayName()) === $lowerSearch
-				// Check if exact first email
-				|| \strtolower($user->getEMailAddress()) === $lowerSearch
-				// Check for exact search term matches (when mail attributes configured as search terms + no enumeration)
-				|| \in_array($lowerSearch, \array_map('strtolower', $user->getSearchTerms()))) {
+				(
+					// Check if the uid is the same
+					\strtolower($uid) === $lowerSearch
+					// Check if exact display name
+					|| \strtolower($user->getDisplayName()) === $lowerSearch
+					// Check if exact first email
+					|| \strtolower($user->getEMailAddress()) === $lowerSearch
+					// Check for exact search term matches (when mail attributes configured as search terms + no enumeration)
+					|| \in_array($lowerSearch, \array_map('strtolower', $user->getSearchTerms()))
+				)
+				// No exact matches with an empty search query
+				&& $lowerSearch !== '') {
 				if (\strtolower($uid) === $lowerSearch) {
 					$foundUserById = true;
 				}
 				$this->result['exact']['users'][] = $entry;
 			} else {
-				$this->result['users'][] = $entry;
+				$userAutoCompleteEnabled = $this->config->getUserValue(
+					$user->getUID(),
+					'files_sharing',
+					'allow_share_dialog_user_enumeration',
+					'yes'
+				);
+				if ($userAutoCompleteEnabled === 'yes') {
+					$this->result['users'][] = $entry;
+				}
 			}
 		}
 
@@ -258,6 +296,7 @@ class ShareesController extends OCSController {
 		} elseif ($this->additionalInfoField === 'id') {
 			return $user->getUID();
 		}
+
 		return null;
 	}
 
@@ -266,6 +305,11 @@ class ShareesController extends OCSController {
 	 */
 	protected function getGroups($search) {
 		$this->result['groups'] = $this->result['exact']['groups'] = [];
+
+		if (\strlen(\trim($search)) === 0 && $this->userSearch->getSearchMinLength() > 0) {
+			$this->result['groups'] = [];
+			return;
+		}
 
 		$groups = $this->groupManager->search($search, $this->limit, $this->offset, 'sharing');
 		$groupIds = \array_map(function (IGroup $group) {
@@ -335,14 +379,43 @@ class ShareesController extends OCSController {
 
 	/**
 	 * @param string $search
-	 * @return array possible sharees
+	 * @return void
 	 */
 	protected function getRemote($search) {
+		$this->result['remotes'] = $this->result['exact']['remotes'] = $users = [];
+
+		if (\strlen(\trim($search)) === 0 && $this->userSearch->getSearchMinLength() > 0) {
+			$this->result['remotes'] = [];
+			return;
+		}
+
+		$pluginClass = $this->config->getSystemValue('sharing.remoteShareesSearch');
+		if ($pluginClass !== '') {
+			$this->result['remotes'] = [];
+			/** @var \OCP\Share\IRemoteShareesSearch $plugin */
+			$plugin = \OC::$server->query($pluginClass);
+			$result = $plugin->search($search);
+			$this->result['exact']['remotes'] = $result;
+			$this->reachedEndFor[] = 'remotes';
+			return;
+		}
 		$this->result['remotes'] = [];
 		// Fetch remote search properties from app config
+		/**
+		 * @var array $searchProperties
+		 */
 		$searchProperties = \explode(',', $this->config->getAppValue('dav', 'remote_search_properties', 'CLOUD,FN'));
 		// Search in contacts
-		$addressBookContacts = $this->contactsManager->search($search, $searchProperties, [], $this->limit, $this->offset);
+		$matchMode = $this->config->getSystemValue('accounts.enable_medial_search', true) === true
+			? 'ANY'
+			: 'START';
+		$addressBookContacts = $this->contactsManager->search(
+			$search,
+			$searchProperties,
+			[ 'matchMode' => $matchMode ],
+			$this->limit,
+			$this->offset
+		);
 		$foundRemoteById = false;
 		foreach ($addressBookContacts as $contact) {
 			if (isset($contact['isLocalSystemBook'])) {
@@ -410,14 +483,16 @@ class ShareesController extends OCSController {
 				}
 
 				// If we get here, we didnt find an exact match, so add to other matches
-				$this->result['remotes'][] = [
-					'label' => $contact['FN'],
-					'value' => [
-						'shareType' => Share::SHARE_TYPE_REMOTE,
-						'shareWith' => $cloudId,
-						'server' => $serverUrl,
-					],
-				];
+				if ($this->userSearch->isSearchable($search)) {
+					$this->result['remotes'][] = [
+						'label' => $contact['FN'],
+						'value' => [
+							'shareType' => Share::SHARE_TYPE_REMOTE,
+							'shareWith' => $cloudId,
+							'server' => $serverUrl,
+						],
+					];
+				}
 			}
 		}
 
@@ -426,9 +501,10 @@ class ShareesController extends OCSController {
 			$this->result['remotes'] = [];
 		}
 
-		if (!$foundRemoteById && \substr_count($search, '@') >= 1 && $this->offset === 0
+		if (!$foundRemoteById && \substr_count($search, '@') >= 1
+			&& $this->offset === 0 && $this->userSearch->isSearchable($search)
 			// if an exact local user is found, only keep the remote entry if
-			// its domain does not matches the trusted domains
+			// its domain does not match the trusted domains
 			// (if it does, it is a user whose local login domain matches the ownCloud
 			// instance domain)
 			&& (empty($this->result['exact']['users'])
@@ -532,6 +608,14 @@ class ShareesController extends OCSController {
 		if ($page <= 0) {
 			return [ 'statuscode' => Http::STATUS_BAD_REQUEST,
 				'message' => 'Invalid page'];
+		}
+
+		$sharingDisabledForUser = $this->shareManager->sharingDisabledForUser(
+			$this->userSession->getUser()->getUID()
+		);
+		// Return empty dataset if User is excluded from sharing
+		if ($sharingDisabledForUser) {
+			return new DataResponse(['data' => $this->result]);
 		}
 
 		$shareTypes = [

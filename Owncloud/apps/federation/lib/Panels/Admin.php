@@ -32,7 +32,6 @@ use OCP\Template;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class Admin implements ISettings {
-
 	/** @var IDBConnection */
 	protected $connection;
 	/** @var IL10N */
@@ -50,14 +49,16 @@ class Admin implements ISettings {
 	/** @var EventDispatcherInterface */
 	protected $eventDispatcher;
 
-	public function __construct(IDBConnection $connection,
-								IL10N $l,
-								IClientService $clientService,
-								ILogger $logger,
-								IJobList $jobList,
-								ISecureRandom $secureRandom,
-								IConfig $config,
-								EventDispatcherInterface $eventDispatcher) {
+	public function __construct(
+		IDBConnection $connection,
+		IL10N $l,
+		IClientService $clientService,
+		ILogger $logger,
+		IJobList $jobList,
+		ISecureRandom $secureRandom,
+		IConfig $config,
+		EventDispatcherInterface $eventDispatcher
+	) {
 		$this->connection = $connection;
 		$this->l = $l;
 		$this->clientService = $clientService;

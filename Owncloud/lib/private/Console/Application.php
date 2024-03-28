@@ -47,6 +47,9 @@ class Application {
 	/** @var IRequest */
 	private $request;
 
+	/** @var SymfonyApplication  */
+	private $application;
+
 	/**
 	 * @param IConfig $config
 	 * @param EventDispatcherInterface $dispatcher
@@ -93,6 +96,7 @@ class Application {
 				if (\OCP\Util::needUpgrade()) {
 					throw new NeedsUpdateException();
 				} elseif ($this->config->getSystemValue('maintenance', false)) {
+					'@phan-var \Symfony\Component\Console\Output\ConsoleOutputInterface $output';
 					$errOutput = $output->getErrorOutput();
 					$errOutput->writeln('<comment>ownCloud is in maintenance mode - no app have been loaded</comment>' . PHP_EOL);
 				} else {
@@ -154,10 +158,10 @@ class Application {
 	 */
 	public function run(InputInterface $input = null, OutputInterface $output = null) {
 		$args = isset($this->request->server['argv']) ? $this->request->server['argv'] : [];
-		$this->dispatcher->dispatch(ConsoleEvent::EVENT_RUN, new ConsoleEvent(
-			ConsoleEvent::EVENT_RUN,
-			$args
-		));
+		$this->dispatcher->dispatch(
+			new ConsoleEvent(ConsoleEvent::EVENT_RUN, $args),
+			ConsoleEvent::EVENT_RUN
+		);
 		return $this->application->run($input, $output);
 	}
 

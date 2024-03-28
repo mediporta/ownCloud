@@ -42,7 +42,22 @@
 				'url' => '/ajax/public_key.php',
 				'verb' => 'POST',
 				'requirements' => []
-			]
+			],
+			[
+				'name' => 'Applicable#patternSearch',
+				'url' => '/applicable/search',
+				'verb' => 'GET',
+			],
+			[
+				'name' => 'Applicable#userDisplayNames',
+				'url' => '/applicable/users',
+				'verb' => 'POST',
+			],
+			[
+				'name' => 'Applicable#groupDisplayNames',
+				'url' => '/applicable/groups',
+				'verb' => 'POST',
+			],
 		]
 	]
 );
@@ -55,7 +70,9 @@ $this->create('files_external_oauth2', 'ajax/oauth2.php')
 $this->create('files_external_list_applicable', '/applicable')
 	->actionInclude('files_external/ajax/applicable.php');
 
-\OCP\API::register('get',
-		'/apps/files_external/api/v1/mounts',
-		['\OCA\Files_External\Lib\Api', 'getUserMounts'],
-		'files_external');
+\OCP\API::register(
+	'get',
+	'/apps/files_external/api/v1/mounts',
+	['\OCA\Files_External\Lib\Api', 'getUserMounts'],
+	'files_external'
+);

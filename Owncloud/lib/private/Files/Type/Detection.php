@@ -63,9 +63,11 @@ class Detection implements IMimeTypeDetector {
 	 * @param string $customConfigDir
 	 * @param string $defaultConfigDir
 	 */
-	public function __construct(IURLGenerator $urlGenerator,
-								$customConfigDir,
-								$defaultConfigDir) {
+	public function __construct(
+		IURLGenerator $urlGenerator,
+		$customConfigDir,
+		$defaultConfigDir
+	) {
 		$this->urlGenerator = $urlGenerator;
 		$this->customConfigDir = $customConfigDir;
 		$this->defaultConfigDir = $defaultConfigDir;
@@ -82,9 +84,11 @@ class Detection implements IMimeTypeDetector {
 	 * @param string $mimetype
 	 * @param string|null $secureMimeType
 	 */
-	public function registerType($extension,
-								 $mimetype,
-								 $secureMimeType = null) {
+	public function registerType(
+		$extension,
+		$mimetype,
+		$secureMimeType = null
+	) {
 		$this->mimetypes[$extension] = [$mimetype, $secureMimeType];
 		$this->secureMimeTypes[$mimetype] = $secureMimeType ?: $mimetype;
 	}
@@ -151,6 +155,26 @@ class Detection implements IMimeTypeDetector {
 	}
 
 	/**
+	 * Detect if the file is a shared object file. We detect this file
+	 * with a regex.
+	 *
+	 * @param string $fileName
+	 * @return bool true if file is a shared object else false
+	 */
+	private function detectSharedObjFileName($fileName) {
+		\preg_match("/(.*?)(\.so)([\.]*?.*)/i", $fileName, $match);
+		/**
+		 * 1. Exactly 4 indexes to match ( check the regex grouping above preg_match )
+		 * 2. Check if the filename has '.so'
+		 * 3. Check if the filename has extension after '.so', say .so.1. or .so.
+		 * That is anything like '.so.*'. This match is made in the 4th index.
+		 * No extension after '.so' is considered to be shared object file
+		 */
+		return (\count($match) === 4) && ($match[2] === '.so')
+			&& ($match[3] === '' || ($match[3] !== '' && \strpos($match[3], '.') === 0));
+	}
+
+	/**
 	 * @return array
 	 */
 	public function getAllMappings() {
@@ -168,17 +192,18 @@ class Detection implements IMimeTypeDetector {
 		$this->loadMappings();
 
 		$fileName = \basename($path);
-		// note: leading dot doesn't qualify as extension
-		if (\strpos($fileName, '.') > 0) {
-			//try to guess the type by the file extension
+		# let's eat the first char if it is a .
+		$fileName = ltrim($fileName, ".");
+		//try to guess the type by the file extension
+		if ($this->detectSharedObjFileName($fileName)) {
+			$extension = 'so';
+		} else {
 			$extension = \strtolower(\strrchr($fileName, '.'));
 			$extension = \substr($extension, 1); //remove leading .
-			return (isset($this->mimetypes[$extension], $this->mimetypes[$extension][0]))
-				? $this->mimetypes[$extension][0]
-				: 'application/octet-stream';
-		} else {
-			return 'application/octet-stream';
 		}
+		return (isset($this->mimetypes[$extension], $this->mimetypes[$extension][0]))
+			? $this->mimetypes[$extension][0]
+			: 'application/octet-stream';
 	}
 
 	/**

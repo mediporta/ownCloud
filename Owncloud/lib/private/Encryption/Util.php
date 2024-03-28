@@ -31,18 +31,18 @@ use OC\Encryption\Exceptions\ModuleDoesNotExistsException;
 use OC\Files\Filesystem;
 use OC\Files\View;
 use OCP\Encryption\IEncryptionModule;
-use OCP\Files\Storage;
+use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IUser;
 
 class Util {
-	const HEADER_START = 'HBEGIN';
-	const HEADER_END = 'HEND';
-	const HEADER_PADDING_CHAR = '-';
+	public const HEADER_START = 'HBEGIN';
+	public const HEADER_END = 'HEND';
+	public const HEADER_PADDING_CHAR = '-';
 
-	const HEADER_ENCRYPTION_MODULE_KEY = 'oc_encryption_module';
+	public const HEADER_ENCRYPTION_MODULE_KEY = 'oc_encryption_module';
 
-	const ID = 'OC_DEFAULT_MODULE';
+	public const ID = 'OC_DEFAULT_MODULE';
 
 	/**
 	 * block size will always be 8192 for a PHP stream
@@ -87,7 +87,8 @@ class Util {
 		View $rootView,
 		\OC\User\Manager $userManager,
 		\OC\Group\Manager $groupManager,
-		IConfig $config) {
+		IConfig $config
+	) {
 		$this->ocHeaderKeys = [
 			self::HEADER_ENCRYPTION_MODULE_KEY
 		];
@@ -226,45 +227,51 @@ class Util {
 	 * @throws \BadMethodCallException
 	 */
 	public function getUidAndFilename($path) {
-		$parts = \explode('/', $path);
-		$uid = '';
-		if (\count($parts) > 2) {
-			$uid = $parts[1];
-		}
-		if (!$this->userManager->userExists($uid)) {
-			throw new \BadMethodCallException(
-				'path needs to be relative to the system wide data folder and point to a user specific file'
-			);
-		}
+		list($storage, $internalPath) = $this->rootView->resolvePath($path);
 
-		$ownerPath = \implode('/', \array_slice($parts, 2));
-
-		return [$uid, Filesystem::normalizePath($ownerPath)];
-	}
-
-	/**
-	 * Remove .path extension from a file path
-	 * @param string $path Path that may identify a .part file
-	 * @return string File path without .part extension
-	 * @note this is needed for reusing keys
-	 */
-	public function stripPartialFileExtension($path) {
-		$extension = \pathinfo($path, PATHINFO_EXTENSION);
-
-		if ($extension === 'part') {
-			$newLength = \strlen($path) - 5; // 5 = strlen(".part")
-			$fPath = \substr($path, 0, $newLength);
-
-			// if path also contains a transaction id, we remove it too
-			$extension = \pathinfo($fPath, PATHINFO_EXTENSION);
-			if (\substr($extension, 0, 12) === 'ocTransferId') { // 12 = strlen("ocTransferId")
-				$newLength = \strlen($fPath) - \strlen($extension) -1;
-				$fPath = \substr($fPath, 0, $newLength);
-			}
-			return $fPath;
+		$absMountPoint = $this->rootView->getMountPoint($path);
+		$parts = \explode('/', $absMountPoint);
+		// strip the first 2 directories (expected to be "/<user>/files/path/to/files")
+		// so mountPoint is expected to be "/files/path/to..."
+		$mountPoint = \implode('/', \array_slice($parts, 2));
+		if ($mountPoint !== '') {
+			$originalPath = "/{$mountPoint}/{$internalPath}";
 		} else {
-			return $path;
+			$originalPath = "/{$internalPath}";
 		}
+
+		if ($storage->instanceOfStorage('\OCA\Files_Sharing\ISharedStorage')) {
+			// TODO: Improve sharedStorage detection.
+			// Note that ISharedStorage doesn't enforce any method
+			if ($storage->instanceOfStorage('\OCA\Files_Sharing\SharedStorage')) {
+				// local sharing
+				$share = $storage->getShare();
+				$node = $share->getNode();
+				$originalPath = "/{$node->getInternalPath()}/{$internalPath}";
+			} else {
+				// remote sharing
+				// FIXME: The original owner is a remote one who won't be present locally.
+				// However, keeping the previous behavior, we'll use the target user (obtained
+				// from the path) as owner. Fixing this properly requires heavy refactoring since
+				// the code requires the keys to have an owner and it isn't possible to return null
+				// to mark there is no local owner for the keys, or that the keys aren't
+				// locally available
+				return [$parts[1], $originalPath];
+			}
+		}
+
+		$checkingPath = "/{$internalPath}";
+		$ownerUid = null;
+		while ($ownerUid === null) {
+			try {
+				$ownerUid = $storage->getOwner($checkingPath);
+			} catch (NotFoundException $e) {
+				// if the path doesn't exist, try the parent.
+				$checkingPath = \dirname($checkingPath);
+			}
+		}
+
+		return [$ownerUid, $originalPath];
 	}
 
 	public function getUserWithAccessToMountPoint($users, $groups) {
@@ -340,7 +347,6 @@ class Util {
 		$normalizedPath = Filesystem::normalizePath($path);
 		$root = \explode('/', $normalizedPath, 4);
 		if (\count($root) > 1) {
-
 			// detect alternative key storage root
 			$rootDir = $this->getKeyStorageRoot();
 			if ($rootDir !== '' &&

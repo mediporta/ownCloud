@@ -26,10 +26,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  */
+
+use OCP\IEventSource;
+use OCP\IL10N;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 \set_time_limit(0);
-require_once '../../lib/base.php';
+require_once __DIR__ . '/../../lib/base.php';
 
 $l = \OC::$server->getL10N('core');
 
@@ -40,6 +43,8 @@ $eventSource = \OC::$server->createEventSource();
 $eventSource->send('success', (string)$l->t('Preparing update'));
 
 class FeedBackHandler {
+	public IEventSource $eventSource;
+	public IL10N $l10n;
 	/** @var integer */
 	private $progressStateMax = 100;
 	/** @var integer */
@@ -47,7 +52,7 @@ class FeedBackHandler {
 	/** @var string */
 	private $currentStep;
 
-	public function __construct(\OCP\IEventSource $eventSource, \OCP\IL10N $l10n) {
+	public function __construct(IEventSource $eventSource, IL10N $l10n) {
 		$this->eventSource = $eventSource;
 		$this->l10n = $l10n;
 	}
@@ -104,9 +109,9 @@ if (OC::checkUpgrade(false)) {
 	$logger = \OC::$server->getLogger();
 	$config = \OC::$server->getConfig();
 	$updater = new \OC\Updater(
-			$config,
-			\OC::$server->getIntegrityCodeChecker(),
-			$logger
+		$config,
+		\OC::$server->getIntegrityCodeChecker(),
+		$logger
 	);
 	$incompatibleApps = [];
 	$disabledThirdPartyApps = [];
@@ -185,6 +190,8 @@ if (OC::checkUpgrade(false)) {
 		$eventSource->send('success', (string)$l->t('Finished code integrity check'));
 	});
 
+	$cacheFactory = \OC::$server->getMemCacheFactory();  // create instance before the upgrade
+
 	try {
 		$updater->upgrade();
 	} catch (\Exception $e) {
@@ -192,6 +199,12 @@ if (OC::checkUpgrade(false)) {
 		$eventSource->close();
 		exit();
 	}
+
+	// Clear caches after successful upgrade.
+	// Caches were created before the upgrade, so the cache prefix will be the old one
+	// TODO: Note that only the "create" method is available in the interface. It isn't
+	// possible to create local or distributed caches explicitly
+	$cacheFactory->create()->clear();
 
 	$disabledApps = [];
 	foreach ($disabledThirdPartyApps as $app) {
@@ -202,8 +215,10 @@ if (OC::checkUpgrade(false)) {
 	}
 
 	if (!empty($disabledApps)) {
-		$eventSource->send('notice',
-			(string)$l->t('Following apps have been disabled: %s', \implode(', ', $disabledApps)));
+		$eventSource->send(
+			'notice',
+			(string)$l->t('Following apps have been disabled: %s', \implode(', ', $disabledApps))
+		);
 	}
 } else {
 	$eventSource->send('notice', (string)$l->t('Already up to date'));

@@ -44,7 +44,6 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
  * @package OC\User
  */
 class SyncService {
-
 	/** @var IConfig */
 	private $config;
 	/** @var ILogger */
@@ -59,9 +58,11 @@ class SyncService {
 	 * @param ILogger $logger
 	 * @param AccountMapper $mapper
 	 */
-	public function __construct(IConfig $config,
-								ILogger $logger,
-								AccountMapper $mapper) {
+	public function __construct(
+		IConfig $config,
+		ILogger $logger,
+		AccountMapper $mapper
+	) {
 		$this->config = $config;
 		$this->logger = $logger;
 		$this->mapper = $mapper;
@@ -85,26 +86,24 @@ class SyncService {
 		$removed = [];
 		$reappeared = [];
 		$backendClass = \get_class($backend);
-		$this->mapper->callForAllUsers(function (Account $a) use (&$removed, &$reappeared, $backend, $backendClass, $callback) {
+		$this->mapper->callForUsers(function (Account $a) use (&$removed, &$reappeared, $backend, $backendClass, $callback) {
 			// Check if the backend matches handles this user
-			list($wasRemoved, $didReappear) = $this->checkIfAccountReappeared($a, $backend, $backendClass);
-			$removed = \array_merge($removed, $wasRemoved);
-			$reappeared = \array_merge($reappeared, $didReappear);
+			$this->checkIfAccountReappeared($a, $removed, $reappeared, $backend, $backendClass);
 			$callback($a);
-		}, '', false);
+		}, '', false, null, null);
 		return [$removed, $reappeared];
 	}
 
 	/**
 	 * Checks a backend to see if a user reappeared relative to the accounts table
 	 * @param Account $a
+	 * @param array $removed
+	 * @param array $reappeared
 	 * @param UserInterface $backend
 	 * @param $backendClass
-	 * @return array
+	 * @return void
 	 */
-	private function checkIfAccountReappeared(Account $a, UserInterface $backend, $backendClass) {
-		$removed = [];
-		$reappeared = [];
+	private function checkIfAccountReappeared(Account $a, array &$removed, array &$reappeared, UserInterface $backend, $backendClass) {
 		if ($a->getBackend() === $backendClass) {
 			// Does the backend have this user still
 			if ($backend->userExists($a->getUserId())) {
@@ -117,7 +116,6 @@ class SyncService {
 				$removed[$a->getUserId()] = $a;
 			}
 		}
-		return [$removed, $reappeared];
 	}
 
 	/**
@@ -125,7 +123,7 @@ class SyncService {
 	 * @param \Traversable $userIds of users
 	 * @param \Closure $callback is called for every user to progress display
 	 */
-	public function run(UserInterface $backend, \Traversable $userIds, \Closure $callback) {
+	public function run(UserInterface $backend, \Traversable $userIds, \Closure $callback = null) {
 		// update existing and insert new users
 		foreach ($userIds as $uid) {
 			try {
@@ -133,15 +131,17 @@ class SyncService {
 				$uid = $account->getUserId(); // get correct case
 				// clean the user's preferences
 				$this->cleanPreferences($uid);
+				if (\is_callable($callback)) {
+					$callback($uid, null);
+				}
 			} catch (\Exception $e) {
 				// Error syncing this user
 				$backendClass = \get_class($backend);
-				$this->logger->error("Error syncing user with uid: $uid and backend: $backendClass");
-				$this->logger->logException($e);
+				$this->logger->logException($e, ['message' => "Error syncing user with uid: $uid and backend: $backendClass"]);
+				if (\is_callable($callback)) {
+					$callback($uid, $e);
+				}
 			}
-
-			// call the callback
-			$callback($uid);
 		}
 	}
 
@@ -160,11 +160,13 @@ class SyncService {
 			if (\array_key_exists('state', $a->getUpdatedFields())) {
 				if ($value === 'true') {
 					$this->logger->debug(
-						"Enabling <$uid>", ['app' => self::class]
+						"Enabling <$uid>",
+						['app' => self::class]
 					);
 				} else {
 					$this->logger->debug(
-						"Disabling <$uid>", ['app' => self::class]
+						"Disabling <$uid>",
+						['app' => self::class]
 					);
 				}
 			}
@@ -181,7 +183,8 @@ class SyncService {
 			$a->setLastLogin($value);
 			if (\array_key_exists('lastLogin', $a->getUpdatedFields())) {
 				$this->logger->debug(
-					"Setting lastLogin for <$uid> to <$value>", ['app' => self::class]
+					"Setting lastLogin for <$uid> to <$value>",
+					['app' => self::class]
 				);
 			}
 		}
@@ -205,7 +208,8 @@ class SyncService {
 		}
 		if (\array_key_exists('email', $a->getUpdatedFields())) {
 			$this->logger->debug(
-				"Setting email for <$uid> to <$email>", ['app' => self::class]
+				"Setting email for <$uid> to <$email>",
+				['app' => self::class]
 			);
 		}
 	}
@@ -231,7 +235,8 @@ class SyncService {
 		}
 		if (\array_key_exists('quota', $a->getUpdatedFields())) {
 			$this->logger->debug(
-				"Setting quota for <$uid> to <$quota>", ['app' => self::class]
+				"Setting quota for <$uid> to <$quota>",
+				['app' => self::class]
 			);
 		}
 	}
@@ -242,10 +247,10 @@ class SyncService {
 	 */
 	private function syncHome(Account $a, UserInterface $backend) {
 		// Fallback for backends that dont yet use the new interfaces
-		$proividesHome = $backend instanceof IProvidesHomeBackend || $backend->implementsActions(\OC_User_Backend::GET_HOME);
+		$providesHome = $backend instanceof IProvidesHomeBackend || $backend->implementsActions(\OC_User_Backend::GET_HOME);
 		$uid = $a->getUserId();
 		// Log when the backend returns a string that is a different home to the current value
-		if ($proividesHome && \is_string($backend->getHome($uid)) && $a->getHome() !== $backend->getHome($uid)) {
+		if ($providesHome && \is_string($backend->getHome($uid)) && $a->getHome() !== $backend->getHome($uid)) {
 			$existing = $a->getHome();
 			$backendHome = $backend->getHome($uid);
 			$class = \get_class($backend);
@@ -255,9 +260,9 @@ class SyncService {
 		}
 		// Home is handled differently, it should only be set on account creation, when there is no home already set
 		// Otherwise it could change on a sync and result in a new user folder being created
-		if ($a->getHome() === null) {
+		if ($a->getHome() === '') {
 			$home = false;
-			if ($proividesHome) {
+			if ($providesHome) {
 				$home = $backend->getHome($uid);
 			}
 			if (!\is_string($home) || $home[0] !== '/') {
@@ -271,7 +276,8 @@ class SyncService {
 			$a->setHome($home);
 			if (\array_key_exists('home', $a->getUpdatedFields())) {
 				$this->logger->debug(
-					"Setting home for <$uid> to <$home>", ['app' => self::class]
+					"Setting home for <$uid> to <$home>",
+					['app' => self::class]
 				);
 			}
 		}
@@ -288,7 +294,8 @@ class SyncService {
 			$a->setDisplayName($displayName);
 			if (\array_key_exists('displayName', $a->getUpdatedFields())) {
 				$this->logger->debug(
-					"Setting displayName for <$uid> to <$displayName>", ['app' => self::class]
+					"Setting displayName for <$uid> to <$displayName>",
+					['app' => self::class]
 				);
 			}
 		}
@@ -312,7 +319,8 @@ class SyncService {
 					// ignore, because precondition is empty
 				}
 				$this->logger->debug(
-					"Setting userName for <$uid> from <$currentUserName> to <$userName>", ['app' => self::class]
+					"Setting userName for <$uid> from <$currentUserName> to <$userName>",
+					['app' => self::class]
 				);
 			}
 		}
@@ -330,7 +338,8 @@ class SyncService {
 			if ($a->haveTermsChanged()) {
 				$logTerms = \implode('|', $searchTerms);
 				$this->logger->debug(
-					"Setting searchTerms for <$uid> to <$logTerms>", ['app' => self::class]
+					"Setting searchTerms for <$uid> to <$logTerms>",
+					['app' => self::class]
 				);
 			}
 		}
@@ -425,9 +434,15 @@ class SyncService {
 	 * @param string $uid
 	 */
 	private function cleanPreferences($uid) {
-		$this->config->deleteUserValue($uid, 'core', 'enabled');
-		$this->config->deleteUserValue($uid, 'login', 'lastLogin');
-		$this->config->deleteUserValue($uid, 'settings', 'email');
-		$this->config->deleteUserValue($uid, 'files', 'quota');
+		$this->deletePreferenceIfExists($uid, 'core', 'enabled');
+		$this->deletePreferenceIfExists($uid, 'login', 'lastLogin');
+		$this->deletePreferenceIfExists($uid, 'settings', 'email');
+		$this->deletePreferenceIfExists($uid, 'files', 'quota');
+	}
+
+	private function deletePreferenceIfExists($uid, $app, $key) {
+		if ($this->config->getUserValue($uid, $app, $key, null) !== null) {
+			$this->config->deleteUserValue($uid, $app, $key);
+		}
 	}
 }

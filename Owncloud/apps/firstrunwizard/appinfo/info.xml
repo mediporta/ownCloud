@@ -6,12 +6,15 @@
 The First run wizard can be customized to meet specific design goals, or to change links and messages. Create an appropriate theme following the Theming documentation, and changes to the look and feel of this Wizard are simple. More information is available in the First run wizard documentation, as well as the theming documentation.
 </description>
 	<licence>AGPL</licence>
-	<author>Frank Karlitschek, Jan-Christoph Borchardt</author>
+	<author>Frank Karlitschek, Jan-Christoph Borchardt, Tom Needham</author>
 	<dependencies>
-		<owncloud min-version="10.0" max-version="10.0" />
+                <owncloud min-version="10.11" max-version="10" />
+                <php min-version="7.4" />
 	</dependencies>
-	<version>1.1</version>
-	<shipped>true</shipped>
+	<version>1.3.0</version>
+	<namespace>FirstRunWizard</namespace>
 	<default_enable/>
-	<ocsid>166055</ocsid>
+	<commands>
+		<command>OCA\FirstRunWizard\Command\ResetAll</command>
+	</commands>
 </info>

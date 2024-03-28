@@ -141,7 +141,7 @@ class PreviewManager implements IPreview {
 			throw new NotLoggedInException();
 		}
 		$file = $this->rootFolder->getUserFolder($user->getUID())->getParent()->get($file);
-		$preview = new Preview('', '/', $file, $maxX, $maxY, $scaleUp);
+		$preview = new Preview('', '', $file, $maxX, $maxY, $scaleUp);
 		return $preview->getPreview();
 	}
 
@@ -233,6 +233,7 @@ class PreviewManager implements IPreview {
 	 * The following providers are enabled by default:
 	 *  - OC\Preview\PNG
 	 *  - OC\Preview\JPEG
+	 *  - OC\Preview\WEBP
 	 *  - OC\Preview\GIF
 	 *  - OC\Preview\BMP
 	 *  - OC\Preview\XBitmap
@@ -248,10 +249,10 @@ class PreviewManager implements IPreview {
 	 *  - OC\Preview\MSOffice2003
 	 *  - OC\Preview\MSOffice2007
 	 *  - OC\Preview\OpenDocument
+	 *  - OC\Preview\StarOffice
 	 *  - OC\Preview\PDF
 	 *  - OC\Preview\Photoshop
 	 *  - OC\Preview\Postscript
-	 *  - OC\Preview\StarOffice
 	 *  - OC\Preview\SVG
 	 *  - OC\Preview\TIFF
 	 *
@@ -265,10 +266,12 @@ class PreviewManager implements IPreview {
 		$imageProviders = [
 			'OC\Preview\PNG',
 			'OC\Preview\JPEG',
+			'OC\Preview\WEBP',
 			'OC\Preview\GIF',
 			'OC\Preview\BMP',
 			'OC\Preview\Heic',
-			'OC\Preview\XBitmap'
+			'OC\Preview\XBitmap',
+			'OC\Preview\SGI',
 		];
 
 		$this->defaultProviders = $this->config->getSystemValue('enabledPreviewProviders', \array_merge([
@@ -311,15 +314,19 @@ class PreviewManager implements IPreview {
 		$this->registerCoreProvider('OC\Preview\MarkDown', '/text\/(x-)?markdown/');
 		$this->registerCoreProvider('OC\Preview\PNG', '/image\/png/');
 		$this->registerCoreProvider('OC\Preview\JPEG', '/image\/jpeg/');
+		$this->registerCoreProvider('OC\Preview\WEBP', '/image\/webp/');
 		$this->registerCoreProvider('OC\Preview\GIF', '/image\/gif/');
 		$this->registerCoreProvider('OC\Preview\BMP', '/image\/bmp/');
 		$this->registerCoreProvider('OC\Preview\XBitmap', '/image\/x-xbitmap/');
 		$this->registerCoreProvider('OC\Preview\MP3', '/audio\/mpeg/');
 
 		// SVG, Office and Bitmap require imagick
+		// Either use the additional library mentioned below when using imagick 6, or use imagick 7
+		// which does not need this library. See the installation and preview documentation for more details.
+		// Install `libmagickcore-6.q16-3-extra` additional to the imagick library when using SVG.
+		// This library adds imagick support for SVG, WMF, OpenEXR, DjVu and Graphviz:
+		
 		if (\extension_loaded('imagick')) {
-			$checkImagick = new \Imagick();
-
 			$imagickProviders = [
 				'SVG'	=> ['mimetype' => '/image\/svg\+xml/', 'class' => '\OC\Preview\SVG'],
 				'TIFF'	=> ['mimetype' => '/image\/tiff/', 'class' => '\OC\Preview\TIFF'],
@@ -328,7 +335,9 @@ class PreviewManager implements IPreview {
 				'PSD'	=> ['mimetype' => '/application\/x-photoshop/', 'class' => '\OC\Preview\Photoshop'],
 				'EPS'	=> ['mimetype' => '/application\/postscript/', 'class' => '\OC\Preview\Postscript'],
 				'TTF'	=> ['mimetype' => '/application\/(?:font-sfnt|x-font$)/', 'class' => '\OC\Preview\Font'],
-				'HEIC'	=> ['mimetype' => '/image\/hei(f|c)/', 'class' => '\OC\Preview\Heic'],
+				'HEIF'	=> ['mimetype' => '/image\/heif/', 'class' => '\OC\Preview\Heic'],
+				'HEIC'	=> ['mimetype' => '/image\/heic/', 'class' => '\OC\Preview\Heic'],
+				'SGI'	=> ['mimetype' => '/image\/sgi/', 'class' => '\OC\Preview\SGI'],
 			];
 
 			foreach ($imagickProviders as $queryFormat => $provider) {
@@ -337,13 +346,13 @@ class PreviewManager implements IPreview {
 					continue;
 				}
 
-				if (\count($checkImagick->queryFormats($queryFormat)) === 1) {
+				if (\count(\Imagick::queryFormats($queryFormat)) === 1) {
 					$this->registerCoreProvider($class, $provider['mimetype']);
 				}
 			}
 
-			if (\count($checkImagick->queryFormats('PDF')) === 1) {
-				// Office previews are currently not supported on Windows
+			if (\count(\Imagick::queryFormats('PDF')) === 1) {
+				// Office previews are only supported if either LibreOffice or OpenOffice is installed on the server
 				if (\OC_Helper::is_function_enabled('shell_exec')) {
 					$officeFound = \is_string($this->config->getSystemValue('preview_libreoffice_path', null));
 
@@ -368,10 +377,8 @@ class PreviewManager implements IPreview {
 			}
 		}
 
-		// Video requires avconv or ffmpeg and is therefor
-		// currently not supported on Windows.
+		// Video requires avconv or ffmpeg to be installed on the server
 		if (\in_array('OC\Preview\Movie', $this->getEnabledDefaultProvider())) {
-			// AtomicParsley would actually work under Windows.
 			$avconvBinary = \OC_Helper::findBinaryPath('avconv');
 			$ffmpegBinary = ($avconvBinary) ? null : \OC_Helper::findBinaryPath('ffmpeg');
 			$atomicParsleyBinary = \OC_Helper::findBinaryPath('AtomicParsley');

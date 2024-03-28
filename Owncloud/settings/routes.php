@@ -64,23 +64,29 @@ $application->registerRoutes($this, [
 		['name' => 'Users#changeMail', 'url' => '/settings/mailaddress/change/{token}/{userId}', 'verb' => 'GET'],
 		['name' => 'Cors#getDomains', 'url' => '/settings/domains', 'verb' => 'GET'],
 		['name' => 'Cors#addDomain', 'url' => '/settings/domains', 'verb' => 'POST'],
-		['name' => 'Cors#removeDomain', 'url' => '/settings/domains/{id}', 'verb' => 'DELETE'],
+		['name' => 'Cors#removeDomain', 'url' => '/settings/domains/{domain}', 'verb' => 'DELETE'],
 		['name' => 'LegalSettings#setImprintUrl', 'url' => '/settings/admin/legal/imprint', 'verb' => 'POST'],
 		['name' => 'LegalSettings#setPrivacyPolicyUrl', 'url' => '/settings/admin/legal/privacypolicy', 'verb' => 'POST'],
 		['name' => 'ChangePassword#changePassword', 'url' => '/users/changepassword', 'verb' => 'POST'],
 		['name' => 'Users#setPasswordForm', 'url' => '/settings/users/setpassword/form/{token}/{userId}', 'verb' => 'GET'],
 		['name' => 'Users#resendToken', 'url' => '/resend/token/{userId}', 'verb' => 'POST'],
+		['name' => 'Users#resendInvitation', 'url' => '/resend/invitation/{userId}', 'verb' => 'POST'],
 		['name' => 'Users#setPassword', 'url' => '/setpassword/{token}/{userId}', 'verb' => 'POST'],
+		['name' => 'Groups#getAssignableAndRemovableGroups', 'url' => '/settings/groups/available', 'verb' => 'GET'],
+		['name' => 'AppConfig#getApps', 'url' => '/settings/appconfig', 'verb' => 'GET'],
+		['name' => 'AppConfig#getKeys', 'url' => '/settings/appconfig/{app}', 'verb' => 'GET'],
+		['name' => 'AppConfig#getValue', 'url' => '/settings/appconfig/{app}/{key}', 'verb' => 'GET'],
+		['name' => 'AppConfig#setValue', 'url' => '/settings/appconfig/{app?}/{key?}', 'verb' => 'PUT'], // optional params can be sent in the request body
+		['name' => 'AppConfig#deleteKey', 'url' => '/settings/appconfig/{app?}/{key?}', 'verb' => 'DELETE'], // optional params can be sent in the request body
+		['name' => 'AppConfig#deleteApp', 'url' => '/settings/appconfig/{app?}', 'verb' => 'DELETE'], // optional params can be sent in the request body
 	]
 ]);
 
 /** @var $this \OCP\Route\IRouter */
 
-// Settings pages
-$this->create('settings_help', '/settings/help')
-	->actionInclude('settings/help.php');
 $this->create('settings_users', '/settings/users')
 	->actionInclude('settings/users.php');
+
 // Settings ajax actions
 // users
 $this->create('settings_ajax_setquota', '/settings/ajax/setquota.php')

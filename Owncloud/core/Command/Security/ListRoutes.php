@@ -32,7 +32,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ListRoutes extends Base {
-
 	/**
 	 * @var Router
 	 */
@@ -51,7 +50,7 @@ class ListRoutes extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$outputType = $input->getOption('output');
 
 		\OC_App::loadApps();
@@ -119,6 +118,7 @@ class ListRoutes extends Base {
 			$table->addRows($rows);
 			$table->render();
 		}
+		return 0;
 	}
 
 	private function buildController($name) {

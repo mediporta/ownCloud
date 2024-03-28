@@ -3,7 +3,9 @@ OC.L10N.register(
     {
     "Uploading..." : "កំពុងដាក់បញ្ចូល...",
     "Cancel" : "បោះបង់",
+    "Add" : "បន្ថែម",
     "Share" : "ចែក​រំលែក",
+    "Pending" : "កំពុង​រង់ចាំ",
     "Shared by" : "បាន​ចែក​រំលែក​ដោយ",
     "Sharing" : "ការ​ចែក​រំលែក",
     "A file or folder has been <strong>shared</strong>" : "<strong>បាន​ចែករំលែក</strong> ឯកសារ​ឬ​ថត",
@@ -13,8 +15,9 @@ OC.L10N.register(
     "%2$s shared %1$s with you" : "%2$s បាន​ចែករំលែក %1$s ជាមួយ​អ្នក",
     "Shares" : "ចែក​រំលែក",
     "This share is password-protected" : "ការ​ចែករំលែក​នេះ​ត្រូវ​បាន​ការពារ​ដោយ​ពាក្យ​សម្ងាត់",
-    "The password is wrong. Try again." : "ពាក្យ​សម្ងាត់​ខុស​ហើយ។ ព្យាយាម​ម្ដង​ទៀត។",
     "Password" : "ពាក្យសម្ងាត់",
+    "The password is wrong. Try again." : "ពាក្យ​សម្ងាត់​ខុស​ហើយ។ ព្យាយាម​ម្ដង​ទៀត។",
+    "Proceed" : "ធ្វើ​បន្ត",
     "Name" : "ឈ្មោះ",
     "Expiration date" : "ពេល​ផុត​កំណត់",
     "Sorry, this link doesn’t seem to work anymore." : "សូម​ទោស តំណ​នេះ​ហាក់​ដូច​ជា​លែង​ដើរ​ហើយ។",
@@ -25,7 +28,6 @@ OC.L10N.register(
     "For more info, please ask the person who sent this link." : "សម្រាប់​ព័ត៌មាន​បន្ថែម សូម​សួរ​អ្នក​ដែល​ផ្ញើ​តំណ​នេះ។",
     "Download" : "ទាញយក",
     "Download %s" : "ទាញយក %s",
-    "Direct link" : "តំណ​ផ្ទាល់",
-    "Pending" : "កំពុង​រង់ចាំ"
+    "Direct link" : "តំណ​ផ្ទាល់"
 },
 "nplurals=1; plural=0;");

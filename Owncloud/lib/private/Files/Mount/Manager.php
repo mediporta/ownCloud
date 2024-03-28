@@ -46,10 +46,7 @@ class Manager implements IMountManager {
 	 * @param string $mountPoint
 	 */
 	public function removeMount($mountPoint) {
-		$mountPoint = Filesystem::normalizePath($mountPoint);
-		if (\strlen($mountPoint) > 1) {
-			$mountPoint .= '/';
-		}
+		$mountPoint = $this->formatPath($mountPoint);
 		unset($this->mounts[$mountPoint]);
 	}
 
@@ -66,7 +63,7 @@ class Manager implements IMountManager {
 	 * Find the mount for $path
 	 *
 	 * @param string $path
-	 * @return MountPoint
+	 * @return MountPoint | null
 	 */
 	public function find($path) {
 		\OC_Util::setupFS();

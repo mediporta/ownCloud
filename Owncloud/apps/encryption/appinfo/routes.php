@@ -4,7 +4,7 @@
  * @author Clark Tomlinson <fallen013@gmail.com>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -21,9 +21,9 @@
  *
  */
 
-
 namespace OCA\Encryption\AppInfo;
 
+/** @phan-suppress-next-line PhanUndeclaredThis */
 (new Application())->registerRoutes($this, ['routes' => [
 
 	[
@@ -56,6 +56,5 @@ namespace OCA\Encryption\AppInfo;
 		'url' => '/ajax/getStatus',
 		'verb' => 'GET'
 	]
-
 
 ]]);

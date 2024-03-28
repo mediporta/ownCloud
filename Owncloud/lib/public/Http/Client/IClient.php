@@ -29,7 +29,6 @@ namespace OCP\Http\Client;
  * @since 8.1.0
  */
 interface IClient {
-
 	/**
 	 * Sends a GET request
 	 * @param string $uri
@@ -51,7 +50,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse
@@ -76,7 +75,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse
@@ -89,10 +88,10 @@ interface IClient {
 	 * Sends a POST request
 	 * @param string $uri
 	 * @param array $options Array such as
-	 *              'body' => [
-	 *                  'field' => 'abc',
-	 *                  'other_field' => '123',
-	 *                  'file_name' => fopen('/path/to/file', 'r'),
+	 *              'multipart' => [
+	 *                  ['name' => 'field', 'contents' => 'abc'],
+	 *                  ['name' => 'other_field', 'contents' => '123'],
+	 *                  ['name' => 'file_name', 'contents' => fopen('/path/to/file', 'r'), 'filename' => 'custom_name.txt'],
 	 *              ],
 	 *              'headers' => [
 	 *                  'foo' => 'bar',
@@ -106,7 +105,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse
@@ -119,10 +118,10 @@ interface IClient {
 	 * Sends a PUT request
 	 * @param string $uri
 	 * @param array $options Array such as
-	 *              'body' => [
-	 *                  'field' => 'abc',
-	 *                  'other_field' => '123',
-	 *                  'file_name' => fopen('/path/to/file', 'r'),
+	 *              'multipart' => [
+	 *                  ['name' => 'field', 'contents' => 'abc'],
+	 *                  ['name' => 'other_field', 'contents' => '123'],
+	 *                  ['name' => 'file_name', 'contents' => fopen('/path/to/file', 'r'), 'filename' => 'custom_name.txt'],
 	 *              ],
 	 *              'headers' => [
 	 *                  'foo' => 'bar',
@@ -136,7 +135,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse
@@ -149,10 +148,10 @@ interface IClient {
 	 * Sends a DELETE request
 	 * @param string $uri
 	 * @param array $options Array such as
-	 *              'body' => [
-	 *                  'field' => 'abc',
-	 *                  'other_field' => '123',
-	 *                  'file_name' => fopen('/path/to/file', 'r'),
+	 *              'multipart' => [
+	 *                  ['name' => 'field', 'contents' => 'abc'],
+	 *                  ['name' => 'other_field', 'contents' => '123'],
+	 *                  ['name' => 'file_name', 'contents' => fopen('/path/to/file', 'r'), 'filename' => 'custom_name.txt'],
 	 *              ],
 	 *              'headers' => [
 	 *                  'foo' => 'bar',
@@ -166,7 +165,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse
@@ -179,10 +178,10 @@ interface IClient {
 	 * Sends a options request
 	 * @param string $uri
 	 * @param array $options Array such as
-	 *              'body' => [
-	 *                  'field' => 'abc',
-	 *                  'other_field' => '123',
-	 *                  'file_name' => fopen('/path/to/file', 'r'),
+	 *              'multipart' => [
+	 *                  ['name' => 'field', 'contents' => 'abc'],
+	 *                  ['name' => 'other_field', 'contents' => '123'],
+	 *                  ['name' => 'file_name', 'contents' => fopen('/path/to/file', 'r'), 'filename' => 'custom_name.txt'],
 	 *              ],
 	 *              'headers' => [
 	 *                  'foo' => 'bar',
@@ -196,7 +195,7 @@ interface IClient {
 	 *                   'referer'   => true,     // add a Referer header
 	 *                   'protocols' => ['https'] // only allow https URLs
 	 *              ],
-	 *              'save_to' => '/path/to/file', // save to a file or a stream
+	 *              'sink' => '/path/to/file', // save to a file or a stream
 	 *              'verify' => true, // bool or string to CA file
 	 *              'debug' => true,
 	 * @return IResponse

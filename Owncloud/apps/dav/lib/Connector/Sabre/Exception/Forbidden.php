@@ -22,7 +22,7 @@
 namespace OCA\DAV\Connector\Sabre\Exception;
 
 class Forbidden extends \Sabre\DAV\Exception\Forbidden {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
 
 	/**
 	 * @var bool
@@ -48,7 +48,6 @@ class Forbidden extends \Sabre\DAV\Exception\Forbidden {
 	 * @return void
 	 */
 	public function serialize(\Sabre\DAV\Server $server, \DOMElement $errorNode) {
-
 		// set ownCloud namespace
 		$errorNode->setAttribute('xmlns:o', self::NS_OWNCLOUD);
 

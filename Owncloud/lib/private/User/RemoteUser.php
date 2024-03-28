@@ -29,7 +29,6 @@ use OCP\IUser;
  * @package OC\User
  */
 class RemoteUser implements IUser {
-
 	/** @var string */
 	private $userId;
 
@@ -92,6 +91,13 @@ class RemoteUser implements IUser {
 	/**
 	 * @inheritdoc
 	 */
+	public function getCreationTime() {
+		return 0;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
 	public function delete() {
 		return false;
 	}
@@ -107,6 +113,10 @@ class RemoteUser implements IUser {
 	 * @inheritdoc
 	 */
 	public function getHome() {
+		return '';
+	}
+
+	public function setHome(string $newLocation) {
 	}
 
 	/**
@@ -134,6 +144,13 @@ class RemoteUser implements IUser {
 	 * @inheritdoc
 	 */
 	public function canChangeDisplayName() {
+		return false;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function canChangeMailAddress() {
 		return false;
 	}
 
@@ -218,5 +235,21 @@ class RemoteUser implements IUser {
 	 * @inheritdoc
 	 */
 	public function setSearchTerms(array $terms) {
+	}
+
+	/**
+	 * @return integer
+	 * @since 11.0.0
+	 */
+	public function getAccountId() {
+		return null;
+	}
+
+	/**
+	 * @return array
+	 * @since 10.11.0
+	 */
+	public function getExtendedAttributes($clearCache = false) {
+		return [];
 	}
 }

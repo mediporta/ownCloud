@@ -40,8 +40,8 @@ OC.L10N.register(
     "Encryption type: User Specific Key" : "Tipo de criptografia: Chave específica do usuário",
     "Please select an encryption option" : "Selecione uma opção de criptografia",
     "Master Key" : "Chave Mestra",
-    "User-specific key" : "Chave específica do usuário",
     "Permanently select this mode" : "Selecionar este modo permanentemente ",
+    "User Specific Key encryption module is deprecated. See the <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">server release notes ↗</a> for more information." : "O módulo de criptografia de chave específica do usuário está obsoleto. Veja as <a target=\"_blank\" rel=\"noreferrer\" href=\"%s\">notas de lançamento do servidor ↗</a> para maiores informações.",
     "Encrypt the home storage" : "Criptografar a pasta de armazenamento home",
     "Enabling this option encrypts all files stored on the main storage, otherwise only files on external storage will be encrypted" : "Ativar essa opção de criptografia para todos os arquivos armazenados no armazenamento principal, caso contrário, apenas arquivos no armazenamento externo serão criptografados",
     "Enable recovery key" : "Habilitar recuperação de chave",
@@ -66,4 +66,4 @@ OC.L10N.register(
     "Enabled" : "Habilitado",
     "Disabled" : "Desabilitado"
 },
-"nplurals=2; plural=(n > 1);");
+"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

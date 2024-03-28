@@ -36,7 +36,10 @@
 namespace OC\Files\Cache;
 
 use Doctrine\DBAL\Platforms\OraclePlatform;
+use OC\Cache\CappedMemoryCache;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Cache\ICache;
+use OCP\Files\Cache\IScanner;
 use OCP\Files\Cache\ICacheEntry;
 use \OCP\Files\IMimeTypeLoader;
 use OCP\IDBConnection;
@@ -80,9 +83,25 @@ class Cache implements ICache {
 	protected $connection;
 
 	/**
+	 * we use a static cache for the path lookup by id because the filecache already knows about all storages
+	 * and a single trip to the db is sufficient to answer subsequent calls.
+	 * Each entry will contain a storage and a path, such as:
+	 *
+	 * $path_cache = [
+	 *   <fileid1> => ['storage' => 7, 'path' => '/path/to/file'],
+	 *   <fileid2> => ['storage' => 4, 'path' => '/another/path/to/file'],
+	 * ]
+	 */
+	private static $path_cache = null;
+
+	/**
 	 * @param \OC\Files\Storage\Storage|string $storage
 	 */
 	public function __construct($storage) {
+		if (self::$path_cache === null) {
+			self::$path_cache = new CappedMemoryCache();
+		}
+
 		if ($storage instanceof \OC\Files\Storage\Storage) {
 			$this->storageId = $storage->getId();
 		} else {
@@ -110,7 +129,7 @@ class Cache implements ICache {
 	 * get the stored metadata of a file or folder
 	 *
 	 * @param string | int $file either the path of a file or folder or the file id for a file or folder
-	 * @return ICacheEntry|false the cache entry as array of false if the file is not found in the cache
+	 * @return ICacheEntry|false the cache entry as array or false if the file is not found in the cache
 	 */
 	public function get($file) {
 		if (\is_string($file) or $file == '') {
@@ -188,11 +207,43 @@ class Cache implements ICache {
 	 * @return ICacheEntry[]
 	 */
 	public function getFolderContentsById($fileId) {
+		return $this->getChildrenWithFilter($fileId, null);
+	}
+
+	private function getChildrenWithFilter($fileId, $mimetypeFilter = null) {
 		if ($fileId > -1) {
-			$sql = 'SELECT `fileid`, `storage`, `path`, `parent`, `name`, `mimetype`, `mimepart`, `size`, `mtime`,
-						   `storage_mtime`, `encrypted`, `etag`, `permissions`, `checksum`
-					FROM `*PREFIX*filecache` WHERE `parent` = ? ORDER BY `name` ASC';
-			$result = $this->connection->executeQuery($sql, [$fileId]);
+			$qb = $this->connection->getQueryBuilder();
+			$qb->select(
+				'fileid',
+				'storage',
+				'path',
+				'parent',
+				'name',
+				'mimetype',
+				'mimepart',
+				'size',
+				'mtime',
+				'storage_mtime',
+				'encrypted',
+				'etag',
+				'permissions',
+				'checksum'
+			)
+				->from('filecache')
+				->where(
+					$qb->expr()->eq('parent', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT))
+				);
+
+			if ($mimetypeFilter) {
+				$mimetypeId = $this->mimetypeLoader->getId($mimetypeFilter);
+				$qb->andWhere(
+					$qb->expr()->eq('mimetype', $qb->createNamedParameter($mimetypeId, IQueryBuilder::PARAM_INT))
+				);
+			}
+
+			$qb->orderBy('name', 'ASC');
+
+			$result = $qb->execute();
 			$files = $result->fetchAll();
 			foreach ($files as &$file) {
 				$file['mimetype'] = $this->mimetypeLoader->getMimetypeById($file['mimetype']);
@@ -290,6 +341,7 @@ class Cache implements ICache {
 	 * @param array $data [$key => $value] the metadata to update, only the fields provided in the array will be updated, non-provided values will remain unchanged
 	 */
 	public function update($id, array $data) {
+		unset(self::$path_cache[(int)$id]);
 		if (isset($data['path'])) {
 			// normalize path
 			$data['path'] = $this->normalize($data['path']);
@@ -299,12 +351,6 @@ class Cache implements ICache {
 			// normalize path
 			$data['name'] = $this->normalize($data['name']);
 		}
-
-		list($queryParts, $params) = $this->buildParts($data);
-		// duplicate $params because we need the parts twice in the SQL statement
-		// once for the SET part, once in the WHERE clause
-		$params = \array_merge($params, $params);
-		$params[] = $id;
 
 		// Oracle does not support empty string values so we convert them to nulls
 		// https://github.com/owncloud/core/issues/31692
@@ -316,13 +362,47 @@ class Cache implements ICache {
 			}
 		}
 
+		list($queryParts, $params) = $this->buildParts($data);
+
 		// don't update if the data we try to set is the same as the one in the record
 		// some databases (Postgres) don't like superfluous updates
-		$sql = 'UPDATE `*PREFIX*filecache` SET ' . \implode(' = ?, ', $queryParts) . '=? ' .
-			'WHERE (' .
-			\implode(' <> ? OR ', $queryParts) . ' <> ? OR ' .
-			\implode(' IS NULL OR ', $queryParts) . ' IS NULL' .
-			') AND `fileid` = ? ';
+		if ($this->connection->getDatabasePlatform() instanceof OraclePlatform) {
+			$whereParts = [];
+			$setParts = [];
+			for ($i = 0; $i < \count($queryParts); $i++) {
+				if ($params[$i] === null) {
+					$setParts[] = "{$queryParts[$i]} = NULL";
+					$whereParts[] = "{$queryParts[$i]} IS NOT NULL";
+				} else {
+					$setParts[] = "{$queryParts[$i]} = ?";
+					$whereParts[] = "({$queryParts[$i]} <> ? OR {$queryParts[$i]} IS NULL)";
+				}
+			}
+			$setClause = \implode(', ', $setParts);
+			$whereClause = \implode(' OR ', $whereParts);
+
+			// remove null values from the $params
+			$params = \array_values(\array_filter($params, function ($v) {
+				return $v !== null;
+			}));
+			// duplicate $params because we need the parts twice in the SQL statement
+			// once for the SET part, once in the WHERE clause
+			$params = \array_merge($params, $params);
+			$params[] = $id;
+
+			$sql = "UPDATE `*PREFIX*filecache` SET $setClause WHERE ($whereClause) AND `fileid` = ?";
+		} else {
+			// duplicate $params because we need the parts twice in the SQL statement
+			// once for the SET part, once in the WHERE clause
+			$params = \array_merge($params, $params);
+			$params[] = $id;
+			$sql = 'UPDATE `*PREFIX*filecache` SET ' . \implode(' = ?, ', $queryParts) . '=? ' .
+				'WHERE (' .
+				\implode(' <> ? OR ', $queryParts) . ' <> ? OR ' .
+				\implode(' IS NULL OR ', $queryParts) . ' IS NULL' .
+				') AND `fileid` = ? ';
+		}
+
 		$this->connection->executeQuery($sql, $params);
 	}
 
@@ -444,10 +524,13 @@ class Cache implements ICache {
 	 */
 	public function remove($file) {
 		$entry = $this->get($file);
-		$sql = 'DELETE FROM `*PREFIX*filecache` WHERE `fileid` = ?';
-		$this->connection->executeQuery($sql, [$entry['fileid']]);
-		if ($entry['mimetype'] === 'httpd/unix-directory') {
-			$this->removeChildren($entry);
+		if ($entry !== false) {
+			unset(self::$path_cache[(int)$entry['fileid']]);
+			$sql = 'DELETE FROM `*PREFIX*filecache` WHERE `fileid` = ?';
+			$this->connection->executeQuery($sql, [$entry['fileid']]);
+			if ($entry['mimetype'] === 'httpd/unix-directory') {
+				$this->removeChildren($entry);
+			}
 		}
 	}
 
@@ -458,10 +541,7 @@ class Cache implements ICache {
 	 * @return array[] the cache entries for the subfolders
 	 */
 	private function getSubFolders($entry) {
-		$children = $this->getFolderContentsById($entry['fileid']);
-		return \array_filter($children, function ($child) {
-			return $child['mimetype'] === 'httpd/unix-directory';
-		});
+		return $this->getChildrenWithFilter($entry['fileid'], 'httpd/unix-directory');
 	}
 
 	/**
@@ -471,6 +551,7 @@ class Cache implements ICache {
 	 * @throws \OC\DatabaseException
 	 */
 	private function removeChildren($entry) {
+		self::$path_cache->clear();
 		$subFolders = $this->getSubFolders($entry);
 		foreach ($subFolders as $folder) {
 			$this->removeChildren($folder);
@@ -509,6 +590,7 @@ class Cache implements ICache {
 	 * @throws \Exception if the given storages have an invalid id
 	 */
 	public function moveFromCache(ICache $sourceCache, $sourcePath, $targetPath) {
+		self::$path_cache->clear();
 		if ($sourceCache instanceof Cache) {
 			// normalize source and target
 			$sourcePath = $this->normalize($sourcePath);
@@ -533,17 +615,8 @@ class Cache implements ICache {
 
 			if ($sourceData['mimetype'] === 'httpd/unix-directory') {
 				//find all child entries
-				$sql = 'SELECT `path`, `fileid` FROM `*PREFIX*filecache` WHERE `storage` = ? AND `path` LIKE ?';
-				$result = $this->connection->executeQuery($sql, [$sourceStorageId, $this->connection->escapeLikeParameter($sourcePath) . '/%']);
-				$childEntries = $result->fetchAll();
-				$sourceLength = \strlen($sourcePath);
 				$this->connection->beginTransaction();
-				$query = $this->connection->prepare('UPDATE `*PREFIX*filecache` SET `storage` = ?, `path` = ?, `path_hash` = ? WHERE `fileid` = ?');
-
-				foreach ($childEntries as $child) {
-					$newTargetPath = $targetPath . \substr($child['path'], $sourceLength);
-					$query->execute([$targetStorageId, $newTargetPath, \md5($newTargetPath), $child['fileid']]);
-				}
+				$this->handleChildrenMove($sourceStorageId, $sourcePath, $targetStorageId, $targetPath);
 				$this->connection->executeQuery($moveSql, [$targetStorageId, $targetPath, \md5($targetPath), \basename($targetPath), $newParentId, $sourceId]);
 				$this->connection->commit();
 			} else {
@@ -554,10 +627,73 @@ class Cache implements ICache {
 		}
 	}
 
+	private function handleChildrenMove($sourceStorageId, $sourcePath, $targetStorageId, $targetPath) {
+		$platformName = $this->connection->getDatabasePlatform()->getName();
+		$versionString = $this->connection->getDatabaseVersionString();
+		$versionArray = \explode('.', $versionString);
+
+		$sql = null;
+		$sqlParams = [
+			'sourceStorageId' => $sourceStorageId,
+			'sourcePath' => "$sourcePath/",
+			'targetStorageId' => $targetStorageId,
+			'targetPath' => "$targetPath/",
+			'sourcePathLike' => $this->connection->escapeLikeParameter("$sourcePath/") . '%'
+		];
+		switch ($platformName) {
+			case 'oracle':
+				if (\intval($versionArray[0]) < 12) {
+					$sql = 'UPDATE `*PREFIX*filecache`
+						SET `storage` = :targetStorageId,
+							`path_hash` = LOWER(dbms_obfuscation_toolkit.md5(input => UTL_RAW.cast_to_raw(REPLACE(`path`, :sourcePath, :targetPath)))),
+							`path` = REPLACE(`path`, :sourcePath, :targetPath)
+						WHERE `storage` = :sourceStorageId
+						AND `path` LIKE :sourcePathLike';
+				} else {
+					$sql = 'UPDATE `*PREFIX*filecache`
+						SET `storage` = :targetStorageId,
+							`path_hash` = LOWER(standard_hash(REPLACE(`path`, :sourcePath, :targetPath), \'MD5\')),
+							`path` = REPLACE(`path`, :sourcePath, :targetPath)
+						WHERE `storage` = :sourceStorageId
+						AND `path` LIKE :sourcePathLike';
+				}
+				break;
+			case 'mysql':
+			case 'postgresql':
+				$sql = 'UPDATE `*PREFIX*filecache`
+					SET `storage` = :targetStorageId,
+						`path_hash` = MD5(REPLACE(`path`, :sourcePath, :targetPath)),
+						`path` = REPLACE(`path`, :sourcePath, :targetPath)
+					WHERE `storage` = :sourceStorageId
+					AND `path` LIKE :sourcePathLike';
+				break;
+		}
+
+		// MariaDB should be included as mysql
+		// if there is an (optimized) sql query with the parameters, run it
+		if (isset($sql, $sqlParams)) {
+			$this->connection->executeQuery($sql, $sqlParams);
+			return;
+		}
+
+		// for other DBs (sqlite), we keep the old behaviour -> get the list and update one by one
+		$sql = 'SELECT `path`, `fileid` FROM `*PREFIX*filecache` WHERE `storage` = ? AND `path` LIKE ?';
+		$result = $this->connection->executeQuery($sql, [$sourceStorageId, $this->connection->escapeLikeParameter($sourcePath) . '/%']);
+		$childEntries = $result->fetchAll();
+		$sourceLength = \strlen($sourcePath);
+		$query = $this->connection->prepare('UPDATE `*PREFIX*filecache` SET `storage` = ?, `path` = ?, `path_hash` = ? WHERE `fileid` = ?');
+
+		foreach ($childEntries as $child) {
+			$newTargetPath = $targetPath . \substr($child['path'], $sourceLength);
+			$query->execute([$targetStorageId, $newTargetPath, \md5($newTargetPath), $child['fileid']]);
+		}
+	}
+
 	/**
 	 * remove all entries for files that are stored on the storage from the cache
 	 */
 	public function clear() {
+		self::$path_cache->clear();
 		Storage::remove($this->storageId);
 	}
 
@@ -568,10 +704,11 @@ class Cache implements ICache {
 	 * - Cache::PARTIAL: File is not stored in the cache but some incomplete data is known
 	 * - Cache::SHALLOW: The folder and it's direct children are in the cache but not all sub folders are fully scanned
 	 * - Cache::COMPLETE: The file or folder, with all it's children) are fully scanned
+	 * - Cache::NOT_SCANNED: Only the folder is in the cache. The contents are unknown, so the folder needs a scan
 	 *
 	 * @param string $file
 	 *
-	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW or Cache::COMPLETE
+	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW, Cache::COMPLETE or Cache::NOT_SCANNED
 	 */
 	public function getStatus($file) {
 		// normalize file
@@ -581,7 +718,10 @@ class Cache implements ICache {
 		$sql = 'SELECT `size` FROM `*PREFIX*filecache` WHERE `storage` = ? AND `path_hash` = ?';
 		$result = $this->connection->executeQuery($sql, [$this->getNumericStorageId(), $pathHash]);
 		if ($row = $result->fetch()) {
-			if ((int)$row['size'] === -1) {
+			$size = (int)$row['size'];
+			if ($size === IScanner::SIZE_NEEDS_SCAN) {
+				return self::NOT_SCANNED;
+			} elseif ($size === IScanner::SIZE_SHALLOW_SCANNED) {
 				return self::SHALLOW;
 			} else {
 				return self::COMPLETE;
@@ -611,7 +751,8 @@ class Cache implements ICache {
 				`etag`, `permissions`, `checksum`
 			FROM `*PREFIX*filecache`
 			WHERE `storage` = ? AND `name` ILIKE ?';
-		$result = $this->connection->executeQuery($sql,
+		$result = $this->connection->executeQuery(
+			$sql,
 			[$this->getNumericStorageId(), $pattern]
 		);
 
@@ -708,7 +849,14 @@ class Cache implements ICache {
 	 * @param array $data (optional) meta data of the folder
 	 */
 	public function correctFolderSize($path, $data = null) {
-		$this->calculateFolderSize($path, $data);
+		$newSize = $this->calculateFolderSize($path, $data);
+		if ($newSize < 0) {
+			// newSize < 0 implies the folder needs a scan or it's
+			// shallow scanned. In both cases, we don't need to correct
+			// the parent folders
+			return;
+		}
+
 		if ($path !== '') {
 			$parent = \dirname($path);
 			if ($parent === '.' or $parent === '/') {
@@ -739,10 +887,18 @@ class Cache implements ICache {
 			if ($row = $result->fetch()) {
 				$result->closeCursor();
 				list($sum, $min) = \array_values($row);
+				if ($min === null && $entry['size'] < 0) {
+					// could happen if the folder hasn't been scanned.
+					// we don't have any data, so return the SIZE_NEEDS_SCAN
+					// if the size of the entry is positive it means that the entry has been scanned,
+					// so the folder is empty (no need to be scanned)
+					return IScanner::SIZE_NEEDS_SCAN;
+				}
 				$sum = 0 + $sum;
 				$min = 0 + $min;
-				if ($min === -1) {
-					$totalSize = $min;
+				if ($min === IScanner::SIZE_NEEDS_SCAN || $min === IScanner::SIZE_SHALLOW_SCANNED) {
+					// current folder is shallow scanned
+					$totalSize = IScanner::SIZE_SHALLOW_SCANNED;
 				} else {
 					$totalSize = $sum;
 				}
@@ -786,8 +942,8 @@ class Cache implements ICache {
 	 */
 	public function getIncomplete() {
 		$query = $this->connection->prepare('SELECT `path` FROM `*PREFIX*filecache`'
-			. ' WHERE `storage` = ? AND `size` = -1 ORDER BY `fileid` DESC', 1);
-		$query->execute([$this->getNumericStorageId()]);
+			. ' WHERE `storage` = ? AND `size` = ? ORDER BY `fileid` DESC', 1);
+		$query->execute([$this->getNumericStorageId(), IScanner::SIZE_NEEDS_SCAN]);
 		if ($row = $query->fetch()) {
 			return $row['path'];
 		} else {
@@ -799,20 +955,34 @@ class Cache implements ICache {
 	 * get the path of a file on this storage by it's file id
 	 *
 	 * @param int $id the file id of the file or folder to search
-	 * @return string|null the path of the file (relative to the storage) or null if a file with the given id does not exists within this cache
+	 * @return string|null the path of the file (relative to the storage) or null if a file with the given id does not exist within this cache
 	 */
 	public function getPathById($id) {
-		$sql = 'SELECT `path` FROM `*PREFIX*filecache` WHERE `fileid` = ? AND `storage` = ?';
-		$result = $this->connection->executeQuery($sql, [$id, $this->getNumericStorageId()]);
-		if ($row = $result->fetch()) {
-			// Oracle stores empty strings as null...
-			if ($row['path'] === null) {
-				return '';
+		if (!isset(self::$path_cache[(int)$id])) {
+			$sql = 'SELECT `storage`, `path` FROM `*PREFIX*filecache` WHERE `fileid` = ?';
+			$result = $this->connection->executeQuery($sql, [$id]);
+			if ($row = $result->fetch()) {
+				$entryStorage = (int)$row['storage'];
+				// Oracle stores empty strings as null...
+				if ($row['path'] === null) {
+					$entryPath = '';
+				} else {
+					$entryPath = $row['path'];
+				}
+				$entry = [
+					'storage' => $entryStorage,
+					'path' => $entryPath,
+				];
+				self::$path_cache[(int)$id] = $entry;
+			} else {
+				return null;
 			}
-			return $row['path'];
-		} else {
-			return null;
 		}
+		
+		if (self::$path_cache[(int)$id]['storage'] === (int)$this->getNumericStorageId()) {
+			return self::$path_cache[(int)$id]['path'];
+		}
+		return null;
 	}
 
 	/**

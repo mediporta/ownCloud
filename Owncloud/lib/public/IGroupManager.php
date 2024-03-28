@@ -66,7 +66,7 @@ interface IGroupManager {
 
 	/**
 	 * @param string $gid
-	 * @return \OCP\IGroup
+	 * @return \OCP\IGroup|null
 	 * @since 8.0.0
 	 */
 	public function get($gid);
@@ -151,4 +151,11 @@ interface IGroupManager {
 	 * @since 8.0.0
 	 */
 	public function isInGroup($userId, $group);
+
+	/**
+	 * Get the active backends
+	 * @return \OCP\GroupInterface[]
+	 * @since 10.7.0
+	 */
+	public function getBackends();
 }

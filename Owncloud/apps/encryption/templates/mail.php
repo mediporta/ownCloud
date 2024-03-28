@@ -6,8 +6,8 @@
 	<tr><td>
 			<table cellspacing="0" cellpadding="0" border="0" width="600px">
 				<tr>
-					<td bgcolor="<?php p($theme->getMailHeaderColor());?>" width="20px">&nbsp;</td>
-					<td bgcolor="<?php p($theme->getMailHeaderColor());?>">
+					<td bgcolor="<?php p($theme->getMailHeaderColor()); ?>" width="20px">&nbsp;</td>
+					<td bgcolor="<?php p($theme->getMailHeaderColor()); ?>">
 						<img src="<?php p(\OC::$server->getURLGenerator()->getAbsoluteURL(image_path('', 'logo-mail.gif'))); ?>" alt="<?php p($theme->getName()); ?>"/>
 					</td>
 				</tr>
@@ -17,9 +17,9 @@
 					<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">
 						<?php
 						print_unescaped($l->t('Hey there,<br><br>the admin enabled server-side-encryption. Your files were encrypted using the password <strong>%s</strong>.<br><br>Please login to the web interface, go to the section "ownCloud basic encryption module" of your personal settings and update your encryption password by entering this password into the "old log-in password" field and your current login-password.<br><br>', [$_['password']]));
-						// TRANSLATORS term at the end of a mail
-						p($l->t('Cheers!'));
-						?>
+// TRANSLATORS term at the end of a mail
+p($l->t('Cheers!'));
+?>
 					</td>
 				</tr>
 				<tr><td colspan="2">&nbsp;</td></tr>
@@ -28,7 +28,7 @@
 					<td style="font-weight:normal; font-size:0.8em; line-height:1.2em; font-family:verdana,'arial',sans;">--<br>
 						<?php p($theme->getName()); ?> -
 						<?php p($theme->getSlogan()); ?>
-						<br><a href="<?php p($theme->getBaseUrl()); ?>"><?php p($theme->getBaseUrl());?></a>
+						<br><a href="<?php p($theme->getBaseUrl()); ?>"><?php p($theme->getBaseUrl()); ?></a>
 					</td>
 				</tr>
 				<tr>

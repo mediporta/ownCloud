@@ -30,8 +30,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @package Owncloud\Updater\Command
  */
 class PreUpgradeRepairCommand extends Command {
-
-	protected function configure(){
+	protected function configure() {
 		$this
 				->setName('upgrade:preUpgradeRepair')
 				->setDescription('Repair and cleanup (pre upgrade, DB collations update, ..) [danger, might take long]')
@@ -41,8 +40,10 @@ class PreUpgradeRepairCommand extends Command {
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
+	 * @return int
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output){
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		$output->writeln('upgrade:preUpgradeRepair command is not implemented');
+		return 1;
 	}
-
 }

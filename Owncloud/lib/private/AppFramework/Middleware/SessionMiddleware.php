@@ -30,7 +30,6 @@ use OCP\AppFramework\Middleware;
 use OCP\ISession;
 
 class SessionMiddleware extends Middleware {
-
 	/** @var IRequest */
 	private $request;
 
@@ -44,10 +43,11 @@ class SessionMiddleware extends Middleware {
 	 * @param IRequest $request
 	 * @param ControllerMethodReflector $reflector
 	 */
-	public function __construct(IRequest $request,
-								ControllerMethodReflector $reflector,
-								ISession $session
-) {
+	public function __construct(
+		IRequest $request,
+		ControllerMethodReflector $reflector,
+		ISession $session
+	) {
 		$this->request = $request;
 		$this->reflector = $reflector;
 		$this->session = $session;

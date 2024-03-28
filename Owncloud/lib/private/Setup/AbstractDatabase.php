@@ -29,7 +29,6 @@ use OCP\ILogger;
 use OCP\Security\ISecureRandom;
 
 abstract class AbstractDatabase {
-
 	/** @var \OCP\IL10N */
 	protected $trans;
 	/** @var string */
@@ -43,7 +42,11 @@ abstract class AbstractDatabase {
 	/** @var string */
 	protected $dbHost;
 	/** @var string */
+	protected $dbConnectionString;
+	/** @var string */
 	protected $tablePrefix;
+	/** @var string */
+	protected $dbprettyname;
 	/** @var IConfig */
 	protected $config;
 	/** @var ILogger */
@@ -68,9 +71,6 @@ abstract class AbstractDatabase {
 		} elseif (empty($config['dbname'])) {
 			$errors[] = $this->trans->t("%s enter the database name.", [$this->dbprettyname]);
 		}
-		if (\substr_count($config['dbname'], '.') >= 1) {
-			$errors[] = $this->trans->t("%s you may not use dots in the database name", [$this->dbprettyname]);
-		}
 		return $errors;
 	}
 
@@ -78,11 +78,13 @@ abstract class AbstractDatabase {
 		$dbUser = $config['dbuser'];
 		$dbPass = $config['dbpass'];
 		$dbName = $config['dbname'];
+		$dbConnectionString = $config['dbconnectionstring'] ?? '';
 		$dbHost = !empty($config['dbhost']) ? $config['dbhost'] : 'localhost';
 		$dbTablePrefix = isset($config['dbtableprefix']) ? $config['dbtableprefix'] : 'oc_';
 
 		$this->config->setSystemValues([
 			'dbname'		=> $dbName,
+			'dbconnectionstring' => $dbConnectionString,
 			'dbhost'		=> $dbHost,
 			'dbtableprefix'	=> $dbTablePrefix,
 		]);
@@ -91,6 +93,7 @@ abstract class AbstractDatabase {
 		$this->dbPassword = $dbPass;
 		$this->dbName = $dbName;
 		$this->dbHost = $dbHost;
+		$this->dbConnectionString = $dbConnectionString;
 		$this->tablePrefix = $dbTablePrefix;
 	}
 

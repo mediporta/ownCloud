@@ -28,8 +28,6 @@
  *
  */
 class OC_Hook {
-	public static $thrownExceptions = [];
-
 	private static $registered = [];
 
 	/**
@@ -86,7 +84,6 @@ class OC_Hook {
 	 * TODO: write example
 	 */
 	public static function emit($signalClass, $signalName, $params = []) {
-
 		// Return false if no hook handlers are listening to this
 		// emitting class
 		if (!\array_key_exists($signalClass, self::$registered)) {
@@ -104,7 +101,6 @@ class OC_Hook {
 			try {
 				\call_user_func([$i["class"], $i["name"]], $params);
 			} catch (Exception $e) {
-				self::$thrownExceptions[] = $e;
 				\OC::$server->getLogger()->logException($e);
 				if ($e instanceof \OC\HintException) {
 					throw $e;

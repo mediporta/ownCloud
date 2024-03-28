@@ -24,6 +24,7 @@
 
 namespace OCA\Files_Sharing;
 
+use OCP\Activity\IEvent;
 use OCP\Activity\IExtension;
 use OCP\Activity\IManager;
 use OCP\IL10N;
@@ -31,50 +32,51 @@ use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 
 class Activity implements IExtension {
-	const FILES_SHARING_APP = 'files_sharing';
+	public const FILES_SHARING_APP = 'files_sharing';
 	/**
 	 * Filter with all sharing related activities
 	 */
-	const FILTER_SHARES = 'shares';
+	public const FILTER_SHARES = 'shares';
 
 	/**
 	 * Activity types known to this extension
 	 */
-	const TYPE_PUBLIC_LINKS = 'public_links';
-	const TYPE_REMOTE_SHARE = 'remote_share';
-	const TYPE_SHARED = 'shared';
+	public const TYPE_PUBLIC_LINKS = 'public_links';
+	public const TYPE_REMOTE_SHARE = 'remote_share';
+	public const TYPE_SHARED = 'shared';
 
 	/**
 	 * Subject keys for translation of the subjections
 	 */
-	const SUBJECT_PUBLIC_SHARED_FILE_DOWNLOADED = 'public_shared_file_downloaded';
-	const SUBJECT_PUBLIC_SHARED_FOLDER_DOWNLOADED = 'public_shared_folder_downloaded';
+	public const SUBJECT_PUBLIC_SHARED_FILE_DOWNLOADED = 'public_shared_file_downloaded';
+	public const SUBJECT_PUBLIC_SHARED_FOLDER_DOWNLOADED = 'public_shared_folder_downloaded';
 
-	const SUBJECT_REMOTE_SHARE_ACCEPTED = 'remote_share_accepted';
-	const SUBJECT_REMOTE_SHARE_DECLINED = 'remote_share_declined';
-	const SUBJECT_REMOTE_SHARE_RECEIVED = 'remote_share_received';
-	const SUBJECT_REMOTE_SHARE_UNSHARED = 'remote_share_unshared';
+	public const SUBJECT_REMOTE_SHARE_ACCEPTED = 'remote_share_accepted';
+	public const SUBJECT_REMOTE_SHARE_DECLINED = 'remote_share_declined';
+	public const SUBJECT_REMOTE_SHARE_RECEIVED = 'remote_share_received';
+	public const SUBJECT_REMOTE_SHARE_UNSHARED = 'remote_share_unshared';
 
-	const SUBJECT_SHARED_USER_SELF = 'shared_user_self';
-	const SUBJECT_RESHARED_USER_BY = 'reshared_user_by';
-	const SUBJECT_UNSHARED_USER_SELF = 'unshared_user_self';
-	const SUBJECT_UNSHARED_USER_BY = 'unshared_user_by';
+	public const SUBJECT_SHARED_USER_SELF = 'shared_user_self';
+	public const SUBJECT_RESHARED_USER_BY = 'reshared_user_by';
+	public const SUBJECT_UNSHARED_USER_SELF = 'unshared_user_self';
+	public const SUBJECT_UNSHARED_USER_BY = 'unshared_user_by';
+	public const SUBJECT_UNSHARED_FROM_SELF = 'unshared_from_self';
 
-	const SUBJECT_SHARED_GROUP_SELF = 'shared_group_self';
-	const SUBJECT_RESHARED_GROUP_BY = 'reshared_group_by';
-	const SUBJECT_UNSHARED_GROUP_SELF = 'unshared_group_self';
-	const SUBJECT_UNSHARED_GROUP_BY = 'unshared_group_by';
+	public const SUBJECT_SHARED_GROUP_SELF = 'shared_group_self';
+	public const SUBJECT_RESHARED_GROUP_BY = 'reshared_group_by';
+	public const SUBJECT_UNSHARED_GROUP_SELF = 'unshared_group_self';
+	public const SUBJECT_UNSHARED_GROUP_BY = 'unshared_group_by';
 
-	const SUBJECT_SHARED_LINK_SELF = 'shared_link_self';
-	const SUBJECT_RESHARED_LINK_BY = 'reshared_link_by';
-	const SUBJECT_UNSHARED_LINK_SELF = 'unshared_link_self';
-	const SUBJECT_UNSHARED_LINK_BY = 'unshared_link_by';
-	const SUBJECT_LINK_EXPIRED = 'link_expired';
-	const SUBJECT_LINK_BY_EXPIRED = 'link_by_expired';
+	public const SUBJECT_SHARED_LINK_SELF = 'shared_link_self';
+	public const SUBJECT_RESHARED_LINK_BY = 'reshared_link_by';
+	public const SUBJECT_UNSHARED_LINK_SELF = 'unshared_link_self';
+	public const SUBJECT_UNSHARED_LINK_BY = 'unshared_link_by';
+	public const SUBJECT_LINK_EXPIRED = 'link_expired';
+	public const SUBJECT_LINK_BY_EXPIRED = 'link_by_expired';
 
-	const SUBJECT_SHARED_EMAIL = 'shared_with_email';
-	const SUBJECT_SHARED_WITH_BY = 'shared_with_by';
-	const SUBJECT_UNSHARED_BY = 'unshared_by';
+	public const SUBJECT_SHARED_EMAIL = 'shared_with_email';
+	public const SUBJECT_SHARED_WITH_BY = 'shared_with_by';
+	public const SUBJECT_UNSHARED_BY = 'unshared_by';
 
 	/** @var IFactory */
 	protected $languageFactory;
@@ -148,7 +150,7 @@ class Activity implements IExtension {
 		switch ($type) {
 			case self::TYPE_SHARED:
 			case self::TYPE_REMOTE_SHARE:
-				return 'icon-share';
+				return 'icon-shared';
 			case self::TYPE_PUBLIC_LINKS:
 				return 'icon-download';
 		}
@@ -194,15 +196,15 @@ class Activity implements IExtension {
 	protected function translateLong($text, IL10N $l, array $params) {
 		switch ($text) {
 			case self::SUBJECT_REMOTE_SHARE_RECEIVED:
-				if (\sizeof($params) === 2) {
+				if (\sizeof($params) > 1) {
 					// New activity ownCloud 8.2+
-					return (string) $l->t('You received a new remote share %2$s from %1$s', $params);
+					return (string) $l->t('You received a new federated share %2$s from %1$s', $params);
 				}
-				return (string) $l->t('You received a new remote share from %s', $params);
+				return (string) $l->t('You received a new federated share from %s', $params);
 			case self::SUBJECT_REMOTE_SHARE_ACCEPTED:
-				return (string) $l->t('%1$s accepted remote share %2$s', $params);
+				return (string) $l->t('%1$s accepted federated share %2$s', $params);
 			case self::SUBJECT_REMOTE_SHARE_DECLINED:
-				return (string) $l->t('%1$s declined remote share %2$s', $params);
+				return (string) $l->t('%1$s declined federated share %2$s', $params);
 			case self::SUBJECT_REMOTE_SHARE_UNSHARED:
 				return (string) $l->t('%1$s unshared %2$s from you', $params);
 			case self::SUBJECT_PUBLIC_SHARED_FOLDER_DOWNLOADED:
@@ -218,6 +220,8 @@ class Activity implements IExtension {
 				return (string) $l->t('You removed the share of %2$s for %1$s', $params);
 			case self::SUBJECT_UNSHARED_USER_BY:
 				return (string) $l->t('%2$s removed the share of %3$s for %1$s', $params);
+			case self::SUBJECT_UNSHARED_FROM_SELF:
+				return (string) $l->t('You unshared %1$s shared by %2$s from self', $params);
 
 			case self::SUBJECT_SHARED_GROUP_SELF:
 				return (string) $l->t('You shared %1$s with group %2$s', $params);
@@ -244,6 +248,9 @@ class Activity implements IExtension {
 			case self::SUBJECT_SHARED_WITH_BY:
 				return (string) $l->t('%2$s shared %1$s with you', $params);
 			case self::SUBJECT_UNSHARED_BY:
+				if ($this->actorIsAutomation($params[1]) && $this->shareIsExpired($params[2])) {
+					return (string) $l->t('The share for %1$s expired', $params);
+				}
 				return (string) $l->t('%2$s removed the share for %1$s', $params);
 			case self::SUBJECT_SHARED_EMAIL:
 				return (string) $l->t('You shared %1$s with %2$s', $params);
@@ -272,6 +279,8 @@ class Activity implements IExtension {
 				return (string) $l->t('Removed share for %2$s', $params);
 			case self::SUBJECT_UNSHARED_USER_BY:
 				return (string) $l->t('%2$s removed share for %3$s', $params);
+			case self::SUBJECT_UNSHARED_FROM_SELF:
+				return (string) $l->t('Unshared %1$s from self', $params);
 
 			case self::SUBJECT_SHARED_GROUP_SELF:
 				return (string) $l->t('Shared with group %2$s', $params);
@@ -299,6 +308,13 @@ class Activity implements IExtension {
 				return (string) $l->t('Shared by %2$s', $params);
 			case self::SUBJECT_SHARED_EMAIL:
 				return (string) $l->t('Shared with %2$s', $params);
+
+			case self::SUBJECT_REMOTE_SHARE_RECEIVED:
+				if (\sizeof($params) > 1) {
+					// New activity ownCloud 8.2+
+					return (string) $l->t('Received federated share from %1$s', $params);
+				}
+				return (string) $l->t('Received federated share from %s', $params);
 
 			default:
 				return false;
@@ -366,7 +382,8 @@ class Activity implements IExtension {
 						1 => 'username',
 						2 => 'username',
 					];
-
+				case self::SUBJECT_UNSHARED_FROM_SELF:
+					return [0 => 'file', 1 => 'username'];
 				case self::SUBJECT_SHARED_GROUP_SELF:
 				case self::SUBJECT_UNSHARED_GROUP_SELF:
 					return [
@@ -478,5 +495,25 @@ class Activity implements IExtension {
 			];
 		}
 		return false;
+	}
+
+	/**
+	 * Check if the actor is an automation.
+	 *
+	 * @param string $user Parameter e.g. `<user display-name="admin">admin</user>`
+	 * @return bool
+	 */
+	protected function actorIsAutomation($user) {
+		return \strip_tags($user) === IEvent::AUTOMATION_AUTHOR;
+	}
+
+	/**
+	 * Check if the share is expired.
+	 *
+	 * @param string $param Parameter e.g. `<user display-name="admin">admin</user>`
+	 * @return bool
+	 */
+	protected function shareIsExpired($param) {
+		return \strip_tags($param) === 'shareExpired';
 	}
 }

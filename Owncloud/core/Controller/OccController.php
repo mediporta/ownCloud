@@ -31,7 +31,6 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 class OccController extends Controller {
-	
 	/** @var array  */
 	private $allowedCommands = [
 		'app:disable',
@@ -62,8 +61,13 @@ class OccController extends Controller {
 	 * @param Application $console
 	 * @param ILogger $logger
 	 */
-	public function __construct($appName, IRequest $request,
-								IConfig $config, Application $console, ILogger $logger) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IConfig $config,
+		Application $console,
+		ILogger $logger
+	) {
 		parent::__construct($appName, $request);
 		$this->config = $config;
 		$this->console = $console;

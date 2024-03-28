@@ -88,12 +88,20 @@
 			$dateColumn.before($tr.children('td:first'));
 			$tr.find('td.filename input:checkbox').remove();
 			$tr.attr('data-share-location-type', fileData.shareLocationType);
+			$tr.attr('data-share-type', fileData.shareType);
 			$tr.attr('data-share-id', _.pluck(fileData.shares, 'id').join(','));
 			// add row with expiration date for link only shares - influenced by _createRow of filelist
 			if (this._linksOnly) {
 				var expirationTimestamp = 0;
-				if(fileData.shares && fileData.shares[0].expiration !== null) {
-					expirationTimestamp = moment(fileData.shares[0].expiration).valueOf();
+				/**
+    				 * The endpoint returns 'null' for the expiration if none has been set.
+				 * In this context, we also need to check for a value of '0'. 
+    				 * This is important because after the element gets updated from JavaScript events, the data will be fetched from the jQuery data attributes, rather than from the endpoint. 
+				 * A few lines down in the code, you can find the statement '$tr.attr('data-expiration', expirationTimestamp);,' which will set the value to '0' if no expiration has been previously set. 
+    				 * Therefore, we need to account for these two different conditions.
+				 */
+				if(fileData.shares && fileData.shares[0].expiration !== null && fileData.shares[0].expiration !== 0) {
+					expirationTimestamp = moment(fileData.shares[0].expiration).endOf('day').valueOf();
 				}
 				$tr.attr('data-expiration', expirationTimestamp);
 
@@ -229,6 +237,13 @@
 			if (this._sharedWithUser) {
 				requestData.shared_with_me = true;
 				requestData.state = 'all';
+				requestData.share_types = [
+					OC.Share.SHARE_TYPE_USER,
+					OC.Share.SHARE_TYPE_GROUP,
+					OC.Share.SHARE_TYPE_REMOTE
+				].join(',');
+			} else if (this._linksOnly) {
+				requestData.share_types = [OC.Share.SHARE_TYPE_LINK].join(',');
 			}
 			requestData.include_tags = true;
 			var shares = $.ajax({
@@ -244,7 +259,7 @@
 
 			if (!!this._sharedWithUser) {
 				var remoteShares = $.ajax({
-					url: OC.linkToOCS('apps/files_sharing/api/v1') + 'remote_shares',
+					url: OC.linkToOCS('apps/files_sharing/api/v1') + 'remote_shares/all',
 					/* jshint camelcase: false */
 					data: {
 						format: 'json',
@@ -302,7 +317,8 @@
 			}
 
 			fileInfo.shareState = parseInt($el.attr('data-share-state'), 10);
-			fileInfo.shareLocationType =  $el.attr('data-share-location-type');
+			fileInfo.shareLocationType = $el.attr('data-share-location-type');
+			fileInfo.shareType = $el.attr('data-share-type') || "";
 			return fileInfo;
 		},
 
@@ -339,7 +355,7 @@
 				.map(function(share) {
 					var file = {
 						shareOwner: share.owner + '@' + share.remote.replace(/.*?:\/\//g, ""),
-						shareState: share.accepted ? OC.Share.STATE_ACCEPTED : OC.Share.STATE_PENDING,
+						shareState: !!parseInt(share.accepted, 10) ? OC.Share.STATE_ACCEPTED : OC.Share.STATE_PENDING,
 						name: OC.basename(share.mountpoint),
 						mtime: share.mtime * 1000,
 						mimetype: share.mimetype,
@@ -348,7 +364,8 @@
 						path: OC.dirname(share.mountpoint),
 						permissions: share.permissions,
 						tags: share.tags || [],
-						shareLocationType: 'remote'
+						shareLocationType: 'remote',
+						shareType: share.share_type || ''
 					};
 
 					file.shares = [{
@@ -484,7 +501,7 @@
 					);
 					delete data.recipientsCount;
 					if (self._sharedWithUser) {
-						// only for outgoing shres
+						// only for outgoing shares
 						delete data.shareTypes;
 					} else {
 						data.shareTypes = _.keys(data.shareTypes);

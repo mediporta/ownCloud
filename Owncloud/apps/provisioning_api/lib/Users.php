@@ -32,8 +32,8 @@ namespace OCA\Provisioning_API;
 use OC\OCS\Result;
 use OC_Helper;
 use OCP\API;
-use OCP\Files\FileInfo;
 use OCP\Files\NotFoundException;
+use OCP\IConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\ILogger;
@@ -43,7 +43,6 @@ use OCP\IUserSession;
 use OCP\Util;
 
 class Users {
-
 	/** @var IUserManager */
 	private $userManager;
 	/** @var IGroupManager|\OC\Group\Manager */ // FIXME Requires a method that is not on the interface
@@ -52,6 +51,8 @@ class Users {
 	private $userSession;
 	/** @var ILogger */
 	private $logger;
+	/** @var IConfig */
+	private $config;
 	/** @var \OC\Authentication\TwoFactorAuth\Manager */
 	private $twoFactorAuthManager;
 
@@ -60,16 +61,21 @@ class Users {
 	 * @param IGroupManager $groupManager
 	 * @param IUserSession $userSession
 	 * @param ILogger $logger
+	 * @param IConfig $config
 	 */
-	public function __construct(IUserManager $userManager,
-								IGroupManager $groupManager,
-								IUserSession $userSession,
-								ILogger $logger,
-								\OC\Authentication\TwoFactorAuth\Manager $twoFactorAuthManager) {
+	public function __construct(
+		IUserManager $userManager,
+		IGroupManager $groupManager,
+		IUserSession $userSession,
+		ILogger $logger,
+		IConfig $config,
+		\OC\Authentication\TwoFactorAuth\Manager $twoFactorAuthManager
+	) {
 		$this->userManager = $userManager;
 		$this->groupManager = $groupManager;
 		$this->userSession = $userSession;
 		$this->logger = $logger;
+		$this->config = $config;
 		$this->twoFactorAuthManager = $twoFactorAuthManager;
 	}
 
@@ -205,18 +211,21 @@ class Users {
 			$data['enabled'] = $targetUserObject->isEnabled() ? 'true' : 'false';
 		} else {
 			// Check they are looking up themselves
-			if ($currentLoggedInUser->getUID() !== $userId) {
+			if (\strcasecmp($currentLoggedInUser->getUID(), $userId) !== 0) {
 				return new Result(null, API::RESPOND_UNAUTHORISED);
 			}
 		}
 
 		// Find the data
-		$data['quota'] = $this->fillStorageInfo($userId);
+		$data['quota'] = $this->fillStorageInfo($targetUserObject->getUID());
 		$data['quota']['definition'] = $targetUserObject->getQuota();
 		$data['email'] = $targetUserObject->getEMailAddress();
 		$data['displayname'] = $targetUserObject->getDisplayName();
 		$data['home'] = $targetUserObject->getHome();
 		$data['two_factor_auth_enabled'] = $this->twoFactorAuthManager->isTwoFactorAuthenticated($targetUserObject) ? 'true' : 'false';
+		$data['last_login'] = $targetUserObject->getLastLogin();
+		$data['creation_time'] = $targetUserObject->getCreationTime();
+		$data['language'] =  $this->config->getUserValue($targetUserObject->getUID(), 'core', 'lang', $this->config->getSystemValue('default_language', 'en'));
 
 		return new Result($data);
 	}
@@ -242,27 +251,37 @@ class Users {
 			return new Result(null, 997);
 		}
 
+		$emailChangeAllowed = $this->config->getSystemValue('allow_user_to_change_mail_address', true) !== false;
+		$displayNameChangeAllowed = $this->config->getSystemValue('allow_user_to_change_display_name', true) !== false;
+		$subAdminManager = $this->groupManager->getSubAdmin();
+		$isAdmin = $this->groupManager->isAdmin($currentLoggedInUser->getUID());
+		$hasPermissionsOverTargetUser = ($subAdminManager->isUserAccessible($currentLoggedInUser, $targetUser) || $isAdmin);
+
 		if ($targetUserId === $currentLoggedInUser->getUID()) {
 			// Editing self (display, email)
 			$permittedFields[] = 'display';
-			$permittedFields[] = 'email';
 			$permittedFields[] = 'password';
 			$permittedFields[] = 'two_factor_auth_enabled';
 			// If admin they can edit their own quota
-			if ($this->groupManager->isAdmin($currentLoggedInUser->getUID())) {
+			if ($isAdmin) {
 				$permittedFields[] = 'quota';
+			}
+			if ($emailChangeAllowed || $hasPermissionsOverTargetUser) {
+				$permittedFields[] = 'email';
+			}
+			if ($displayNameChangeAllowed || $hasPermissionsOverTargetUser) {
+				$permittedFields[] = 'displayname';
 			}
 		} else {
 			// Check if admin / subadmin
-			$subAdminManager = $this->groupManager->getSubAdmin();
-			if ($subAdminManager->isUserAccessible($currentLoggedInUser, $targetUser)
-			|| $this->groupManager->isAdmin($currentLoggedInUser->getUID())) {
-				// They have permissions over the user
+			if ($hasPermissionsOverTargetUser) {
+				// They have permissions over the user, so they can edit any field
 				$permittedFields[] = 'display';
 				$permittedFields[] = 'quota';
 				$permittedFields[] = 'password';
-				$permittedFields[] = 'email';
 				$permittedFields[] = 'two_factor_auth_enabled';
+				$permittedFields[] = 'email';
+				$permittedFields[] = 'displayname';
 			} else {
 				// No rights
 				return new Result(null, 997);
@@ -275,6 +294,7 @@ class Users {
 		// Process the edit
 		switch ($parameters['_put']['key']) {
 			case 'display':
+			case 'displayname':
 				$targetUser->setDisplayName($parameters['_put']['value']);
 				break;
 			case 'quota':
@@ -300,15 +320,16 @@ class Users {
 				}
 				break;
 			case 'two_factor_auth_enabled':
-				if ($parameters['_put']['value'] === true) {
+				if ($parameters['_put']['value'] === 'true') {
 					$this->twoFactorAuthManager->enableTwoFactorAuthentication($targetUser);
 				} else {
 					$this->twoFactorAuthManager->disableTwoFactorAuthentication($targetUser);
 				}
 				break;
 			case 'email':
-				if (\filter_var($parameters['_put']['value'], FILTER_VALIDATE_EMAIL)) {
-					$targetUser->setEMailAddress($parameters['_put']['value']);
+				$emailAddress = $parameters['_put']['value'];
+				if (($emailAddress === '') || \filter_var($emailAddress, FILTER_VALIDATE_EMAIL)) {
+					$targetUser->setEMailAddress($emailAddress);
 				} else {
 					return new Result(null, 102);
 				}
@@ -480,13 +501,13 @@ class Users {
 			return new Result(null, 102);
 		}
 
-		if (!$this->groupManager->isAdmin($user->getUID())) {
-			return new Result(null, 104);
-		}
-
 		$targetUser = $this->userManager->get($parameters['userid']);
 		if ($targetUser === null) {
 			return new Result(null, 103);
+		}
+
+		if (!$this->groupManager->isAdmin($user->getUID()) && !$this->groupManager->getSubAdmin()->isUserAccessible($user, $targetUser)) {
+			return new Result(null, 104);
 		}
 
 		// Add user to group
@@ -624,22 +645,37 @@ class Users {
 	 * @return Result
 	 */
 	public function getUserSubAdminGroups($parameters) {
-		$user = $this->userManager->get($parameters['userid']);
+		// Check if user is logged in
+		$currentLoggedInUser = $this->userSession->getUser();
+		if ($currentLoggedInUser === null) {
+			return new Result(null, API::RESPOND_UNAUTHORISED);
+		}
+
+		$currentLoggedInUserId = $currentLoggedInUser->getUID();
+
+		$targetUserId = $parameters['userid'];
+		$targetUser = $this->userManager->get($targetUserId);
+
 		// Check if the user exists
-		if ($user === null) {
-			return new Result(null, 101, 'User does not exist');
+		if ($targetUser === null) {
+			return new Result(null, API::RESPOND_NOT_FOUND, 'The requested user could not be found');
 		}
 
-		// Get the subadmin groups
-		$groups = $this->groupManager->getSubAdmin()->getSubAdminsGroups($user);
-		foreach ($groups as $key => $group) {
-			$groups[$key] = $group->getGID();
-		}
+		// Check if same user or subadmin or admin
+		$subAdminManager = $this->groupManager->getSubAdmin();
+		if ($targetUserId === $currentLoggedInUserId
+			|| $subAdminManager->isUserAccessible($currentLoggedInUser, $targetUser)
+			|| $this->groupManager->isAdmin($currentLoggedInUserId)) {
+			// Get the subadmin groups
+			$groups = $subAdminManager->getSubAdminsGroups($targetUser);
+			foreach ($groups as $key => $group) {
+				$groups[$key] = $group->getGID();
+			}
 
-		if (!$groups) {
-			return new Result(null, 102, 'Unknown error occurred');
+			return new Result($groups ? $groups : []);
 		} else {
-			return new Result($groups);
+			// No permission to access users groups
+			return new Result(null, API::RESPOND_UNAUTHORISED);
 		}
 	}
 

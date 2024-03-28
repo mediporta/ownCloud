@@ -107,7 +107,8 @@ class Manager extends PublicEmitter implements IUserManager {
 		$this->userSearch = $userSearch;
 		$cachedUsers = &$this->cachedUsers;
 		$this->listen(
-			'\OC\User', 'postDelete',
+			'\OC\User',
+			'postDelete',
 			function ($user) use (&$cachedUsers) {
 				/** @var \OC\User\User $user */
 				unset($cachedUsers[$user->getUID()]);
@@ -172,9 +173,10 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * get a user by user id
 	 *
 	 * @param string $uid
+	 * @param bool $evenMissing get an DeletedUser instance if the user is missing
 	 * @return \OC\User\User|null Either the user or null if the specified user does not exist
 	 */
-	public function get($uid) {
+	public function get($uid, $evenMissing = false) {
 		// fix numeric uid that was cast by storing it in an array key
 		if (\is_numeric($uid)) {
 			$uid = (string)$uid;
@@ -184,17 +186,26 @@ class Manager extends PublicEmitter implements IUserManager {
 		}
 		//check the cache first to prevent having to loop over the backends
 		if ($this->cachedUsers->hasKey($uid)) {
-			return $this->cachedUsers->get($uid);
+			$cachedUser = $this->cachedUsers->get($uid);
+			if ($cachedUser === null && $evenMissing) {
+				return new DeletedUser($this, $this->config, \OC::$server->getURLGenerator(), $uid);
+			} else {
+				return $cachedUser;
+			}
 		}
 		try {
 			$account = $this->accountMapper->getByUid($uid);
 			return $this->getUserObject($account);
 		} catch (DoesNotExistException $ex) {
 			$this->cachedUsers->set($uid, null);
-			return null;
+			if ($evenMissing) {
+				return new DeletedUser($this, $this->config, \OC::$server->getURLGenerator(), $uid);
+			} else {
+				return null;
+			}
 		} catch (MultipleObjectsReturnedException $ex) {
 			$this->logger->error(
-				"More than one user found for $uid, treating as not existing.",
+				"More than one user found for $uid, treating as nonexistent.",
 				['app' => __CLASS__]
 			);
 			$this->cachedUsers->set($uid, null);
@@ -249,6 +260,7 @@ class Manager extends PublicEmitter implements IUserManager {
 
 		foreach ($this->backends as $backend) {
 			if ($backend->implementsActions(Backend::CHECK_PASSWORD)) {
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$uid = $backend->checkPassword($loginName, $password);
 				if ($uid !== false) {
 					$account = $this->syncService->createOrSyncAccount($uid, $backend);
@@ -267,12 +279,13 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @param string $pattern
 	 * @param int $limit
 	 * @param int $offset
+	 * @param bool $alwaysReturnAllMatches
 	 * @return \OC\User\User[]
 	 */
-	public function search($pattern, $limit = null, $offset = null) {
+	public function search($pattern, $limit = null, $offset = null, $alwaysReturnAllMatches = false) {
 		$accounts = $this->accountMapper->search('user_id', $pattern, $limit, $offset);
 		$users = [];
-		if ($this->userSearch->isSearchable($pattern)) {
+		if ($alwaysReturnAllMatches || $this->userSearch->isSearchable($pattern)) {
 			foreach ($accounts as $account) {
 				$user = $this->getUserObject($account);
 				$users[$user->getUID()] = $user;
@@ -331,10 +344,10 @@ class Manager extends PublicEmitter implements IUserManager {
 			$l = \OC::$server->getL10N('lib');
 
 			// Check the name for bad characters
-			// Allowed are: "a-z", "A-Z", "0-9" and "_.@-'"
-			if (\preg_match('/[^a-zA-Z0-9 _\.@\-\']/', $uid)) {
+			// Allowed are: "a-z", "A-Z", "0-9" and "+_.@-'"
+			if (\preg_match('/[^a-zA-Z0-9 \+_\.@\-\']/', $uid)) {
 				throw new \Exception($l->t('Only the following characters are allowed in a username:'
-					. ' "a-z", "A-Z", "0-9", and "_.@-\'"'));
+					. ' "a-z", "A-Z", "0-9", and "+_.@-\'"'));
 			}
 			// No empty username
 			if (\trim($uid) == '') {
@@ -355,6 +368,15 @@ class Manager extends PublicEmitter implements IUserManager {
 				throw new \Exception($l->t('The username can not be longer than 64 characters'));
 			}
 
+			$invalidUids = \array_merge(
+				\OCP\User::FILES_THAT_ARE_NOT_USERS,
+				\OCP\User::DIRECTORIES_THAT_ARE_NOT_USERS
+			);
+
+			if (\in_array(\strtolower($uid), $invalidUids)) {
+				throw new \Exception($l->t("The special username %s is not allowed", $uid));
+			}
+
 			// No empty password
 			if (\trim($password) == '') {
 				throw new \Exception($l->t('A valid password must be provided'));
@@ -367,8 +389,8 @@ class Manager extends PublicEmitter implements IUserManager {
 
 			$this->emit('\OC\User', 'preCreateUser', [$uid, $password]);
 			\OC::$server->getEventDispatcher()->dispatch(
-				'OCP\User::validatePassword',
-				new GenericEvent(null, ['uid' => $uid, 'password' => $password])
+				new GenericEvent(null, ['uid' => $uid, 'password' => $password]),
+				'OCP\User::validatePassword'
 			);
 
 			if (empty($this->backends)) {
@@ -377,6 +399,7 @@ class Manager extends PublicEmitter implements IUserManager {
 
 			foreach ($this->backends as $backend) {
 				if ($backend->implementsActions(Backend::CREATE_USER)) {
+					/* @phan-suppress-next-line PhanUndeclaredMethod */
 					$backend->createUser($uid, $password);
 					$user = $this->createUserFromBackend($uid, $password, $backend);
 					return $user === null ? false : $user;
@@ -433,10 +456,7 @@ class Manager extends PublicEmitter implements IUserManager {
 	 * @since 9.0.0
 	 */
 	public function callForAllUsers(\Closure $callback, $search = '', $onlySeen = false) {
-		$this->accountMapper->callForAllUsers(function (Account $account) use ($callback) {
-			$user = $this->getUserObject($account);
-			return $callback($user);
-		}, $search, $onlySeen);
+		$this->callForUsers($callback, '', $onlySeen, null, null);
 	}
 
 	/**
@@ -457,6 +477,21 @@ class Manager extends PublicEmitter implements IUserManager {
 		$this->callForAllUsers($callback, '', true);
 	}
 
+	/**
+	 * @param \Closure $callback
+	 * @param string $search
+	 * @param boolean $onlySeen when true only users that have a lastLogin entry
+	 *                in the preferences table will be affected
+	 * @param int $limit
+	 * @param int $offset
+	 * @since 10.4.0
+	 */
+	public function callForUsers(\Closure $callback, $search = '', $onlySeen = false, $limit = null, $offset = null) {
+		$this->accountMapper->callForUsers(function (Account $account) use ($callback) {
+			$user = $this->getUserObject($account);
+			return $callback($user);
+		}, $search, $onlySeen, $limit, $offset);
+	}
 	/**
 	 * @param string $email
 	 * @return IUser[]

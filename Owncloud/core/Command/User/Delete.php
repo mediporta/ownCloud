@@ -27,15 +27,17 @@ namespace OC\Core\Command\User;
 use OCP\IUserManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 
 class Delete extends Command {
 	/** @var IUserManager */
-	protected $userManager;
+	private $userManager;
 
 	/**
 	 * @param IUserManager $userManager
+	 * @param IRootFolder $rootFolder
 	 */
 	public function __construct(IUserManager $userManager) {
 		$this->userManager = $userManager;
@@ -50,13 +52,25 @@ class Delete extends Command {
 				'uid',
 				InputArgument::REQUIRED,
 				'The username.'
+			)
+			->addOption(
+				'force',
+				'f',
+				InputOption::VALUE_NONE,
+				'Try to force the deletion of the user data even if the user is missing.'
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uid = $input->getArgument('uid');
 		$user = $this->userManager->get($uid);
 		if ($user === null) {
+			if ($input->getOption('force')) {
+				$deletedUser = $this->userManager->get($uid, true);
+				$deletedUser->delete();
+				$output->writeln("<info>User deleted.</info>");
+				return 0;
+			}
 			$output->writeln("<error>User with uid '$uid' does not exist</error>");
 			return 1;
 		}

@@ -4,7 +4,7 @@
  * @author Robin Appelman <icewind@owncloud.com>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2022, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -43,6 +43,21 @@ abstract class Job implements IJob {
 	protected $argument;
 
 	/**
+	 * @var int $lastChecked
+	 */
+	protected $lastChecked;
+
+	/**
+	 * @var int $reservedAt
+	 */
+	protected $reservedAt;
+
+	/**
+	 * @var int $executionDuration
+	 */
+	protected $executionDuration;
+
+	/**
 	 * @param JobList $jobList
 	 * @param ILogger $logger
 	 */
@@ -52,7 +67,16 @@ abstract class Job implements IJob {
 			//storing job start time
 			$jobStartTime = \time();
 
-			\OCP\Util::writeLog('cron', 'Started background job of class : ' . \get_class($this) . ' with arguments : ' . \print_r($this->argument, true), \OCP\Util::DEBUG);
+			if ($logger) {
+				$logger->debug(
+					'Started background job of class : {class} with arguments : {arguments}',
+					[
+						'app' => 'cron',
+						'class' => \get_class($this),
+						'arguments' => \print_r($this->argument, true)
+					]
+				);
+			}
 
 			$this->run($this->argument);
 
@@ -60,8 +84,17 @@ abstract class Job implements IJob {
 			$jobEndTime = \time();
 			$timeTaken = $jobEndTime - $jobStartTime;
 
-			\OCP\Util::writeLog('cron', "Finished background job, the job took : $timeTaken seconds, " .
-				"this job is an instance of class : " . \get_class($this) . ' with arguments : ' . \print_r($this->argument, true), \OCP\Util::DEBUG);
+			if ($logger) {
+				$logger->debug(
+					'Finished background job, the job took : {timeTaken} seconds, this job is an instance of class : {class} with arguments : {arguments}',
+					[
+						'app' => 'cron',
+						'timeTaken' => $timeTaken,
+						'class' => \get_class($this),
+						'arguments' => \print_r($this->argument, true)
+					]
+				);
+			}
 
 			$jobList->setExecutionTime($this, $timeTaken);
 		} catch (\Exception $e) {
@@ -87,6 +120,18 @@ abstract class Job implements IJob {
 	public function setArgument($argument) {
 		$this->argument = $argument;
 	}
+	
+	public function setLastChecked(int $lastChecked): void {
+		$this->lastChecked = $lastChecked;
+	}
+	
+	public function setReservedAt(int $reservedAt): void {
+		$this->reservedAt = $reservedAt;
+	}
+
+	public function setExecutionDuration(int $executionDuration): void {
+		$this->executionDuration = $executionDuration;
+	}
 
 	public function getId() {
 		return $this->id;
@@ -98,5 +143,17 @@ abstract class Job implements IJob {
 
 	public function getArgument() {
 		return $this->argument;
+	}
+
+	public function getLastChecked(): int {
+		return $this->lastChecked;
+	}
+
+	public function getReservedAt(): int {
+		return $this->reservedAt;
+	}
+
+	public function getExecutionDuration(): int {
+		return $this->executionDuration;
 	}
 }

@@ -33,7 +33,6 @@ use OCP\IConfig;
 use OCP\L10N\IFactory;
 
 class Profile implements ISettings {
-
 	/* @var IConfig */
 	protected $config;
 	/* @var IGroupManager */
@@ -57,11 +56,12 @@ class Profile implements ISettings {
 	 * @param IFactory $lfactory
 	 * @param LocaleHelper $localeHelper
 	 */
-	public function __construct(IConfig $config,
-								   IGroupManager $groupManager,
-								   IUserSession $userSession,
-								   IFactory $lfactory,
-								   LocaleHelper $localeHelper
+	public function __construct(
+		IConfig $config,
+		IGroupManager $groupManager,
+		IUserSession $userSession,
+		IFactory $lfactory,
+		LocaleHelper $localeHelper
 	) {
 		$this->config = $config;
 		$this->groupManager = $groupManager;
@@ -100,11 +100,14 @@ class Profile implements ISettings {
 		$tmpl->assign('enableAvatars', $this->config->getSystemValue('enable_avatars', true) === true);
 		$tmpl->assign('avatarChangeSupported', $this->userSession->getUser()->canChangeAvatar());
 		$tmpl->assign('displayNameChangeSupported', $this->userSession->getUser()->canChangeDisplayName());
+		$tmpl->assign('mailAddressChangeSupported', $this->userSession->getUser()->canChangeMailAddress());
 		$tmpl->assign('passwordChangeSupported', $this->userSession->getUser()->canChangePassword());
-		$groups = $this->groupManager->getUserGroupIds($this->userSession->getUser());
-		\sort($groups);
+		$groups = $this->groupManager->getUserGroups($this->userSession->getUser());
 		$tmpl->assign('groups', $groups);
+		$tmpl->assign('username', $this->userSession->getUser()->getUID());
 		$tmpl->assign('languageSelector', $selector->fetchPage());
+		$tmpl->assign('legal_privacy_policy', $this->config->getAppValue('core', 'legal.privacy_policy_url'));
+		$tmpl->assign('legal_imprint', $this->config->getAppValue('core', 'legal.imprint_url'));
 		return $tmpl;
 	}
 

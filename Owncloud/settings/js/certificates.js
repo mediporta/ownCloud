@@ -13,7 +13,7 @@ $(document).ready(function () {
 		return true;
 	});
 
-	$('#sslCertificate tr > td').tipsy({gravity: 'n', live: true});
+	$('#sslCertificate tr > td').tooltip({placement: 'top'});
 
 	$('#rootcert_import').fileupload({
 		pasteZone: null,
@@ -49,8 +49,8 @@ $(document).ready(function () {
 			row.append($('<td/>').attr('title', data.issuerOrganization).text(data.issuer));
 			row.append($('<td/>').addClass('remove').append(
 				$('<img/>').attr({
-					alt: t('core', 'Delete'),
-					title: t('core', 'Delete'),
+					alt: t('settings', 'Delete'),
+					title: t('settings', 'Delete'),
 					src: OC.imagePath('core', 'actions/delete.svg')
 				}).addClass('action')
 			));

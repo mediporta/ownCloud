@@ -35,7 +35,6 @@ namespace OC\Files\Storage;
  * in classes which extend it, e.g. $this->stat() .
  */
 trait LocalTempFileTrait {
-
 	/** @var string[] */
 	protected $cachedFiles = [];
 
@@ -62,6 +61,7 @@ trait LocalTempFileTrait {
 	 * @return string
 	 */
 	protected function toTmpFile($path) { //no longer in the storage api, still useful here
+		'@phan-var \OC\Files\Storage\Common $this';
 		$source = $this->fopen($path, 'r');
 		if (!$source) {
 			return false;

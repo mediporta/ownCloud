@@ -71,9 +71,19 @@ class SetConfig extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appName = $input->getArgument('app');
 		$configName = $input->getArgument('name');
+
+		if ($appName === '') {
+			$output->writeln('<error>App name must not be empty.</error>');
+			return 1;
+		}
+
+		if ($configName === '') {
+			$output->writeln('<error>Config name must not be empty.</error>');
+			return 1;
+		}
 
 		if (!\in_array($configName, $this->config->getAppKeys($appName)) && $input->hasParameterOption('--update-only')) {
 			$output->writeln('<comment>Config value ' . $configName . ' for app ' . $appName . ' not updated, as it has not been set before.</comment>');

@@ -7,6 +7,17 @@
 script('core', 'setupchecks');
 script('settings', 'panels/setupchecks');
 ?>
+
+<?php
+$license = \OC::$server->query(\OC\License\LicenseFetcher::class)->getOwncloudLicense();
+$ioc_exec_confirmation = \OC::$server->getConfig()->getSystemValue('indicators-of-compromise-scanner.confirmation', false);
+if ($license !== null && $ioc_exec_confirmation !== 'EXECUTED_ON_ALL_NODES') {
+	?>
+	<div id="security-warning" class="section">
+		<?php include_once(__DIR__ . '/../../../../core/templates/ioc.warning.php'); ?>
+	</div>
+<?php } ?>
+
 <div id="security-warning" class="section">
 	<h2 class="app-name"><?php p($l->t('Security & setup warnings'));?></h2>
 	<ul>
@@ -16,7 +27,7 @@ script('settings', 'panels/setupchecks');
 		?>
 		<li>
 			<?php p($l->t('php does not seem to be setup properly to query system environment variables. The test with getenv("PATH") only returns an empty response.')); ?><br>
-			<?php print_unescaped($l->t('Please check the <a target="_blank" rel="noreferrer" href="%s">installation documentation ↗</a> for php configuration notes and the php configuration of your server, especially when using php-fpm.', link_to_docs('admin-php-fpm'))); ?>
+			<?php print_unescaped($l->t('Please check the <a target="_blank" rel="noreferrer" href="%s">installation documentation ↗</a> for php configuration notes and the php configuration of your server, especially when using php-fpm.', link_to_docs(\OCP\Constants::DOCS_ADMIN_PHP_FPM))); ?>
 		</li>
 	<?php
 	}
@@ -37,11 +48,11 @@ script('settings', 'panels/setupchecks');
 		</li>
 	<?php
 	}
-	// Is the Transaction isolation level READ_COMMITED?
+	// Is the Transaction isolation level READ_COMMITTED?
 	if ($_['invalidTransactionIsolationLevel']) {
 		?>
 		<li>
-			<?php p($l->t('Your database does not run with "READ COMMITED" transaction isolation level. This can cause problems when multiple actions are executed in parallel.')); ?>
+			<?php p($l->t('Your database does not run with "READ COMMITTED" transaction isolation level. This can cause problems when multiple actions are executed in parallel.')); ?>
 		</li>
 	<?php
 	}
@@ -65,13 +76,13 @@ script('settings', 'panels/setupchecks');
 	if ($_['fileLockingType'] === 'none') {
 		?>
 		<li>
-			<?php print_unescaped($l->t('Transactional file locking is disabled, this might lead to issues with race conditions. Enable \'filelocking.enabled\' in config.php to avoid these problems. See the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a> for more information.', link_to_docs('admin-transactional-locking'))); ?>
+			<?php print_unescaped($l->t('Transactional file locking is disabled, this might lead to issues with race conditions. Enable \'filelocking.enabled\' in config.php to avoid these problems. See the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a> for more information.', link_to_docs(\OCP\Constants::DOCS_ADMIN_TRANSACTIONAL_LOCKING))); ?>
 		</li>
 		<?php
 	} elseif ($_['fileLockingType'] === 'db') {
 		?>
 		<li>
-			<?php print_unescaped($l->t('Transactional file locking should be configured to use memory-based locking, not the default slow database-based locking. See the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a> for more information.', link_to_docs('admin-transactional-locking'))); ?>
+			<?php print_unescaped($l->t('Transactional file locking should be configured to use memory-based locking, not the default slow database-based locking. See the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a> for more information.', link_to_docs(\OCP\Constants::DOCS_ADMIN_TRANSACTIONAL_LOCKING))); ?>
 		</li>
 		<?php
 	}
@@ -105,7 +116,7 @@ script('settings', 'panels/setupchecks');
 		<li>
 			<?php p($l->t('SQLite is used as database. For larger installations we recommend to switch to a different database backend.')); ?><br>
 			<?php p($l->t('Especially when using the desktop client for file syncing the use of SQLite is discouraged.')); ?><br>
-			<?php print_unescaped($l->t('To migrate to another database use the command line tool: \'occ db:convert-type\', or see the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a>.', link_to_docs('admin-db-conversion'))); ?>
+			<?php print_unescaped($l->t('To migrate to another database use the command line tool: \'occ db:convert-type\', or see the <a target="_blank" rel="noreferrer" href="%s">documentation ↗</a>.', link_to_docs(\OCP\Constants::DOCS_ADMIN_DB_CONVERSION))); ?>
 		</li>
 
 		<?php
@@ -125,17 +136,17 @@ script('settings', 'panels/setupchecks');
 				<br>
 				<ol>
 					<?php foreach (\json_decode($_['cronErrors']) as $error) {
-			if (isset($error->error)) {
-				?>
+						if (isset($error->error)) {
+							?>
 						<li><?php p($error->error) ?> <?php p($error->hint) ?></li>
 					<?php
-			}
-		}; ?>
+						}
+					}; ?>
 				</ol>
 		</li>
 	<?php
 	}
-	?>
+?>
 	</ul>
 
 	<div id="postsetupchecks" data-check-wellknown="<?php if ($_['checkForWorkingWellKnownSetup']) {
@@ -148,7 +159,7 @@ script('settings', 'panels/setupchecks');
 		<ul class="warnings hidden"></ul>
 		<ul class="info hidden"></ul>
 		<p class="hint hidden">
-			<?php print_unescaped($l->t('Please double check the <a target="_blank" rel="noreferrer" href="%s">installation guides ↗</a>, and check for any errors or warnings in the <a href="#log-section">log</a>.', link_to_docs('admin-install'))); ?>
+			<?php print_unescaped($l->t('Please double check the <a target="_blank" rel="noreferrer" href="%s">installation guides ↗</a>, and check for any errors or warnings in the <a href="#log-section">log</a>.', link_to_docs(\OCP\Constants::DOCS_ADMIN_INSTALL))); ?>
 		</p>
 	</div>
 	<div id="security-warning-state">

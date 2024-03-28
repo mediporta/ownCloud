@@ -63,8 +63,9 @@ class ControllerMethodReflector implements IControllerMethodReflector {
 			// over phpdoc annotations
 			if (\method_exists($param, 'getType')) {
 				$type = $param->getType();
+				'@phan-var \ReflectionNamedType $type';
 				if ($type !== null) {
-					$this->types[$param->getName()] = (string) $type;
+					$this->types[$param->getName()] = $type->getName();
 				}
 			}
 
@@ -82,7 +83,7 @@ class ControllerMethodReflector implements IControllerMethodReflector {
 	 * @param string $parameter the parameter whose type comments should be
 	 * parsed
 	 * @return string|null type in the type parameters (@param int $something)
-	 * would return int or null if not existing
+	 * would return int or null if nonexistent
 	 */
 	public function getType($parameter) {
 		if (\array_key_exists($parameter, $this->types)) {

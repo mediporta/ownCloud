@@ -35,7 +35,6 @@ use OCP\IUserSession;
  * @package OC\Settings\Controller
  */
 class SettingsPageController extends Controller {
-
 	/** @var ISettingsManager */
 	protected $settingsManager;
 	/** @var IURLGenerator */
@@ -53,12 +52,14 @@ class SettingsPageController extends Controller {
 	 * @param IGroupManager $groupManager
 	 * @param IUserSession $userSession
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								ISettingsManager $settingsManager,
-								IURLGenerator $urlGenerator,
-								IGroupManager $groupManager,
-								IUserSession $userSession) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		ISettingsManager $settingsManager,
+		IURLGenerator $urlGenerator,
+		IGroupManager $groupManager,
+		IUserSession $userSession
+	) {
 		parent::__construct($appName, $request);
 		$this->settingsManager = $settingsManager;
 		$this->urlGenerator = $urlGenerator;
@@ -120,7 +121,7 @@ class SettingsPageController extends Controller {
 		$icon = $section->getIconName() . '.svg';
 		$appPath = \OC_App::getAppPath($section->getID());
 
-		if (\file_exists($appPath . '/img/' . $icon)) {
+		if ($appPath !== false && \file_exists($appPath . '/img/' . $icon)) {
 			$icon = $this->urlGenerator->imagePath($section->getID(), $icon);
 		} else {
 			$icon = $section->getIconName();

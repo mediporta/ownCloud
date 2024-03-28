@@ -31,7 +31,6 @@ use OCP\Files\FileInfo;
 use OCP\Preview\IProvider2;
 
 abstract class Image implements IProvider2 {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -44,11 +43,17 @@ abstract class Image implements IProvider2 {
 		}
 
 		$image = new \OC_Image();
-		$stream = $file->fopen('r');
-
-		$image->loadFromFileHandle($stream);
+		$handle = $file->fopen('r');
+		$image->load($handle);
 		$image->fixOrientation();
-		\fclose($stream);
+		if (!$this->validateImageDimensions($image)) {
+			return false;
+		}
+
+		if (\is_resource($handle)) {
+			\fclose($handle);
+		}
+
 		if ($image->valid()) {
 			$image->scaleDownToFit($maxX, $maxY);
 
@@ -62,5 +67,25 @@ abstract class Image implements IProvider2 {
 	 */
 	public function isAvailable(FileInfo $file) {
 		return true;
+	}
+
+	private function validateImageDimensions(\OC_Image $image): bool {
+		[$width, $height] = $this->getMaxDimensions();
+		return !($image->width() > $width || $image->height() > $height);
+	}
+
+	private function getMaxDimensions(): array {
+		// 24 MP - 6016 x 4000
+		$maxDimension = \OC::$server->getConfig()->getSystemValue('preview_max_dimensions', '6016x4000');
+		$exploded = explode('x', strtolower($maxDimension));
+		if ($exploded === false || \count($exploded) !== 2) {
+			return [6016, 4000];
+		}
+		[$w, $h] = $exploded;
+		if (is_numeric($w) && is_numeric($h)) {
+			return [(int)$w, (int)$h];
+		}
+
+		return [6016, 4000];
 	}
 }

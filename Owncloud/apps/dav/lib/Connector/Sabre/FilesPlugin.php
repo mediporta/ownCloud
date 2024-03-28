@@ -31,12 +31,13 @@
 namespace OCA\DAV\Connector\Sabre;
 
 use OC\AppFramework\Http\Request;
+use OC\Files\Filesystem;
 use OCA\DAV\Files\IProvidesAdditionalHeaders;
-use OCA\DAV\Meta\MetaFile;
 use OCP\Files\ForbiddenException;
 use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
 use OCP\IRequest;
+use Sabre\DAV\Exception\BadRequest;
 use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\IFile;
@@ -48,22 +49,21 @@ use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
 
 class FilesPlugin extends ServerPlugin {
-
 	// namespace
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
-	const FILEID_PROPERTYNAME = '{http://owncloud.org/ns}id';
-	const INTERNAL_FILEID_PROPERTYNAME = '{http://owncloud.org/ns}fileid';
-	const PERMISSIONS_PROPERTYNAME = '{http://owncloud.org/ns}permissions';
-	const SHARE_PERMISSIONS_PROPERTYNAME = '{http://open-collaboration-services.org/ns}share-permissions';
-	const DOWNLOADURL_PROPERTYNAME = '{http://owncloud.org/ns}downloadURL';
-	const SIZE_PROPERTYNAME = '{http://owncloud.org/ns}size';
-	const GETETAG_PROPERTYNAME = '{DAV:}getetag';
-	const LASTMODIFIED_PROPERTYNAME = '{DAV:}lastmodified';
-	const OWNER_ID_PROPERTYNAME = '{http://owncloud.org/ns}owner-id';
-	const OWNER_DISPLAY_NAME_PROPERTYNAME = '{http://owncloud.org/ns}owner-display-name';
-	const CHECKSUMS_PROPERTYNAME = '{http://owncloud.org/ns}checksums';
-	const DATA_FINGERPRINT_PROPERTYNAME = '{http://owncloud.org/ns}data-fingerprint';
-	const PRIVATE_LINK_PROPERTYNAME = '{http://owncloud.org/ns}privatelink';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const FILEID_PROPERTYNAME = '{http://owncloud.org/ns}id';
+	public const INTERNAL_FILEID_PROPERTYNAME = '{http://owncloud.org/ns}fileid';
+	public const PERMISSIONS_PROPERTYNAME = '{http://owncloud.org/ns}permissions';
+	public const SHARE_PERMISSIONS_PROPERTYNAME = '{http://open-collaboration-services.org/ns}share-permissions';
+	public const DOWNLOADURL_PROPERTYNAME = '{http://owncloud.org/ns}downloadURL';
+	public const SIZE_PROPERTYNAME = '{http://owncloud.org/ns}size';
+	public const GETETAG_PROPERTYNAME = '{DAV:}getetag';
+	public const LASTMODIFIED_PROPERTYNAME = '{DAV:}lastmodified';
+	public const OWNER_ID_PROPERTYNAME = '{http://owncloud.org/ns}owner-id';
+	public const OWNER_DISPLAY_NAME_PROPERTYNAME = '{http://owncloud.org/ns}owner-display-name';
+	public const CHECKSUMS_PROPERTYNAME = '{http://owncloud.org/ns}checksums';
+	public const DATA_FINGERPRINT_PROPERTYNAME = '{http://owncloud.org/ns}data-fingerprint';
+	public const PRIVATE_LINK_PROPERTYNAME = '{http://owncloud.org/ns}privatelink';
 
 	/**
 	 * Reference to main server object
@@ -107,11 +107,13 @@ class FilesPlugin extends ServerPlugin {
 	 * @param bool $isPublic
 	 * @param bool $downloadAttachment
 	 */
-	public function __construct(Tree $tree,
-								IConfig $config,
-								IRequest $request,
-								$isPublic = false,
-								$downloadAttachment = true) {
+	public function __construct(
+		Tree $tree,
+		IConfig $config,
+		IRequest $request,
+		$isPublic = false,
+		$downloadAttachment = true
+	) {
 		$this->tree = $tree;
 		$this->config = $config;
 		$this->request = $request;
@@ -153,8 +155,9 @@ class FilesPlugin extends ServerPlugin {
 		$this->server->on('propPatch', [$this, 'handleUpdateProperties']);
 		$this->server->on('afterBind', [$this, 'sendFileIdHeader']);
 		$this->server->on('afterWriteContent', [$this, 'sendFileIdHeader']);
-		$this->server->on('afterMethod:GET', [$this,'httpGet']);
+		$this->server->on('afterMethod:GET', [$this, 'httpGet']);
 		$this->server->on('afterMethod:GET', [$this, 'handleDownloadToken']);
+		$this->server->on('exception', [$this, 'handleDownloadFailure']);
 		$this->server->on('afterResponse', function ($request, ResponseInterface $response) {
 			$body = $response->getBody();
 			if (\is_resource($body)) {
@@ -162,6 +165,55 @@ class FilesPlugin extends ServerPlugin {
 			}
 		});
 		$this->server->on('beforeMove', [$this, 'checkMove']);
+		$this->server->on('validateTokens', [$this, 'validateTokens'], 0);
+		$this->server->on('method:PROPFIND', [$this, 'checkPropFind']);
+	}
+
+	/**
+	 * Check if the file tree can be found and if it's traversable.
+	 * Also check for read permissions if the requested resource is
+	 * a share, since a share can be create-only.
+	 *
+	 * @param RequestInterface $request
+	 */
+	public function checkPropFind($request) {
+		$path = $request->getPath();
+		$node = $this->server->tree->getNodeForPath($path);
+
+		if ($node instanceof Node) {
+			/** @var Node $node */
+			'@phan-var Node $node';
+			$fileInfo = $node->getFileInfo();
+			list($storage, ) = Filesystem::resolvePath($fileInfo->getPath());
+
+			if ($storage->instanceOfStorage('\OCA\Files_Sharing\SharedStorage')) {
+				/** @var \OCA\Files_Sharing\SharedStorage $storage */
+				'@phan-var \OCA\Files_Sharing\SharedStorage $storage';
+				$hasReadPermission = ($storage->getShare()->getPermissions() & \OCP\Constants::PERMISSION_READ) > 0;
+
+				if (!$hasReadPermission) {
+					throw new NotFound();
+				}
+			}
+		}
+	}
+
+	/**
+	 * This methods gets called before the validateTokens-method
+	 * in the sabre implementation due to its higher priority.
+	 *
+	 * @param RequestInterface $request
+	 * @param mixed $conditions
+	 * @throws BadRequest
+	 */
+	public function validateTokens($request, &$conditions) {
+		$method = $request->getMethod();
+
+		// Move- and copy-methods need a destination header to be validated.
+		// The validateTokens-method in the sabre implementation does not check this...
+		if (\in_array($method, ['MOVE', 'COPY']) && !$request->getHeader('Destination')) {
+			throw new BadRequest('The destination header was not supplied');
+		}
 	}
 
 	/**
@@ -177,8 +229,8 @@ class FilesPlugin extends ServerPlugin {
 		if (!$sourceNode instanceof Node) {
 			return;
 		}
-		list($sourceDir, ) = \Sabre\HTTP\URLUtil::splitPath($source);
-		list($destinationDir, ) = \Sabre\HTTP\URLUtil::splitPath($destination);
+		list($sourceDir, ) = \Sabre\Uri\split($source);
+		list($destinationDir, ) = \Sabre\Uri\split($destination);
 
 		if ($sourceDir !== $destinationDir) {
 			$sourceNodeFileInfo = $sourceNode->getFileInfo();
@@ -193,9 +245,20 @@ class FilesPlugin extends ServerPlugin {
 	}
 
 	/**
+	 * This sets a cookie to be able to recognize the failure of the download
+	 *
+	 * @param \Throwable $ex
+	 */
+	public function handleDownloadFailure(\Throwable $ex) {
+		$queryParams = $this->server->httpRequest->getQueryParameters();
+
+		if (isset($queryParams['downloadStartSecret'])) {
+			$this->setSecretCookie('ocDownloadStarted', '-1');
+		}
+	}
+
+	/**
 	 * This sets a cookie to be able to recognize the start of the download
-	 * the content must not be longer than 32 characters and must only contain
-	 * alphanumeric characters
 	 *
 	 * @param RequestInterface $request
 	 * @param ResponseInterface $response
@@ -203,18 +266,8 @@ class FilesPlugin extends ServerPlugin {
 	public function handleDownloadToken(RequestInterface $request, ResponseInterface $response) {
 		$queryParams = $request->getQueryParameters();
 
-		/**
-		 * this sets a cookie to be able to recognize the start of the download
-		 * the content must not be longer than 32 characters and must only contain
-		 * alphanumeric characters
-		 */
 		if (isset($queryParams['downloadStartSecret'])) {
-			$token = $queryParams['downloadStartSecret'];
-			if (!isset($token[32])
-				&& \preg_match('!^[a-zA-Z0-9]+$!', $token) === 1) {
-				// FIXME: use $response->setHeader() instead
-				\setcookie('ocDownloadStarted', $token, \time() + 20, '/');
-			}
+			$this->setSecretCookie('ocDownloadStarted', $queryParams['downloadStartSecret']);
 		}
 	}
 
@@ -242,7 +295,8 @@ class FilesPlugin extends ServerPlugin {
 					Request::USER_AGENT_IE,
 					Request::USER_AGENT_ANDROID_MOBILE_CHROME,
 					Request::USER_AGENT_FREEBOX,
-				])) {
+				]
+			)) {
 				$response->setHeader('Content-Disposition', 'attachment; filename="' . \rawurlencode($filename) . '"');
 			} else {
 				$response->setHeader('Content-Disposition', 'attachment; filename*=UTF-8\'\'' . \rawurlencode($filename)
@@ -304,9 +358,13 @@ class FilesPlugin extends ServerPlugin {
 			});
 
 			$propFind->handle(self::SHARE_PERMISSIONS_PROPERTYNAME, function () use ($node, $httpRequest) {
-				return $node->getSharePermissions(
-					$httpRequest->getRawServerValue('PHP_AUTH_USER')
-				);
+				try {
+					return $node->getSharePermissions(
+						$httpRequest->getRawServerValue('PHP_AUTH_USER')
+					);
+				} catch (StorageNotAvailableException $ex) {
+					return null;
+				}
 			});
 
 			$propFind->handle(self::GETETAG_PROPERTYNAME, function () use ($node) {
@@ -333,7 +391,7 @@ class FilesPlugin extends ServerPlugin {
 		}
 
 		if ($node instanceof \OCA\DAV\Connector\Sabre\Node) {
-			$propFind->handle(self::DATA_FINGERPRINT_PROPERTYNAME, function () use ($node) {
+			$propFind->handle(self::DATA_FINGERPRINT_PROPERTYNAME, function () {
 				return $this->config->getSystemValue('data-fingerprint', '');
 			});
 		}
@@ -411,7 +469,7 @@ class FilesPlugin extends ServerPlugin {
 	public function sendFileIdHeader($filePath, \Sabre\DAV\INode $node = null) {
 		// chunked upload handling
 		if (\OC_FileChunking::isWebdavChunk()) {
-			list($path, $name) = \Sabre\HTTP\URLUtil::splitPath($filePath);
+			list($path, $name) = \Sabre\Uri\split($filePath);
 			$info = \OC_FileChunking::decodeName($name);
 			if (!empty($info)) {
 				$filePath = $path . '/' . $info['name'];
@@ -422,12 +480,27 @@ class FilesPlugin extends ServerPlugin {
 		if (!$this->server->tree->nodeExists($filePath)) {
 			return;
 		}
-		$node = $this->server->tree->getNodeForPath($filePath);
-		if ($node instanceof \OCA\DAV\Connector\Sabre\Node) {
-			$fileId = $node->getFileId();
+		$nodeForPath = $this->server->tree->getNodeForPath($filePath);
+		if ($nodeForPath instanceof \OCA\DAV\Connector\Sabre\Node) {
+			$fileId = $nodeForPath->getFileId();
 			if ($fileId !== null) {
 				$this->server->httpResponse->setHeader('OC-FileId', $fileId);
 			}
+		}
+	}
+
+	/**
+	 * This sets a cookie, which content must not be longer than 32 characters and must only contain
+	 * alphanumeric characters if request is successfuk, or -1 if request failed.
+	 *
+	 * @param $secretName
+	 * @param $secretToken
+	 */
+	private function setSecretCookie($secretName, $secretToken) {
+		if ($secretToken === '-1' || (!isset($secretToken[32])
+			&& \preg_match('!^[a-zA-Z0-9]+$!', $secretToken) === 1)) {
+			// FIXME: use $response->setHeader() instead
+			\setcookie($secretName, $secretToken, \time() + 20, '/');
 		}
 	}
 }

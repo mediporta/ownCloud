@@ -23,8 +23,7 @@ namespace OCA\FederatedFileSharing\BackgroundJob;
 
 use OC\BackgroundJob\Job;
 use OC\BackgroundJob\JobList;
-use OCA\FederatedFileSharing\AddressHandler;
-use OCA\FederatedFileSharing\DiscoveryManager;
+use OCA\FederatedFileSharing\AppInfo\Application;
 use OCA\FederatedFileSharing\Notifications;
 use OCP\BackgroundJob\IJobList;
 use OCP\ILogger;
@@ -38,7 +37,6 @@ use OCP\ILogger;
  * @package OCA\FederatedFileSharing\BackgroundJob
  */
 class RetryJob extends Job {
-
 	/** @var  bool */
 	private $retainJob = true;
 
@@ -60,21 +58,8 @@ class RetryJob extends Job {
 		if ($notifications) {
 			$this->notifications = $notifications;
 		} else {
-			$addressHandler = new AddressHandler(
-				\OC::$server->getURLGenerator(),
-				\OC::$server->getL10N('federatedfilesharing')
-			);
-			$discoveryManager = new DiscoveryManager(
-				\OC::$server->getMemCacheFactory(),
-				\OC::$server->getHTTPClientService()
-			);
-			$this->notifications = new Notifications(
-				$addressHandler,
-				\OC::$server->getHTTPClientService(),
-				$discoveryManager,
-				\OC::$server->getJobList(),
-				\OC::$server->getConfig()
-			);
+			$federatedFileSharingApp = new Application();
+			$this->notifications = $federatedFileSharingApp->getContainer()->query('Notifications');
 		}
 	}
 
@@ -116,7 +101,8 @@ class RetryJob extends Job {
 	 * @param array $argument
 	 */
 	protected function reAddJob(IJobList $jobList, array $argument) {
-		$jobList->add('OCA\FederatedFileSharing\BackgroundJob\RetryJob',
+		$jobList->add(
+			'OCA\FederatedFileSharing\BackgroundJob\RetryJob',
 			[
 				'remote' => $argument['remote'],
 				'remoteId' => $argument['remoteId'],

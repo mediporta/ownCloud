@@ -35,7 +35,7 @@
 namespace OCP;
 
 /**
- * This interface provides an immutable object with with accessors to
+ * This interface provides an immutable object with accessors to
  * request variables and headers.
  *
  * Access request variables by method and name.
@@ -54,21 +54,21 @@ namespace OCP;
  *   will return false on subsequent access to ->put or ->patch.
  * - When accessing ->patch and the Content-Type is either application/json
  *   or application/x-www-form-urlencoded (most cases) it will act like ->get
- *   and ->post and return an array. Otherwise the raw data will be returned.
+ *   and ->post and return an array. Otherwise, the raw data will be returned.
  *
  * @property-read string[] $server
  * @property-read string[] $urlParams
+ * @property-read string[] $query
  * @since 6.0.0
  */
 interface IRequest {
-
 	/**
 	 * @param string $name
 	 *
-	 * @return string
+	 * @return string|null
 	 * @since 6.0.0
 	 */
-	public function getHeader($name);
+	public function getHeader(string $name): ?string;
 
 	/**
 	 * Lets you access post and get parameters by the index
@@ -108,7 +108,7 @@ interface IRequest {
 	 * Shortcut for accessing an uploaded file through the $_FILES array
 	 *
 	 * @param string $key the key that will be taken from the $_FILES array
-	 * @return array the file in the $_FILES element
+	 * @return array|null the file in the $_FILES element
 	 * @since 6.0.0
 	 */
 	public function getUploadedFile($key);
@@ -117,7 +117,7 @@ interface IRequest {
 	 * Shortcut for getting env variables
 	 *
 	 * @param string $key the key that will be taken from the $_ENV array
-	 * @return array the value in the $_ENV element
+	 * @return array|null the value in the $_ENV element
 	 * @since 6.0.0
 	 */
 	public function getEnv($key);
@@ -126,7 +126,7 @@ interface IRequest {
 	 * Shortcut for getting cookie variables
 	 *
 	 * @param string $key the key that will be taken from the $_COOKIE array
-	 * @return string the value in the $_COOKIE element
+	 * @return string|null the value in the $_COOKIE element
 	 * @since 6.0.0
 	 */
 	public function getCookie($key);

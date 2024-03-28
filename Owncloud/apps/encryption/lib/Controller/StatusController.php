@@ -3,7 +3,7 @@
  * @author Björn Schießle <bjoern@schiessle.org>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -20,9 +20,7 @@
  *
  */
 
-
 namespace OCA\Encryption\Controller;
-
 
 use OCA\Encryption\Session;
 use OCP\AppFramework\Controller;
@@ -31,7 +29,6 @@ use OCP\IL10N;
 use OCP\IRequest;
 
 class StatusController extends Controller {
-
 	/** @var IL10N */
 	private $l;
 
@@ -44,11 +41,12 @@ class StatusController extends Controller {
 	 * @param IL10N $l10n
 	 * @param Session $session
 	 */
-	public function __construct($AppName,
-								IRequest $request,
-								IL10N $l10n,
-								Session $session
-								) {
+	public function __construct(
+		$AppName,
+		IRequest $request,
+		IL10N $l10n,
+		Session $session
+	) {
 		parent::__construct($AppName, $request);
 		$this->l = $l10n;
 		$this->session = $session;
@@ -59,10 +57,9 @@ class StatusController extends Controller {
 	 * @return DataResponse
 	 */
 	public function getStatus() {
-
 		$status = 'error';
 		$message = 'no valid init status';
-		switch( $this->session->getStatus()) {
+		switch ($this->session->getStatus()) {
 			case Session::RUN_MIGRATION:
 				$status = 'interactionNeeded';
 				$message = (string)$this->l->t(
@@ -94,5 +91,4 @@ class StatusController extends Controller {
 			]
 		);
 	}
-
 }

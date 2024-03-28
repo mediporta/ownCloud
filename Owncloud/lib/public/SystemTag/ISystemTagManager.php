@@ -30,7 +30,6 @@ use OCP\IUser;
  * @since 9.0.0
  */
 interface ISystemTagManager {
-
 	/**
 	 * Returns the tag objects matching the given tag ids.
 	 *
@@ -51,7 +50,7 @@ interface ISystemTagManager {
 	 *
 	 * @param string $tagName tag name
 	 * @param bool $userVisible whether the tag is visible by users
-	 * @param bool $userAssignable whether the tag is assignable by users
+	 * @param null|bool $userAssignable whether the tag is assignable by users
 	 *
 	 * @return \OCP\SystemTag\ISystemTag system tag
 	 *
@@ -59,7 +58,7 @@ interface ISystemTagManager {
 	 *
 	 * @since 9.0.0
 	 */
-	public function getTag($tagName, $userVisible, $userAssignable);
+	public function getTag($tagName, $userVisible, $userAssignable, $userEditable = null);
 
 	/**
 	 * Creates the tag object using the given attributes.
@@ -67,6 +66,7 @@ interface ISystemTagManager {
 	 * @param string $tagName tag name
 	 * @param bool $userVisible whether the tag is visible by users
 	 * @param bool $userAssignable whether the tag is assignable by users
+	 * @param null|bool $userEditable whether the tag is editable by users
 	 *
 	 * @return \OCP\SystemTag\ISystemTag system tag
 	 *
@@ -74,7 +74,7 @@ interface ISystemTagManager {
 	 *
 	 * @since 9.0.0
 	 */
-	public function createTag($tagName, $userVisible, $userAssignable);
+	public function createTag($tagName, $userVisible, $userAssignable, $userEditable = null);
 
 	/**
 	 * Returns all known tags, optionally filtered by visibility.
@@ -95,6 +95,7 @@ interface ISystemTagManager {
 	 * @param string $newName the new tag name
 	 * @param bool $userVisible whether the tag is visible by users
 	 * @param bool $userAssignable whether the tag is assignable by users
+	 * @param null|bool $userEditable whether the tag is assignable by users
 	 *
 	 * @throws \OCP\SystemTag\TagNotFoundException if tag with the given id does not exist
 	 * @throws \OCP\SystemTag\TagAlreadyExistsException if there is already another tag
@@ -102,7 +103,7 @@ interface ISystemTagManager {
 	 *
 	 * @since 9.0.0
 	 */
-	public function updateTag($tagId, $newName, $userVisible, $userAssignable);
+	public function updateTag($tagId, $newName, $userVisible, $userAssignable, $userEditable = null);
 
 	/**
 	 * Delete the given tags from the database and all their relationships.
@@ -160,4 +161,14 @@ interface ISystemTagManager {
 	 * @since 9.1.0
 	 */
 	public function getTagGroups(ISystemTag $tag);
+
+	/**
+	 * Verify if users of group can use static tags
+	 *
+	 * @param ISystemTag $tag
+	 * @param IUser $user
+	 * @return bool, true if user of group can use static tags, else false
+	 * @since 10.0.11
+	 */
+	public function canUserUseStaticTagInGroup(ISystemTag $tag, Iuser $user);
 }

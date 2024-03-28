@@ -26,6 +26,7 @@
 namespace OC;
 
 use OCP\App\IAppManager;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\INavigationManager;
 use OCP\IURLGenerator;
@@ -51,17 +52,23 @@ class NavigationManager implements INavigationManager {
 	private $userSession;
 	/** @var IGroupManager */
 	private $groupManager;
+	/** @var IConfig */
+	private $config;
 
-	public function __construct(IAppManager $appManager = null,
-						 IURLGenerator $urlGenerator = null,
-						 IFactory $l10nFac = null,
-						 IUserSession $userSession = null,
-						 IGroupManager$groupManager = null) {
+	public function __construct(
+		IAppManager $appManager = null,
+		IURLGenerator $urlGenerator = null,
+		IFactory $l10nFac = null,
+		IUserSession $userSession = null,
+		IGroupManager $groupManager = null,
+		IConfig $config = null
+	) {
 		$this->appManager = $appManager;
 		$this->urlGenerator = $urlGenerator;
 		$this->l10nFac = $l10nFac;
 		$this->userSession = $userSession;
 		$this->groupManager = $groupManager;
+		$this->config = $config;
 	}
 
 	/**
@@ -173,7 +180,7 @@ class NavigationManager implements INavigationManager {
 			}
 
 			if ($iconPath === null) {
-				$iconPath = $this->urlGenerator->imagePath('core', 'default-app-icon');
+				$iconPath = $this->urlGenerator->imagePath('core', 'default-app-icon.svg');
 			}
 
 			$this->add([
@@ -184,6 +191,47 @@ class NavigationManager implements INavigationManager {
 				'name' => $l->t($name),
 			]);
 		}
+
+		// add web if setup
+		$webBaseUrl = $this->config->getSystemValue('web.baseUrl', null);
+		$webIconKey = 'web.icon';
+		$webIconLabel = 'web.label';
+		if (!$webBaseUrl) {
+			// Check the old phoenix.baseUrl system key to provide compatibility across
+			// the name change from phoenix to web.
+			$webBaseUrl = \OC::$server->getConfig()->getSystemValue('phoenix.baseUrl', null);
+			$webIconKey = 'phoenix.icon';
+			$webIconLabel = 'phoenix.label';
+		}
+		if ($webBaseUrl && !$this->suppressWebNavItem()) {
+			$iconPath = $this->config->getSystemValue($webIconKey, $this->urlGenerator->imagePath('core', 'apps/web.svg'));
+			$l = $this->l10nFac->get("core");
+			$label = $this->config->getSystemValue($webIconLabel, $l->t('New Design'));
+			$this->add([
+				'id' => 'web',
+				'href' => \rtrim($webBaseUrl, '/') . '/index.html',
+				'name' => $label,
+				'icon' => $iconPath,
+				'order' => 99
+			]);
+		}
+	}
+
+	/**
+	 * Decides if the `Web` nav item should be hidden.
+	 *
+	 * Since we have two different deployment modes - external or as oc10 app -
+	 * we can't just decide based on whether or not the app is enabled. If it's
+	 * not installed at all we skip the `enabled` check and just rely on the
+	 * webBaseUrl being configured or not.
+	 *
+	 * @return bool
+	 */
+	private function suppressWebNavItem(): bool {
+		if (!$this->appManager->isInstalled('web')) {
+			return false;
+		}
+		return !$this->appManager->isEnabledForUser('web');
 	}
 
 	private function isAdmin() {

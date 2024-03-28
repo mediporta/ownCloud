@@ -36,7 +36,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class ChangeKeyStorageRoot extends Command {
-
 	/** @var View  */
 	protected $rootView;
 
@@ -80,14 +79,14 @@ class ChangeKeyStorageRoot extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$oldRoot = $this->util->getKeyStorageRoot();
 		$newRoot = $input->getArgument('newRoot');
 
 		if ($newRoot === null) {
 			$question = new ConfirmationQuestion('No storage root given, do you want to reset the key storage root to the default location? (y/n) ', false);
 			if (!$this->questionHelper->ask($input, $output, $question)) {
-				return;
+				return 0;
 			}
 			$newRoot = '';
 		}
@@ -100,7 +99,9 @@ class ChangeKeyStorageRoot extends Command {
 			$this->util->setKeyStorageRoot($newRoot);
 			$output->writeln('');
 			$output->writeln("Key storage root successfully changed to <info>$newRootDescription</info>");
+			return 0;
 		}
+		return 1;
 	}
 
 	/**
@@ -171,7 +172,7 @@ class ChangeKeyStorageRoot extends Command {
 	 */
 	protected function setupUserFS($uid) {
 		\OC_Util::tearDownFS();
-		\OC_Util::setupFS($uid);
+		\OC_Util::setupFS($uid, false);
 	}
 
 	/**

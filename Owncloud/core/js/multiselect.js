@@ -134,6 +134,9 @@
 				if(settings.singleSelect) {
 					input.attr('name', 'ms'+multiSelectId+'-option');
 				}
+				if(element.is('[disabled=disabled]')) {
+					input.prop('disabled', true);
+				}
 				var label=$('<label/>');
 				label.attr('for', id);
 				label.text(element.text() || item);
@@ -231,7 +234,7 @@
 							$.each(options,function(index, item) {
 								if ($(item).val() == value || $(item).text() == value) {
 									exists = true;
-									OC.Notification.showTemporary(t('settings', "Error adding {addItem}: {addItem} already exists", {addItem: value}));
+									OC.Notification.showTemporary(t('core', "Error adding {addItem}: {addItem} already exists", {addItem: value}));
 									return false;
 								}
 							});

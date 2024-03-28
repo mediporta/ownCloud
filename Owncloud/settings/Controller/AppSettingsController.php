@@ -37,8 +37,8 @@ use OCP\IConfig;
  * @package OC\Settings\Controller
  */
 class AppSettingsController extends Controller {
-	const CAT_ENABLED = 0;
-	const CAT_DISABLED = 1;
+	public const CAT_ENABLED = 0;
+	public const CAT_DISABLED = 1;
 
 	/** @var \OCP\IL10N */
 	private $l10n;
@@ -54,11 +54,13 @@ class AppSettingsController extends Controller {
 	 * @param IConfig $config
 	 * @param IAppManager $appManager
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IL10N $l10n,
-								IConfig $config,
-								IAppManager $appManager) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IL10N $l10n,
+		IConfig $config,
+		IAppManager $appManager
+	) {
 		parent::__construct($appName, $request);
 		$this->l10n = $l10n;
 		$this->config = $config;
@@ -88,7 +90,7 @@ class AppSettingsController extends Controller {
 					return ($a < $b) ? -1 : 1;
 				});
 				break;
-			// not-installed apps
+				// not-installed apps
 			case 'disabled':
 				$apps = \OC_App::listAllApps();
 				$apps = \array_filter($apps, function ($app) {
@@ -112,7 +114,6 @@ class AppSettingsController extends Controller {
 		// fix groups to be an array
 		$dependencyAnalyzer = new DependencyAnalyzer(new Platform($this->config), $this->l10n);
 		$apps = \array_map(function ($app) use ($dependencyAnalyzer) {
-
 			// fix groups
 			$groups = [];
 			if (\is_string($app['groups'])) {

@@ -42,6 +42,9 @@
 	transform-origin: center;
 }
 
+/* Disable this loading animation on login screen */
+#body-login button.icon-loading-small:after { display: none; }
+
 .loading:after,
 .loading-small:after,
 .icon-loading:after,
@@ -77,6 +80,9 @@ img.icon-loading-dark, object.icon-loading-dark, video.icon-loading-dark, button
 img.icon-loading-small, object.icon-loading-small, video.icon-loading-small, button.icon-loading-small, textarea.icon-loading-small, input.icon-loading-small, select.icon-loading-small {
 	background-image: url("../img/loading-small.gif");
 }
+
+/* Disable this loading animation on login screen */
+#body-login button.icon-loading-small { background-image: none; }
 
 img.icon-loading-small-dark, object.icon-loading-small-dark, video.icon-loading-small-dark, button.icon-loading-small-dark, textarea.icon-loading-small-dark, input.icon-loading-small-dark, select.icon-loading-small-dark {
 	background-image: url("../img/loading-small-dark.gif");
@@ -197,12 +203,24 @@ img.icon-loading-small-dark, object.icon-loading-small-dark, video.icon-loading-
 	background-image: url('../img/actions/history.svg');
 }
 
+.icon-group {
+	background-image: url('../img/actions/group.svg');
+}
+
 .icon-info {
 	background-image: url('../img/actions/info.svg');
 }
 
 .icon-info-white {
 	background-image: url('../img/actions/info-white.svg');
+}
+
+.icon-lock-closed {
+	background-image: url('../img/actions/lock-closed.svg');
+}
+
+.icon-lock-open {
+	background-image: url('../img/actions/lock-open.svg');
 }
 
 .icon-logout {
@@ -265,6 +283,14 @@ img.icon-loading-small-dark, object.icon-loading-small-dark, video.icon-loading-
 	background-image: url('../img/actions/public-white.svg');
 }
 
+.icon-public-create {
+	background-image: url('../img/actions/public-create.svg');
+}
+
+.icon-public-create-white {
+	background-image: url('../img/actions/public-create-white.svg');
+}
+
 .icon-rename {
 	background-image: url('../img/actions/rename.svg');
 }
@@ -311,6 +337,10 @@ img.icon-loading-small-dark, object.icon-loading-small-dark, video.icon-loading-
 .icon-star:hover,
 .icon-star:focus {
 	background-image: url('../img/actions/starred.svg');
+}
+
+.icon-time {
+	background-image: url('../img/actions/time.svg');
 }
 
 .icon-toggle {

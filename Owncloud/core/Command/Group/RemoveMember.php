@@ -33,6 +33,9 @@ class RemoveMember extends Command {
 	/** @var \OCP\IGroupManager */
 	protected $groupManager;
 
+	/** @var IUserManager  */
+	private $userManager;
+
 	/**
 	 * @param IGroupManager $groupManager
 	 */
@@ -59,18 +62,25 @@ class RemoveMember extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$groupName = $input->getArgument('group');
 		$group = $this->groupManager->get($groupName);
+		$errorFound = false;
 		if (!$group) {
 			$output->writeln('<error>Group "' . $groupName . '" does not exist</error>');
-			return 1;
+			$errorFound = true;
 		}
 
-		$members = $input->getOption('member');
+		if (!$errorFound) {
+			$members = $input->getOption('member');
 
-		if (!\count($members)) {
-			$output->writeln('<error>No members specified</error>');
+			if (!\count($members)) {
+				$output->writeln('<error>No members specified</error>');
+				$errorFound = true;
+			}
+		}
+
+		if ($errorFound) {
 			return 1;
 		}
 
@@ -90,9 +100,13 @@ class RemoveMember extends Command {
 				$memberExistsError = true;
 			}
 		}
-		
+
 		if ($memberExistsError) {
-			return 1;
+			$exitCode = 1;
+		} else {
+			$exitCode = 0;
 		}
+
+		return $exitCode;
 	}
 }

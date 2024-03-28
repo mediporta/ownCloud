@@ -40,7 +40,6 @@ OC.L10N.register(
     "Encryption type: User Specific Key" : "Tipo de encriptação: Chave escolhida pelo utilizador",
     "Please select an encryption option" : "Por favor selecione uma opção de encriptação",
     "Master Key" : "Chave-mestra",
-    "User-specific key" : "Chave escolhida pelo utilizador",
     "Permanently select this mode" : "Selecionar este modo permanentemente",
     "Encrypt the home storage" : "Encriptar o armazenamento do início",
     "Enabling this option encrypts all files stored on the main storage, otherwise only files on external storage will be encrypted" : "Ativando esta opção todos os ficheiros armazenados no armazenamento principal serão encriptados, senão serão encriptados todos os ficheiros no armazenamento externo",
@@ -66,4 +65,4 @@ OC.L10N.register(
     "Enabled" : "Ativada",
     "Disabled" : "Desativada"
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

@@ -48,7 +48,7 @@ class ListModules extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$encryptionModules = $this->encryptionManager->getEncryptionModules();
 		$defaultEncryptionModuleId = $this->encryptionManager->getDefaultEncryptionModuleId();
 
@@ -58,6 +58,7 @@ class ListModules extends Base {
 			$encModules[$module['id']]['default'] = $module['id'] === $defaultEncryptionModuleId;
 		}
 		$this->writeModuleList($input, $output, $encModules);
+		return 0;
 	}
 
 	/**

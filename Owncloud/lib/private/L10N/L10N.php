@@ -25,9 +25,10 @@ namespace OC\L10N;
 use OCP\IL10N;
 use OCP\L10N\IFactory;
 use Punic\Calendar;
-use Symfony\Component\Translation\PluralizationRules;
+use Symfony\Contracts\Translation\TranslatorTrait;
 
 class L10N implements IL10N {
+	use TranslatorTrait;
 
 	/** @var IFactory */
 	protected $factory;
@@ -96,16 +97,16 @@ class L10N implements IL10N {
 	 *
 	 */
 	public function n($text_singular, $text_plural, $count, $parameters = []) {
-		$identifier = "_${text_singular}_::_${text_plural}_";
+		$identifier = "_{$text_singular}_::_{$text_plural}_";
 		if (isset($this->translations[$identifier])) {
 			return (string) new \OC_L10N_String($this, $identifier, $parameters, $count);
-		} else {
-			if ($count === 1) {
-				return (string) new \OC_L10N_String($this, $text_singular, $parameters, $count);
-			} else {
-				return (string) new \OC_L10N_String($this, $text_plural, $parameters, $count);
-			}
 		}
+
+		if ($count === 1) {
+			return (string) new \OC_L10N_String($this, $text_singular, $parameters, $count);
+		}
+
+		return (string) new \OC_L10N_String($this, $text_plural, $parameters, $count);
 	}
 
 	/**
@@ -201,6 +202,6 @@ class L10N implements IL10N {
 	 * @return int
 	 */
 	public function computePlural($number) {
-		return PluralizationRules::get($number, $this->lang);
+		return $this->getPluralizationRule($number, $this->lang);
 	}
 }

@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2022, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -27,25 +27,26 @@ use OC\Files\Node\File;
 use OCP\Files\ForbiddenException;
 use OCP\Files\IProvidesAdditionalHeaders;
 use OC\Preview;
+use OCA\Files_Sharing\SharedStorage;
+use OCP\Files\IProvidesVersionAuthor;
+use OCP\Files\IProvidesVersionTag;
 use OCP\Files\IRootFolder;
 use OCP\Files\IPreviewNode;
 use OCP\Files\Storage\IVersionedStorage;
-use OCP\Files\Storage;
+use OCP\Files\Storage\IStorage;
 use OCP\IImage;
 
 /**
- * Class MetaFileVersionNode - this class represents a version of a file in the
- * meta endpoint
+ * Noncurrent version of the file node. This class represents a version of a file in the meta endpoint
  *
  * @package OC\Files\Meta
  */
-class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvidesAdditionalHeaders {
-
+class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvidesAdditionalHeaders, IProvidesVersionAuthor, IProvidesVersionTag {
 	/** @var string */
 	private $versionId;
 	/** @var MetaVersionCollection */
 	private $parent;
-	/** @var IVersionedStorage */
+	/** @var IStorage|IVersionedStorage|SharedStorage */
 	private $storage;
 	/** @var string */
 	private $internalPath;
@@ -60,12 +61,16 @@ class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvide
 	 * @param MetaVersionCollection $parent
 	 * @param IRootFolder $root
 	 * @param array $version
-	 * @param Storage $storage
+	 * @param IStorage|IVersionedStorage|SharedStorage $storage
 	 * @param string $internalPath
 	 */
-	public function __construct(MetaVersionCollection $parent,
-								IRootFolder $root,
-								array $version, Storage $storage, $internalPath) {
+	public function __construct(
+		MetaVersionCollection $parent,
+		IRootFolder $root,
+		array $version,
+		IStorage $storage,
+		$internalPath
+	) {
 		$this->parent = $parent;
 		$this->versionId = $version['version'];
 		$this->versionInfo = $version;
@@ -79,6 +84,24 @@ class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvide
 	 */
 	public function getName() {
 		return $this->versionId;
+	}
+
+	public function getPath() {
+		return $this->parent->getPath() . '/' . $this->getName();
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getEditedBy() : string {
+		return $this->versionInfo['edited_by'] ?? '';
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getVersionTag() : string {
+		return $this->versionInfo['version_tag'] ?? '';
 	}
 
 	/**
@@ -142,15 +165,17 @@ class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvide
 	 * @inheritdoc
 	 */
 	public function getContentDispositionFileName() {
+		// internalPath is empty for the share receiver if a single file was shared.
+		// We need to retrieve the file name via the mount point then.
+		if ($this->storage->instanceOfStorage(SharedStorage::class) && $this->internalPath === '') {
+			$mountPoint = $this->storage->getMountPoint();
+			return \basename($mountPoint);
+		}
 		return \basename($this->internalPath);
 	}
 
 	public function getId() {
 		return $this->parent->getId();
-	}
-
-	public function getPath() {
-		return $this->parent->getPath() . '/' . $this->getName();
 	}
 
 	public function getMountPoint() {
@@ -177,5 +202,14 @@ class MetaFileVersionNode extends AbstractFile implements IPreviewNode, IProvide
 		$preview->setMode($mode);
 		$preview->setKeepAspect($keepAspect);
 		return $preview->getPreview();
+	}
+
+	public function getStorage() {
+		return $this->storage;
+	}
+
+	public function isUpdateable() {
+		// Versions are not updateable
+		return false;
 	}
 }

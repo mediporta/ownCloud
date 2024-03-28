@@ -24,11 +24,11 @@ namespace OCA\Notifications\Mailer;
 use OCP\Notification\IManager;
 use OCP\Notification\INotification;
 use OCP\Mail\IMailer;
-use OCP\IConfig;
-use OCP\L10N\IFactory;
-use OCP\Util;
 use OCP\Template;
 use OCA\Notifications\Configuration\OptionsStorage;
+use OCP\IURLGenerator;
+use OCP\Defaults;
+use OCP\Util;
 
 /**
  * The class will focus on sending notifications via email. In addition, some email-related
@@ -44,12 +44,42 @@ class NotificationMailer {
 	/** @var OptionsStorage */
 	private $optionsStorage;
 
-	public function __construct(IManager $manager, IMailer $mailer, OptionsStorage $optionsStorage) {
+	/** @var IURLGenerator */
+	private $urlGenerator;
+	
+	/** @var string */
+	protected $senderAddress;
+
+	/** @var string */
+	protected $senderName;
+
+	public function __construct(IManager $manager, IMailer $mailer, OptionsStorage $optionsStorage, IURLGenerator $urlGenerator) {
 		$this->manager = $manager;
 		$this->mailer = $mailer;
 		$this->optionsStorage = $optionsStorage;
+		$this->urlGenerator = $urlGenerator;
 	}
+	
+	/**
+	 * Get the sender data
+	 * @param string $setting Either `email` or `name`
+	 * @return string
+	 */
+	protected function getSenderData($setting) {
+		if (empty($this->senderAddress)) {
+			$this->senderAddress = Util::getDefaultEmailAddress('no-reply');
+		}
+		if (empty($this->senderName)) {
+			$defaults = new Defaults();
+			$this->senderName = $defaults->getName();
+		}
 
+		if ($setting === 'email') {
+			return $this->senderAddress;
+		}
+		return $this->senderName;
+	}
+	
 	/**
 	 * Send a notification via email to the list of email addresses passed as parameter
 	 * @param INotification $notification the notification to be sent
@@ -72,10 +102,15 @@ class NotificationMailer {
 
 		$emailMessage = $this->mailer->createMessage();
 		$emailMessage->setTo([$emailAddress]);
+		$emailMessage->setFrom([$this->getSenderData('email') => $this->getSenderData('name')]);
 
 		$notificationLink = $notification->getLink();
+		$urlComponents = \parse_url($notificationLink);
+
 		if ($notificationLink === '') {
 			$notificationLink = $serverUrl;
+		} elseif (!isset($urlComponents['host'])) {
+			$notificationLink = $this->urlGenerator->getAbsoluteURL($notificationLink);
 		}
 
 		$parsedSubject = $notification->getParsedSubject();
@@ -83,8 +118,8 @@ class NotificationMailer {
 
 		$emailMessage->setSubject($parsedSubject);
 
-		$htmlText = $this->getMailBody($parsedMessage, $notificationLink, 'mail/htmlmail');
-		$plainText = $this->getMailBody($parsedMessage, $notificationLink, 'mail/plaintextmail');
+		$htmlText = $this->getMailBody($parsedMessage, $notificationLink, 'mail/htmlmail', $language);
+		$plainText = $this->getMailBody($parsedMessage, $notificationLink, 'mail/plaintextmail', $language);
 
 		$emailMessage->setPlainBody($plainText);
 		$emailMessage->setHtmlBody($htmlText);
@@ -92,7 +127,7 @@ class NotificationMailer {
 		$failedRecipents = $this->mailer->send($emailMessage);
 		if (!empty($failedRecipents)) {
 			// throw a plain exception to converge the mailer->send behaviour
-			throw new \Exception('Failed to send mail to ' . implode(', ', $failedRecipents));
+			throw new \Exception('Failed to send mail to ' . \implode(', ', $failedRecipents));
 		}
 
 		return $emailMessage;
@@ -113,7 +148,7 @@ class NotificationMailer {
 	 * The checks of this function shouldn't consider the notification as prepared in order to use
 	 * this function as soon as possible
 	 * @param INotification $notification the notification that will be checked
-	 * @return true if the notification will be sent by the sendNotification method, false otherwise
+	 * @return boolean true if the notification will be sent by the sendNotification method, false otherwise
 	 */
 	public function willSendNotification(INotification $notification) {
 		$options = $this->optionsStorage->getOptions($notification->getUser());
@@ -130,8 +165,8 @@ class NotificationMailer {
 		}
 	}
 
-	private function getMailBody($message, $serverUrl, $targetTemplate) {
-		$tmpl = new Template('notifications', $targetTemplate, '', false);
+	private function getMailBody($message, $serverUrl, $targetTemplate, $languageCode) {
+		$tmpl = new Template('notifications', $targetTemplate, '', false, $languageCode);
 		$tmpl->assign('message', $message);
 		$tmpl->assign('serverUrl', $serverUrl);
 		return $tmpl->fetchPage();

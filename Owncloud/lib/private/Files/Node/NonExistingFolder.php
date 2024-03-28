@@ -122,7 +122,7 @@ class NonExistingFolder extends Folder {
 		}
 	}
 
-	public function get($path) {
+	public function get($path, $ensureExists = false) {
 		throw new NotFoundException();
 	}
 
@@ -154,7 +154,7 @@ class NonExistingFolder extends Folder {
 		throw new NotFoundException();
 	}
 
-	public function getById($id) {
+	public function getById($id, $first = false) {
 		throw new NotFoundException();
 	}
 

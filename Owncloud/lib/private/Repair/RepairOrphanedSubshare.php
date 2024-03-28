@@ -21,31 +21,20 @@
 
 namespace OC\Repair;
 
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 
 class RepairOrphanedSubshare implements IRepairStep {
-
 	/** @var IDBConnection  */
 	private $connection;
-
-	/** @var  IQueryBuilder */
-	private $missingParents;
-
-	/** @var IQueryBuilder  */
-	private $deleteOrphanReshares;
-
-	/** @var  int */
-	private $pageLimit;
 
 	/**
 	 * RepairOrphanedSubshare constructor.
 	 *
 	 * @param IDBConnection $connection
 	 */
-	public function __construct(IDBConnection $connection, $pageLimit = 1000) {
+	public function __construct(IDBConnection $connection) {
 		$this->connection = $connection;
 	}
 
@@ -90,8 +79,10 @@ class RepairOrphanedSubshare implements IRepairStep {
 		$deleteOrphanReshares = $this->connection->getQueryBuilder();
 		$deleteOrphanReshares
 			->delete('share')
-			->where($deleteOrphanReshares->expr()->notIn('parent',
-			$deleteOrphanReshares->createFunction($subquery)));
+			->where($deleteOrphanReshares->expr()->notIn(
+				'parent',
+				$deleteOrphanReshares->createFunction($subquery)
+			));
 		$deleteOrphanReshares->execute();
 	}
 }

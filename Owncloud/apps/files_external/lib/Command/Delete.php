@@ -81,13 +81,13 @@ class Delete extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$mountId = $input->getArgument('mount_id');
 		try {
 			$mount = $this->globalService->getStorage($mountId);
 		} catch (NotFoundException $e) {
 			$output->writeln('<error>Mount with id "' . $mountId . ' not found, check "occ files_external:list" to get available mounts"</error>');
-			return 404;
+			return 1;
 		}
 
 		$noConfirm = $input->getOption('yes');
@@ -102,10 +102,11 @@ class Delete extends Base {
 			$question = new ConfirmationQuestion('Delete this mount? [y/N] ', false);
 
 			if (!$questionHelper->ask($input, $output, $question)) {
-				return;
+				return 1;
 			}
 		}
 
 		$this->globalService->removeStorage($mountId);
+		return 0;
 	}
 }

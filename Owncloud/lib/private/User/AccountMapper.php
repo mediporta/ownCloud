@@ -30,7 +30,6 @@ use OCP\IConfig;
 use OCP\IDBConnection;
 
 class AccountMapper extends Mapper {
-
 	/* @var IConfig */
 	protected $config;
 
@@ -66,6 +65,7 @@ class AccountMapper extends Mapper {
 	 * @return Entity the saved entity with the set id
 	 */
 	public function insert(Entity $entity) {
+		$entity->setCreationTime(\time());
 		// run the normal entity insert operation to get an id
 		$entity = parent::insert($entity);
 
@@ -164,10 +164,10 @@ class AccountMapper extends Mapper {
 
 		$qb = $this->db->getQueryBuilder();
 		$qb->selectAlias('DISTINCT a.id', 'id')
-			->addSelect(['user_id', 'lower_user_id', 'display_name', 'email', 'last_login', 'backend', 'state', 'quota', 'home'])
+			->addSelect(['user_id', 'lower_user_id', 'display_name', 'email', 'last_login', 'creation_time', 'backend', 'state', 'quota', 'home'])
 			->from($this->getTableName(), 'a')
 			->leftJoin('a', 'account_terms', 't', $qb->expr()->eq('a.id', 't.account_id'))
-			->orderBy('display_name')
+			->orderBy('user_id')
 			->where($qb->expr()->like('lower_user_id', $qb->createPositionalParameter($loweredParameter)))
 			->orWhere($qb->expr()->iLike('display_name', $qb->createPositionalParameter($parameter)))
 			->orWhere($qb->expr()->iLike('email', $qb->createPositionalParameter($parameter)))
@@ -215,17 +215,35 @@ class AccountMapper extends Mapper {
 	}
 
 	public function callForAllUsers($callback, $search, $onlySeen) {
+		$this->callForUsers($callback, $search, $onlySeen);
+	}
+
+	public function callForUsers($callback, $search, $onlySeen, $limit = null, $offset = null) {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select(['*'])
 			->from($this->getTableName());
 
 		if ($search) {
-			$qb->where($qb->expr()->iLike('user_id',
-				$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%')));
+			$qb->where($qb->expr()->iLike(
+				'user_id',
+				$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%')
+			));
 		}
 		if ($onlySeen) {
 			$qb->where($qb->expr()->gt('last_login', new Literal(0)));
 		}
+
+		if ($limit !== null || $offset !== null) {
+			$qb->orderBy('user_id'); // needed for predictable limit & offset
+		}
+
+		if ($limit !== null) {
+			$qb->setMaxResults($limit);
+		}
+		if ($offset !== null) {
+			$qb->setFirstResult($offset);
+		}
+
 		$stmt = $qb->execute();
 		while ($row = $stmt->fetch()) {
 			$return = $callback($this->mapRowToEntity($row));

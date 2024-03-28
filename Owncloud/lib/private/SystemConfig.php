@@ -33,7 +33,6 @@ use OCP\IConfig;
  * fixes cyclic DI: AllConfig needs AppConfig needs Database needs AllConfig
  */
 class SystemConfig {
-
 	/** @var array */
 	protected $sensitiveValues = [
 		'dbpassword' => true,
@@ -49,6 +48,7 @@ class SystemConfig {
 		'ldap_agent_password' => true,
 		'proxyuserpwd' => true,
 		'marketplace.key' => true,
+		'metrics_shared_secret' => true,
 		'log.condition' => [
 			[
 			'shared_secret' => true,
@@ -74,6 +74,9 @@ class SystemConfig {
 				],
 			],
 		],
+		'openid-connect' => [
+			'client-secret' => true
+		]
 	];
 	/** @var Config */
 	private $config;

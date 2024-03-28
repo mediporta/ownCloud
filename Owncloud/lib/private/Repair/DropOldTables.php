@@ -28,7 +28,6 @@ use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 
 class DropOldTables implements IRepairStep {
-
 	/** @var IDBConnection */
 	protected $connection;
 
@@ -55,15 +54,11 @@ class DropOldTables implements IRepairStep {
 	 * @throws \Exception in case of failure
 	 */
 	public function run(IOutput $output) {
-		$tables = $this->oldDatabaseTables();
-		$output->startProgress(\count($tables));
 		foreach ($this->oldDatabaseTables() as $tableName) {
 			if ($this->connection->tableExists($tableName)) {
 				$this->connection->dropTable($tableName);
 			}
-			$output->advance(1, "Drop old database table: $tableName");
 		}
-		$output->finishProgress();
 	}
 
 	/**
@@ -99,7 +94,8 @@ class DropOldTables implements IRepairStep {
 			'clndr_share_calendar',
 			'clndr_repeat',
 			'contacts_addressbooks',
-			'contacts_cards'
+			'contacts_cards',
+			'contacts_cards_properties'
 		];
 	}
 }

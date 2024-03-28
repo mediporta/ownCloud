@@ -22,13 +22,11 @@
 namespace OC\Repair;
 
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 
 class RepairSubShares implements IRepairStep {
-
 	/** @var IDBConnection  */
 	private $connection;
 
@@ -39,7 +37,8 @@ class RepairSubShares implements IRepairStep {
 	private $deleteShareId;
 
 	public function __construct(
-		IDBConnection $connection) {
+		IDBConnection $connection
+	) {
 		$this->connection = $connection;
 	}
 

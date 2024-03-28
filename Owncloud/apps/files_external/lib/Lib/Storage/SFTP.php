@@ -34,7 +34,8 @@
 namespace OCA\Files_External\Lib\Storage;
 use Icewind\Streams\IteratorDirectory;
 use Icewind\Streams\RetryWrapper;
-use phpseclib\Net\SFTP\Stream;
+use phpseclib3\Net\SFTP\Stream;
+use OCA\Files_External\Lib\RSAStore;
 
 /**
 * Uses phpseclib's Net\SFTP class and the Net\SFTP\Stream stream wrapper to
@@ -49,7 +50,7 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 	private $auth;
 
 	/**
-	* @var SFTP
+	* @var \phpseclib3\Net\SFTP
 	*/
 	protected $client;
 
@@ -91,8 +92,11 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 		}
 		$this->user = $params['user'];
 
-		if (isset($params['public_key_auth'])) {
-			$this->auth = $params['public_key_auth'];
+		if (isset($params['private_key'])) {
+			// The $params['private_key'] contains the token to get the private key, not the key.
+			// The actual private key is fetched from the RSAStore using that token.
+			$rsaStore = RSAStore::getGlobalInstance();
+			$this->auth = $rsaStore->retrieveData($params['private_key']);
 		} elseif (isset($params['password'])) {
 			$this->auth = $params['password'];
 		} else {
@@ -114,7 +118,7 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 	/**
 	 * Returns the connection.
 	 *
-	 * @return \phpseclib\Net\SFTP connected client instance
+	 * @return \phpseclib3\Net\SFTP connected client instance
 	 * @throws \Exception when the connection failed
 	 */
 	public function getConnection() {
@@ -123,7 +127,7 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 		}
 
 		$hostKeys = $this->readHostKeys();
-		$this->client = new \phpseclib\Net\SFTP($this->host, $this->port);
+		$this->client = new \phpseclib3\Net\SFTP($this->host, $this->port);
 
 		// The SSH Host Key MUST be verified before login().
 		$currentHostKey = $this->client->getServerPublicHostKey();
@@ -316,10 +320,14 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 	public function filetype($path) {
 		try {
 			$stat = $this->getConnection()->stat($this->absPath($path));
+			/* ToDo: Investigate if NET_SFTP_TYPE_REGULAR is an available constant */
+			/* @phan-suppress-next-line PhanUndeclaredConstant */
 			if ($stat['type'] == NET_SFTP_TYPE_REGULAR) {
 				return 'file';
 			}
 
+			/* ToDo: Investigate if NET_SFTP_TYPE_DIRECTORY is an available constant */
+			/* @phan-suppress-next-line PhanUndeclaredConstant */
 			if ($stat['type'] == NET_SFTP_TYPE_DIRECTORY) {
 				return 'dir';
 			}
@@ -418,6 +426,8 @@ class SFTP extends \OCP\Files\Storage\StorageAdapter {
 	 * @throws \Exception
 	 */
 	public function uploadFile($path, $target) {
+		/* ToDo: Investigate if NET_SFTP_LOCAL_FILE is an available constant */
+		/* @phan-suppress-next-line PhanUndeclaredConstant */
 		$this->getConnection()->put($target, $path, NET_SFTP_LOCAL_FILE);
 	}
 

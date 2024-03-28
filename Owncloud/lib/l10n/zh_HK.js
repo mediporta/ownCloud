@@ -19,9 +19,8 @@ OC.L10N.register(
     "Encryption" : "加密",
     "Sharing" : "分享",
     "Search" : "尋找",
-    "Updates" : "更新",
-    "Help" : "幫助",
     "Settings" : "設定",
-    "Users" : "用戶"
+    "Users" : "用戶",
+    "Imprint" : "版本說明"
 },
 "nplurals=1; plural=0;");

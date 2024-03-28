@@ -29,6 +29,9 @@ class TimestampFormatter implements OutputFormatterInterface {
 	/** @var IConfig */
 	protected $config;
 
+	/** @var OutputFormatterInterface  */
+	private $formatter;
+
 	/**
 	 * @param IConfig $config
 	 * @param OutputFormatterInterface $formatter
@@ -73,7 +76,7 @@ class TimestampFormatter implements OutputFormatterInterface {
 	 * @return bool
 	 */
 	public function hasStyle($name) {
-		$this->formatter->hasStyle($name);
+		return $this->formatter->hasStyle($name);
 	}
 
 	/**

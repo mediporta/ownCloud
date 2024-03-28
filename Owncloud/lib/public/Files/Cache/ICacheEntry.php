@@ -27,7 +27,7 @@ namespace OCP\Files\Cache;
  * @since 9.0.0
  */
 interface ICacheEntry {
-	const DIRECTORY_MIMETYPE = 'httpd/unix-directory';
+	public const DIRECTORY_MIMETYPE = 'httpd/unix-directory';
 
 	/**
 	 * Get the numeric id of a file
@@ -80,7 +80,10 @@ interface ICacheEntry {
 	/**
 	 * Get the file size in bytes
 	 *
-	 * @return int
+	 * It should return the size as integer, but it could return it
+	 * as float if the size doesn't fit
+	 *
+	 * @return int|float
 	 * @since 9.0.0
 	 */
 	public function getSize();

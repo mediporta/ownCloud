@@ -22,6 +22,7 @@
 
 namespace OCA\DAV\Connector\Sabre;
 
+use Sabre\DAV\Exception\NotFound;
 use Sabre\HTTP\RequestInterface;
 use Sabre\HTTP\ResponseInterface;
 
@@ -31,7 +32,6 @@ use Sabre\HTTP\ResponseInterface;
  * or mangle Etag headers.
  */
 class CopyEtagHeaderPlugin extends \Sabre\DAV\ServerPlugin {
-
 	/** @var \Sabre\DAV\Server */
 	private $server;
 	/**
@@ -44,7 +44,7 @@ class CopyEtagHeaderPlugin extends \Sabre\DAV\ServerPlugin {
 	public function initialize(\Sabre\DAV\Server $server) {
 		$this->server = $server;
 
-		$server->on('afterMethod', [$this, 'afterMethod']);
+		$server->on('afterMethod:*', [$this, 'afterMethod']);
 		$server->on('afterMove', [$this, 'afterMove']);
 	}
 
@@ -71,11 +71,15 @@ class CopyEtagHeaderPlugin extends \Sabre\DAV\ServerPlugin {
 	 * @return void
 	 */
 	public function afterMove($source, $destination) {
-		$node = $this->server->tree->getNodeForPath($destination);
-		if ($node instanceof File) {
-			$eTag = $node->getETag();
-			$this->server->httpResponse->setHeader('OC-ETag', $eTag);
-			$this->server->httpResponse->setHeader('ETag', $eTag);
+		try {
+			$node = $this->server->tree->getNodeForPath($destination);
+			if ($node instanceof File) {
+				$eTag = $node->getETag();
+				$this->server->httpResponse->setHeader('OC-ETag', $eTag);
+				$this->server->httpResponse->setHeader('ETag', $eTag);
+			}
+		} catch (NotFound $ex) {
+			// nothing to do then ....
 		}
 	}
 }

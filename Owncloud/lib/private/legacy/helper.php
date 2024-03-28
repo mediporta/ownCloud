@@ -132,7 +132,7 @@ class OC_Helper {
 	/**
 	 * Make a computer file size
 	 * @param string $str file size in human readable format
-	 * @return float a file size in bytes
+	 * @return float|false a file size in bytes
 	 *
 	 * Makes 2kB to 2048.
 	 *
@@ -509,7 +509,7 @@ class OC_Helper {
 		if (\in_array($function_name, $disabled)) {
 			return false;
 		}
-		$disabled = \explode(',', $ini->get('suhosin.executor.func.blacklist'));
+		$disabled = \explode(',', $ini->get('suhosin.executor.func.blacklist') ?? '');
 		$disabled = \array_map('trim', $disabled);
 		if (\in_array($function_name, $disabled)) {
 			return false;
@@ -593,6 +593,7 @@ class OC_Helper {
 		$sourceStorage = $storage;
 		if ($storage->instanceOfStorage('\OCA\Files_Sharing\SharedStorage')) {
 			$includeExtStorage = false;
+			'@phan-var \OCA\Files_Sharing\SharedStorage $storage';
 			$sourceStorage = $storage->getSourceStorage();
 		}
 		if ($includeExtStorage) {
@@ -605,7 +606,8 @@ class OC_Helper {
 
 		// TODO: need a better way to get total space from storage
 		if ($sourceStorage->instanceOfStorage('\OC\Files\Storage\Wrapper\Quota')) {
-			/** @var \OC\Files\Storage\Wrapper\Quota $storage */
+			/** @var \OC\Files\Storage\Wrapper\Quota $sourceStorage */
+			'@phan-var \OC\Files\Storage\Wrapper\Quota $sourceStorage';
 			$quota = $sourceStorage->getQuota();
 		}
 		$free = $sourceStorage->free_space('');

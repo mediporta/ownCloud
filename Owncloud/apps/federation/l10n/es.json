@@ -1,6 +1,6 @@
 { "translations": {
     "Server added to the list of trusted ownClouds" : "Servidor añadido a la lista de ownClouds en los que se confía",
-    "Server is already in the list of trusted servers." : "El servidor ya está en la lista de servidores en los que se confía.",
+    "Server is already in the list of trusted servers." : "El servidor ya está en la lista de servidores confiables.",
     "No ownCloud server found" : "No se ha encontrado el servidor ownCloud",
     "Could not add server" : "No se ha podido añadir el servidor",
     "Federation" : "Federación",
@@ -10,5 +10,5 @@
     "+ Add ownCloud server" : "+ Añadir servidor ownCloud",
     "ownCloud Server" : "Servidor ownCloud",
     "Add" : "Añadir"
-},"pluralForm" :"nplurals=2; plural=(n != 1);"
+},"pluralForm" :"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 }

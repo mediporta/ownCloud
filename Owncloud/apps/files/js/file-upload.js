@@ -111,7 +111,38 @@ OC.FileUpload.prototype = {
 		if (this._newName) {
 			return this._newName;
 		}
-		return this.getFile().name;
+
+		var fileName = this.getFile().name;
+		return this.sanitizeFileName(fileName);
+	},
+
+	/**
+	 * Return the sanitized file name.
+	 *
+	 * @return {String} file name
+	 */
+	sanitizeFileName: function(fileName) {
+		return fileName.trim();
+	},
+
+	/**
+	 * Return the sanitized path.
+	 *
+	 * @return {String} path
+	 */
+	sanitizePath: function(path) {
+		if(!path){
+			return path;
+		}
+
+		var pathSegments = path.split('/');
+		var sanitizedPathSegments = [];
+
+		for (var i = 0; i < pathSegments.length; i++) {
+			sanitizedPathSegments.push(pathSegments[i].trim());
+		}
+
+		return sanitizedPathSegments.join('/');
 	},
 
 	getLastModified: function() {
@@ -140,7 +171,9 @@ OC.FileUpload.prototype = {
 	 * @return {String} full path
 	 */
 	getFullPath: function() {
-		return OC.joinPaths(this._targetFolder, this.getFile().relativePath || '');
+		var relativePath = this.getFile().relativePath;
+		var sanitizedRelativePath =  this.sanitizePath(relativePath);
+		return OC.joinPaths(this._targetFolder, sanitizedRelativePath || '');
 	},
 
 	/**
@@ -186,7 +219,7 @@ OC.FileUpload.prototype = {
 	 * Multiple calls will increment the appended number.
 	 */
 	autoRename: function() {
-		var name = this.getFile().name;
+		var name = this.sanitizeFileName(this.getFile().name);
 		if (!this._renameAttempt) {
 			this._renameAttempt = 1;
 		}
@@ -213,7 +246,15 @@ OC.FileUpload.prototype = {
 		var data = this.data;
 		var file = this.getFile();
 
-		// it was a folder upload, so make sure the parent directory exists alrady
+		/**
+		 * If the variable file is a directory, we just create it and return.
+		 * Files being handled separately
+		 */
+		if (file.isDirectory){
+			return this.uploader.ensureFolderExists(OC.joinPaths(this._targetFolder, this.sanitizePath(file.fullPath)));
+		}
+
+		// it was a folder upload, so make sure the parent directory exists already
 		var folderPromise;
 		if (file.relativePath) {
 			folderPromise = this.uploader.ensureFolderExists(this.getFullPath());
@@ -402,7 +443,7 @@ OC.FileUpload.prototype = {
 			if (response.errorThrown === 'timeout') {
 				return {
 					status: 0,
-					message: t('core', 'Upload timeout for file "{file}"', {file: this.getFileName()})
+					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()})
 				};
 			}
 
@@ -430,17 +471,17 @@ OC.FileUpload.prototype = {
 			}
 		} else if (response.result) {
 			response = response.result;
-		} else {
+		} else if (response.jqXHR) {
 			if (response.jqXHR.status === 0 && response.jqXHR.statusText === 'error') {
 				// timeout (IE11)
 				return {
 					status: 0,
-					message: t('core', 'Upload timeout for file "{file}"', {file: this.getFileName()})
+					message: t('files', 'Upload timeout for file "{file}"', {file: this.getFileName()})
 				};
 			}
 			return {
 				status: response.jqXHR.status,
-				message: t('core', 'Unknown error "{error}" uploading file "{file}"', {error: response.jqXHR.statusText, file: this.getFileName()})
+				message: t('files', 'Unknown error "{error}" uploading file "{file}"', {error: response.jqXHR.statusText, file: this.getFileName()})
 			};
 		}
 		return response;
@@ -612,6 +653,11 @@ OC.Uploader.prototype = _.extend({
 			promise = deferred.promise();
 			this._knownDirs[fullPath] = promise;
 
+			// once the promise ends, we'll remove it from the this._knownDirs
+			promise.always(function() {
+				delete self._knownDirs[fullPath];
+			});
+
 			// make sure all parents already exist
 			var parentPath = OC.dirname(fullPath);
 			var parentPromise = this._knownDirs[parentPath];
@@ -682,6 +728,7 @@ OC.Uploader.prototype = _.extend({
 		this.log('canceling uploads');
 		jQuery.each(this._uploads, function(i, upload) {
 			upload.abort();
+			upload.aborted = true;
 		});
 		this.clear();
 	},
@@ -691,7 +738,7 @@ OC.Uploader.prototype = _.extend({
 	clear: function() {
 		var remainingUploads = {};
 		_.each(this._uploads, function(upload, key) {
-			if (!upload.isDone) {
+			if (!upload.isDone && !upload.aborted) {
 				remainingUploads[key] = upload;
 			}
 		});
@@ -756,7 +803,7 @@ OC.Uploader.prototype = _.extend({
 				// when only replacement selected -> overwrite
 				self.onReplace(conflict.data('data'));
 			} else {
-				// when only original seleted -> skip
+				// when only original selected -> skip
 				// when none selected -> skip
 				self.onSkip(conflict.data('data'));
 			}
@@ -815,21 +862,35 @@ OC.Uploader.prototype = _.extend({
 	 * @param {function} callbacks.onCancel
 	 */
 	checkExistingFiles: function (selection, callbacks) {
+		var self = this;
 		var fileList = this.fileList;
 		var conflicts = [];
 		// only keep non-conflicting uploads
 		selection.uploads = _.filter(selection.uploads, function(upload) {
 			var file = upload.getFile();
 			if (file.relativePath) {
-				// can't check in subfolder contents
+				// can't check in subfolder contents, let backend handle this
 				return true;
 			}
 			if (!fileList) {
 				// no list to check against
 				return true;
 			}
-			var fileInfo = fileList.findFile(file.name);
+
+			var currentDirectory = fileList.getCurrentDirectory();
+			var targetFolder = upload.getTargetFolder();
+			// let backend handle the conflict check if files are dragged into another folder
+			if (targetFolder && currentDirectory && currentDirectory !== targetFolder) {
+				return true;
+			}
+
+			var fileInfo = fileList.findFile(self.sanitizeFileName(file.name));
 			if (fileInfo) {
+				var sharePermission = parseInt($("#sharePermission").val());
+				if (sharePermission === (OC.PERMISSION_READ | OC.PERMISSION_CREATE)) {
+					OC.Notification.show(t('files', 'The file {file} already exists', {file: fileInfo.name}), {type: 'error'});
+					return false;
+				}
 				conflicts.push([
 					// original
 					_.extend(fileInfo, {
@@ -842,10 +903,11 @@ OC.Uploader.prototype = _.extend({
 			}
 			return true;
 		});
+
 		if (conflicts.length) {
 			// wait for template loading
-			OC.dialogs.fileexists(null, null, null, this).done(function() {
-				_.each(conflicts, function(conflictData) {
+			OC.dialogs.fileexists(null, null, null, this).done(function () {
+				_.each(conflicts, function (conflictData) {
 					OC.dialogs.fileexists(conflictData[1], conflictData[0], conflictData[1].getFile(), this);
 				});
 			});
@@ -856,6 +918,15 @@ OC.Uploader.prototype = _.extend({
 		// if the folder was concurrently modified, these will get added
 		// to the already visible dialog, if applicable
 		callbacks.onNoConflicts(selection);
+	},
+
+	/**
+	 * Return the sanitized file name.
+	 *
+	 * @return {String} file name
+	 */
+	sanitizeFileName: function(fileName) {
+		return fileName.trim();
 	},
 
 	_hideProgressBar: function() {
@@ -886,7 +957,7 @@ OC.Uploader.prototype = _.extend({
 		} else {
 			if (progress >= total) {
 				// change message if we stalled at 100%
-				this.$uploadprogressbar.find('.label .desktop').text(t('core', 'Processing files...'));
+				this.$uploadprogressbar.find('.label .desktop').text(t('files', 'Processing files...'));
 			}
 			if (new Date().getTime() - this._lastProgressTime >= this._uploadStallTimeout * 1000 ) {
 				// TODO: move to "fileuploadprogress" event instead and use data.uploadedBytes
@@ -1130,7 +1201,7 @@ OC.Uploader.prototype = _.extend({
 				start: function(e) {
 					self.log('start', e, null);
 					//hide the tooltip otherwise it covers the progress bar
-					$('#upload').tipsy('hide');
+					$('#upload').tooltip('hide');
 				},
 				fail: function(e, data) {
 					var upload = self.getUpload(data);
@@ -1194,6 +1265,16 @@ OC.Uploader.prototype = _.extend({
 					} else if (status === 412) {
 						// file already exists
 						self.showConflict(upload);
+					} else if (status === 403) {
+						// permission denied
+						var response = upload.getResponse();
+						message = response.message;
+						// If the message comes from a storage wrapper exception it should be already
+						// translated. Otherwise we have a default exception message and translate it here
+						if (message === '' || message === 'You don’t have permission to upload or create files here') {
+							message = t('files', 'You don’t have permission to upload or create files here');
+						}
+						OC.Notification.show(message, {type: 'error'});
 					} else if (status === 404) {
 						// target folder does not exist any more
 						var dir = upload.getFullPath();
@@ -1203,6 +1284,9 @@ OC.Uploader.prototype = _.extend({
 							OC.Notification.show(t('files', 'Target folder does not exist any more'), {type: 'error'});
 						}
 						self.cancelUploads();
+					} else if (status === 423) {
+						// file is locked
+						OC.Notification.show(t('files', 'The file {file} is currently locked, please try again later', {file: upload.getFileName()}), {type: 'error'});
 					} else if (status === 507) {
 						// not enough space
 						OC.Notification.show(t('files', 'Not enough free space'), {type: 'error'});
@@ -1212,8 +1296,9 @@ OC.Uploader.prototype = _.extend({
 						var message = '';
 						if (upload) {
 							var response = upload.getResponse();
-							message = response.message;
+							message = t('files', 'Failed to upload the file "{fileName}": {error}', {fileName: upload.getFileName(), error: response.message});
 						}
+
 						OC.Notification.show(message || data.errorThrown, {type: 'error'});
 					}
 
@@ -1259,12 +1344,11 @@ OC.Uploader.prototype = _.extend({
 
 			if (this._supportAjaxUploadWithProgress()) {
 				//remaining time
-				var lastUpdate = new Date().getMilliseconds();
-				var lastSize = 0;
 				var bufferSize = 20;
 				var buffer = [];
 				var bufferIndex = 0;
 				var bufferTotal = 0;
+				var filledBufferSize = 0;
 				for(var i = 0; i < bufferSize;i++){
 					buffer[i] = 0;
 				}
@@ -1286,7 +1370,7 @@ OC.Uploader.prototype = _.extend({
 							+ '</span><span class="mobile">'
 							+ t('files', '...')
 							+ '</span></em>');
-					self.$uploadprogressbar.tipsy({gravity:'n', fade:true, live:true});
+					self.$uploadprogressbar.tooltip();
 					self._showProgressBar();
 					self.trigger('start', e, data);
 				});
@@ -1298,24 +1382,29 @@ OC.Uploader.prototype = _.extend({
 				fileupload.on('fileuploadprogressall', function(e, data) {
 					self.log('progress handle fileuploadprogressall', e, data);
 					var progress = (data.loaded / data.total) * 100;
-					var thisUpdate = new Date().getMilliseconds();
-					var diffUpdate = (thisUpdate - lastUpdate)/1000; // eg. 2s
-					lastUpdate = thisUpdate;
-					var diffSize = data.loaded - lastSize;
-					lastSize = data.loaded;
-					diffSize = diffSize / diffUpdate; // apply timing factor, eg. 1mb/2s = 0.5mb/s
-					var remainingSeconds = ((data.total - data.loaded) / diffSize);
+					var remainingBits = (data.total - data.loaded) * 8;
+					var remainingSeconds = remainingBits / data.bitrate;
+
+					//Take the average remaining seconds of the last bufferSize events
+					//to prevent fluctuation and provide a smooth experience
 					if (isFinite(remainingSeconds) && remainingSeconds >= 0) {
 						bufferTotal = bufferTotal - (buffer[bufferIndex]) + remainingSeconds;
-						buffer[bufferIndex] = remainingSeconds; //buffer to make it smoother
+						buffer[bufferIndex] = remainingSeconds;
 						bufferIndex = (bufferIndex + 1) % bufferSize;
+						if (filledBufferSize < bufferSize) {
+							filledBufferSize++;
+						}
 					}
-					var smoothRemainingSeconds = (bufferTotal / bufferSize); //seconds
-					var h = moment.duration(smoothRemainingSeconds, "seconds").humanize();
+
+					if (!oc_appconfig.files.hide_upload_estimation) {
+						var smoothRemainingSeconds = (bufferTotal / filledBufferSize);
+						var h = moment.duration(smoothRemainingSeconds, "seconds").humanize();
+						self.$uploadprogressbar.find('.label .mobile').text(h);
+						self.$uploadprogressbar.find('.label .desktop').text(h);
+					}
+
 					self.$uploadprogressbar.attr('data-loaded', data.loaded);
 					self.$uploadprogressbar.attr('data-total', data.total);
-					self.$uploadprogressbar.find('.label .mobile').text(h);
-					self.$uploadprogressbar.find('.label .desktop').text(h);
 					self.$uploadprogressbar.attr('original-title',
 						t('files', '{loadedSize} of {totalSize} ({bitrate})' , {
 							loadedSize: humanFileSize(data.loaded),

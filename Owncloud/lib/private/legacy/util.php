@@ -56,11 +56,12 @@
  *
  */
 
+use OC\Security\SignedUrl\Verifier;
+use OC\User\LoginException;
 use OCP\Authentication\Exceptions\AccountCheckException;
 use OCP\Files\NoReadAccessException;
-use OCP\IConfig;
-use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\License\ILicenseManager;
 
 class OC_Util {
 	public static $scripts = [];
@@ -69,8 +70,8 @@ class OC_Util {
 	private static $rootMounted = false;
 	private static $fsSetup = false;
 	private static $version;
-	const EDITION_COMMUNITY = 'Community';
-	const EDITION_ENTERPRISE = 'Enterprise';
+	public const EDITION_COMMUNITY = 'Community';
+	public const EDITION_ENTERPRISE = 'Enterprise';
 
 	protected static function getAppManager() {
 		return \OC::$server->getAppManager();
@@ -128,7 +129,7 @@ class OC_Util {
 	 * @return boolean
 	 * @description configure the initial filesystem based on the configuration
 	 */
-	public static function setupFS($user = '') {
+	public static function setupFS($user = '', $fullInit = true) {
 		//setting up the filesystem twice can only lead to trouble
 		if (self::$fsSetup) {
 			return false;
@@ -159,6 +160,7 @@ class OC_Util {
 		\OC\Files\Filesystem::addStorageWrapper('mount_options', function ($mountPoint, \OCP\Files\Storage $storage, \OCP\Files\Mount\IMountPoint $mount) {
 			if ($storage->instanceOfStorage('\OC\Files\Storage\Common')) {
 				/** @var \OC\Files\Storage\Common $storage */
+				'@phan-var \OC\Files\Storage\Common $storage';
 				$storage->setMountOptions($mount->getOptions());
 			}
 			return $storage;
@@ -169,6 +171,16 @@ class OC_Util {
 				return new \OC\Files\Storage\Wrapper\PermissionsMask([
 					'storage' => $storage,
 					'mask' => \OCP\Constants::PERMISSION_ALL - \OCP\Constants::PERMISSION_SHARE
+				]);
+			}
+			return $storage;
+		});
+
+		\OC\Files\Filesystem::addStorageWrapper('read_only', function ($mountPoint, \OCP\Files\Storage $storage, \OCP\Files\Mount\IMountPoint $mount) {
+			if ($mount->getOption('read_only', false)) {
+				return new \OC\Files\Storage\Wrapper\PermissionsMask([
+					'storage' => $storage,
+					'mask' => \OCP\Constants::PERMISSION_READ | \OCP\Constants::PERMISSION_SHARE
 				]);
 			}
 			return $storage;
@@ -213,7 +225,12 @@ class OC_Util {
 					$user = $storage->getUser()->getUID();
 					$quota = OC_Util::getUserQuota($user);
 					if ($quota !== \OCP\Files\FileInfo::SPACE_UNLIMITED) {
-						return new \OC\Files\Storage\Wrapper\Quota(['storage' => $storage, 'quota' => $quota, 'root' => 'files']);
+						return new \OC\Files\Storage\Wrapper\Quota([
+							'mountPoint' => $mountPoint,
+							'storage' => $storage,
+							'quota' => $quota,
+							'root' => 'files'
+						]);
 					}
 				}
 			}
@@ -243,15 +260,17 @@ class OC_Util {
 			if (!\is_array($readOnlyGroups)) {
 				$readOnlyGroups = [];
 			}
+			$readOnlyGroupMemberships = [];
+			if ($readOnlyGroups) {
+				$userGroups = \array_keys(
+					\OC::$server->getGroupManager()->getUserIdGroups($user)
+				);
 
-			$userGroups = \array_keys(
-				\OC::$server->getGroupManager()->getUserIdGroups($user)
-			);
-
-			$readOnlyGroupMemberships = \array_intersect(
-				$readOnlyGroups,
-				$userGroups
-			);
+				$readOnlyGroupMemberships = \array_intersect(
+					$readOnlyGroups,
+					$userGroups
+				);
+			}
 		}
 
 		if ($isGuest === '1' || !empty($readOnlyGroupMemberships)) {
@@ -275,6 +294,7 @@ class OC_Util {
 
 		//check if we are using an object storage
 		$objectStore = \OC::$server->getSystemConfig()->getValue('objectstore', null);
+		$objectStore = \OC::$server->getSystemConfig()->getValue('objectstore_multibucket', $objectStore);
 		if (isset($objectStore)) {
 			self::initObjectStoreRootFS($objectStore);
 		} else {
@@ -291,7 +311,7 @@ class OC_Util {
 			$userDir = '/' . $user . '/files';
 
 			//jail the user into his "home" directory
-			\OC\Files\Filesystem::init($user, $userDir);
+			\OC\Files\Filesystem::init($user, $userDir, $fullInit);
 
 			OC_Hook::emit('OC_Filesystem', 'setup', ['user' => $user, 'user_dir' => $userDir]);
 		}
@@ -320,10 +340,10 @@ class OC_Util {
 	 * @return boolean
 	 */
 	public static function isDefaultExpireDateEnforced() {
-		$isDefaultExpireDateEnabled = \OCP\Config::getAppValue('core', 'shareapi_default_expire_date', 'no');
+		$isDefaultExpireDateEnabled = \OC::$server->getConfig()->getAppValue('core', 'shareapi_default_expire_date', 'no');
 		$enforceDefaultExpireDate = false;
 		if ($isDefaultExpireDateEnabled === 'yes') {
-			$value = \OCP\Config::getAppValue('core', 'shareapi_enforce_expire_date', 'no');
+			$value = \OC::$server->getConfig()->getAppValue('core', 'shareapi_enforce_expire_date', 'no');
 			$enforceDefaultExpireDate = ($value === 'yes') ? true : false;
 		}
 
@@ -363,7 +383,12 @@ class OC_Util {
 	 * @throws \OC\HintException
 	 */
 	public static function copySkeleton($userId, \OCP\Files\Folder $userDirectory) {
-		$skeletonDirectory = \OCP\Config::getSystemValue('skeletondirectory', \OC::$SERVERROOT . '/core/skeleton');
+		$skeletonDirectory = \OC::$server->getConfig()->getSystemValue('skeletondirectory', \OC::$SERVERROOT . '/core/skeleton');
+
+		// An empty setting for skeletondirectory means that no skeleton is required.
+		if ($skeletonDirectory === '') {
+			return;
+		}
 
 		if (!\is_dir($skeletonDirectory)) {
 			throw new \OC\HintException('The skeleton folder '.$skeletonDirectory.' is not accessible');
@@ -457,7 +482,23 @@ class OC_Util {
 	 * @return string
 	 */
 	public static function getEditionString() {
-		if (OC_App::isEnabled('enterprise_key')) {
+		$licenseManager = \OC::$server->getLicenseManager();
+		// TODO: Need to open method in the licenseManager to expose the license type
+		$licenseMessage = $licenseManager->getLicenseMessageFor('core');
+		$licenseState = $licenseMessage['license_state'];
+		$licenseType = $licenseMessage['type'];
+		if ($licenseState !== ILicenseManager::LICENSE_STATE_MISSING &&
+			$licenseState !== ILicenseManager::LICENSE_STATE_INVALID
+		) {
+			// if it's a expired demo key, we need to return community
+			if ($licenseState === ILicenseManager::LICENSE_STATE_EXPIRED && $licenseType !== 0) {
+				/**
+				 * TODO: licenseType === 0 is documented as "normal" license in the
+				 * ILicenseManager::getLicenseMessageFor method
+				 * This needs to be properly exposed as constant by the ILicenseManager
+				 */
+				return OC_Util::EDITION_COMMUNITY;
+			}
 			return OC_Util::EDITION_ENTERPRISE;
 		} else {
 			return OC_Util::EDITION_COMMUNITY;
@@ -692,8 +733,14 @@ class OC_Util {
 		}
 
 		$webServerRestart = false;
-		$setup = new \OC\Setup($config, \OC::$server->getIniWrapper(), \OC::$server->getL10N('lib'),
-			new \OC_Defaults(), \OC::$server->getLogger(), \OC::$server->getSecureRandom());
+		$setup = new \OC\Setup(
+			$config,
+			\OC::$server->getIniWrapper(),
+			\OC::$server->getL10N('lib'),
+			new \OC_Defaults(),
+			\OC::$server->getLogger(),
+			\OC::$server->getSecureRandom()
+		);
 
 		$urlGenerator = \OC::$server->getURLGenerator();
 
@@ -711,9 +758,11 @@ class OC_Util {
 			if (!\is_writable(OC::$configDir) or !\is_readable(OC::$configDir)) {
 				$errors[] = [
 					'error' => $l->t('Cannot write into "config" directory'),
-					'hint' => $l->t('This can usually be fixed by '
+					'hint' => $l->t(
+						'This can usually be fixed by '
 						. '%sgiving the webserver write access to the config directory%s.',
-						['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>'])
+						['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>']
+					)
 				];
 			}
 		}
@@ -727,16 +776,20 @@ class OC_Util {
 				} else {
 					$errors[] = [
 						'error' => $l->t('Cannot create "data" directory'),
-						'hint' => $l->t('This can usually be fixed by '
+						'hint' => $l->t(
+							'This can usually be fixed by '
 							. '<a href="%s" target="_blank" rel="noreferrer">giving the webserver write access to the root directory</a>.',
-							[$urlGenerator->linkToDocs('admin-dir_permissions')])
+							[$urlGenerator->linkToDocs('admin-dir_permissions')]
+						)
 					];
 				}
 			} elseif (!\is_writable($CONFIG_DATADIRECTORY) or !\is_readable($CONFIG_DATADIRECTORY)) {
 				//common hint for all file permissions error messages
-				$permissionsHint = $l->t('Permissions can usually be fixed by '
+				$permissionsHint = $l->t(
+					'Permissions can usually be fixed by '
 					. '%sgiving the webserver write access to the root directory%s.',
-					['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>']);
+					['<a href="' . $urlGenerator->linkToDocs('admin-dir_permissions') . '" target="_blank" rel="noreferrer">', '</a>']
+				);
 				$errors[] = [
 					'error' => 'Your Data directory is not writable by ownCloud',
 					'hint' => $permissionsHint
@@ -748,9 +801,11 @@ class OC_Util {
 
 		if (!OC_Util::isSetLocaleWorking()) {
 			$errors[] = [
-				'error' => $l->t('Setting locale to %s failed',
+				'error' => $l->t(
+					'Setting locale to %s failed',
 					['en_US.UTF-8/fr_FR.UTF-8/es_ES.UTF-8/de_DE.UTF-8/ru_RU.UTF-8/'
-						. 'pt_BR.UTF-8/it_IT.UTF-8/ja_JP.UTF-8/zh_CN.UTF-8']),
+						. 'pt_BR.UTF-8/it_IT.UTF-8/ja_JP.UTF-8/zh_CN.UTF-8']
+				),
 				'hint' => $l->t('Please install one of these locales on your system and restart your webserver.')
 			];
 		}
@@ -761,8 +816,7 @@ class OC_Util {
 		// defined = defined
 		// ini = ini_get
 		// If the dependency is not found the missing module name is shown to the EndUser
-		// When adding new checks always verify that they pass on Travis as well
-		// for ini settings, see https://github.com/owncloud/administration/blob/master/travis-ci/custom.ini
+		// When adding new checks always verify that they pass on CI as well
 		$dependencies = [
 			'classes' => [
 				'ZipArchive' => 'zip',
@@ -985,21 +1039,57 @@ class OC_Util {
 	}
 
 	/**
+	 * @return bool
+	 * @throws LoginException
+	 */
+	private static function checkPreSignedUrl(): bool {
+		$request = \Sabre\HTTP\Sapi::createFromServerArray($_SERVER);
+		$verifier = new Verifier($request, \OC::$server->getConfig());
+		if ($verifier->isSignedRequest()) {
+			if (!$verifier->signedRequestIsValid()) {
+				throw new LoginException('Invalid pre signed url');
+			}
+
+			$urlCredential = $verifier->getUrlCredential();
+			$user = \OC::$server->getUserManager()->get($urlCredential);
+			if ($user === null) {
+				$message = \OC::$server->getL10N('dav')->t('User unknown');
+				throw new LoginException($message);
+			}
+			if (!$user->isEnabled()) {
+				$message = \OC::$server->getL10N('dav')->t('User disabled');
+				throw new LoginException($message);
+			}
+			\OC::$server->getUserSession()->setUser($user);
+			\OC_Util::setupFS($urlCredential);
+			\OC::$server->getSession()->close();
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Check if the user is logged in, redirects to home if not. With
 	 * redirect URL parameter to the request URI.
 	 *
+	 * @param bool $allowPreSigned
 	 * @return void
+	 * @throws LoginException
 	 */
-	public static function checkLoggedIn() {
+	public static function checkLoggedIn($allowPreSigned = false): void {
+		if ($allowPreSigned && self::checkPreSignedUrl()) {
+			return;
+		}
 		// Check if we are a user
 		$userSession = \OC::$server->getUserSession();
-		if (!$userSession->isLoggedIn()) {
-			\header('Location: ' . \OC::$server->getURLGenerator()->linkToRoute(
-						'core.login.showLoginForm',
-						[
+		if ($userSession && !$userSession->isLoggedIn()) {
+			\header(
+				'Location: ' . \OC::$server->getURLGenerator()->linkToRoute(
+					'core.login.showLoginForm',
+					[
 							'redirect_url' => \urlencode(\OC::$server->getRequest()->getRequestUri()),
 						]
-					)
+				)
 			);
 			exit();
 		}
@@ -1088,7 +1178,17 @@ class OC_Util {
 				$location = $urlGenerator->getAbsoluteURL($defaultPage);
 			} else {
 				$appId = 'files';
-				$defaultApps = \explode(',', \OCP\Config::getSystemValue('defaultapp', 'files'));
+				$uid = \OC_User::getUser();
+				$config = \OC::$server->getConfig();
+				$defaultApps = \explode(',', $config->getSystemValue('defaultapp', 'files'));
+
+				if ($uid) {
+					$userDefaultApp = $config->getUserValue($uid, 'core', 'defaultapp', null);
+					if ($userDefaultApp) {
+						\array_unshift($defaultApps, $userDefaultApp);
+					}
+				}
+
 				// find the first app that is enabled for the current user
 				foreach ($defaultApps as $defaultApp) {
 					$defaultApp = OC_App::cleanAppId(\strip_tags($defaultApp));
@@ -1194,8 +1294,10 @@ class OC_Util {
 
 		$fp = @\fopen($testFile, 'w');
 		if (!$fp) {
-			throw new OC\HintException('Can\'t create test file to check for working .htaccess file.',
-				'Make sure it is possible for the webserver to write to ' . $testFile);
+			throw new OC\HintException(
+				'Can\'t create test file to check for working .htaccess file.',
+				'Make sure it is possible for the webserver to write to ' . $testFile
+			);
 		}
 		\fwrite($fp, $testContent);
 		\fclose($fp);
@@ -1208,11 +1310,14 @@ class OC_Util {
 	 * @return bool
 	 */
 	public static function isSetLocaleWorking() {
-		\Patchwork\Utf8\Bootup::initLocale();
-		if (\basename('§') === '') {
-			return false;
+		if (\basename('§') === '§') {
+			return true;
 		}
-		return true;
+
+		\setlocale(LC_ALL, 'C.UTF-8', 'C');
+		\setlocale(LC_CTYPE, 'en_US.UTF-8', 'fr_FR.UTF-8', 'es_ES.UTF-8', 'de_DE.UTF-8', 'ru_RU.UTF-8', 'pt_BR.UTF-8', 'it_IT.UTF-8', 'ja_JP.UTF-8', 'zh_CN.UTF-8', '0');
+
+		return \basename('§') === '§';
 	}
 
 	/**
@@ -1326,14 +1431,6 @@ class OC_Util {
 		if (\function_exists('accelerator_reset')) {
 			accelerator_reset();
 		}
-		// XCache
-		if (\function_exists('xcache_clear_cache')) {
-			if (\OC::$server->getIniWrapper()->getBool('xcache.admin.enable_auth')) {
-				\OCP\Util::writeLog('core', 'XCache opcode cache will not be cleared because "xcache.admin.enable_auth" is enabled.', \OCP\Util::WARN);
-			} else {
-				@xcache_clear_cache(XC_TYPE_PHP, 0);
-			}
-		}
 		// Opcache (PHP >= 5.5)
 		if (\function_exists('opcache_reset')) {
 			\opcache_reset();
@@ -1368,6 +1465,32 @@ class OC_Util {
 		$file = \rtrim($file, '/');
 		$t = \explode('/', $file);
 		return \array_pop($t);
+	}
+
+	/**
+	 * Remove the ".part" extension from the path. The "ocTransferId" part added for the uploads
+	 * can also be removed.
+	 * @params string $path the path to be cleaned up
+	 * @params bool $stripTransferId whether the method should also remove the "ocTransferId" if it exists
+	 * @return string the cleaned path
+	 */
+	public static function stripPartialFileExtension(string $path, bool $stripTransferId = true): string {
+		$extension = \pathinfo($path, PATHINFO_EXTENSION);
+
+		if ($extension === 'part') {
+			$newLength = \strlen($path) - 5; // 5 = strlen(".part")
+			$fPath = \substr($path, 0, $newLength);
+
+			// if path also contains a transaction id, we remove it too
+			$extension = \pathinfo($fPath, PATHINFO_EXTENSION);
+			if ($stripTransferId && \substr($extension, 0, 12) === 'ocTransferId') { // 12 = strlen("ocTransferId")
+				$newLength = \strlen($fPath) - \strlen($extension) -1;
+				$fPath = \substr($fPath, 0, $newLength);
+			}
+			return $fPath;
+		} else {
+			return $path;
+		}
 	}
 
 	/**

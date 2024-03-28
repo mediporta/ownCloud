@@ -3,7 +3,7 @@
  * @author Björn Schießle <bjoern@schiessle.org>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -35,7 +35,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class MigrateKeys extends Command {
-
 	/** @var IUserManager */
 	private $userManager;
 	/** @var View */
@@ -54,12 +53,13 @@ class MigrateKeys extends Command {
 	 * @param IConfig $config
 	 * @param ILogger $logger
 	 */
-	public function __construct(IUserManager $userManager,
-								View $view,
-								IDBConnection $connection,
-								IConfig $config,
-								ILogger $logger) {
-
+	public function __construct(
+		IUserManager $userManager,
+		View $view,
+		IDBConnection $connection,
+		IConfig $config,
+		ILogger $logger
+	) {
 		$this->userManager = $userManager;
 		$this->view = $view;
 		$this->connection = $connection;
@@ -79,8 +79,12 @@ class MigrateKeys extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
-
+	/**
+	 * @param InputInterface $input
+	 * @param OutputInterface $output
+	 * @return int
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		// perform system reorganization
 		$migration = new Migration($this->config, $this->view, $this->connection, $this->logger);
 
@@ -98,8 +102,8 @@ class MigrateKeys extends Command {
 			$output->writeln("Reorganize system folder structure");
 			$migration->reorganizeSystemFolderStructure();
 			$migration->updateDB();
-			foreach($this->userManager->getBackends() as $backend) {
-				$name = get_class($backend);
+			foreach ($this->userManager->getBackends() as $backend) {
+				$name = \get_class($backend);
 
 				if ($backend instanceof IUserBackend) {
 					$name = $backend->getBackendName();
@@ -116,11 +120,11 @@ class MigrateKeys extends Command {
 						$migration->reorganizeFolderStructureForUser($user);
 					}
 					$offset += $limit;
-				} while(count($users) >= $limit);
+				} while (\count($users) >= $limit);
 			}
 		}
 
 		$migration->finalCleanUp();
-
+		return 0;
 	}
 }

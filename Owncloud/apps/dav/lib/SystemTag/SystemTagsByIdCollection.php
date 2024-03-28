@@ -33,7 +33,6 @@ use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\ICollection;
 
 class SystemTagsByIdCollection implements ICollection {
-
 	/**
 	 * @var ISystemTagManager
 	 */
@@ -119,7 +118,21 @@ class SystemTagsByIdCollection implements ICollection {
 			$visibilityFilter = null;
 		}
 
-		$tags = $this->tagManager->getAllTags($visibilityFilter);
+		$tags = $this->tagManager->getAllTags($visibilityFilter, null);
+		/**
+		 * Filter out static tags if the user does not have privilege to see it.
+		 */
+		$tags =  \array_filter($tags, function ($tag) {
+			if (!$tag->isUserEditable() && $tag->isUserAssignable()) {
+				$user = $this->userSession->getUser();
+				if (($user !== null) &&
+					!$this->tagManager->canUserUseStaticTagInGroup($tag, $user)) {
+					return false;
+				}
+			}
+			return true;
+		});
+
 		return \array_map(function ($tag) {
 			return $this->makeNode($tag);
 		}, $tags);

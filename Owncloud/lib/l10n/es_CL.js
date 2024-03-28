@@ -18,9 +18,7 @@ OC.L10N.register(
     "Can't create app folder. Please fix permissions. %s" : "No se puede crear el directorio de aplicación. Por favor corregir los permisos. %s",
     "No source specified when installing app" : "No se especificó el origen al instalar la aplicación",
     "General" : "General",
-    "Help" : "Ayuda",
     "Settings" : "Configuración",
-    "Users" : "Usuarios",
-    "web services under your control" : "Servicios Web bajo su control"
+    "Users" : "Usuarios"
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

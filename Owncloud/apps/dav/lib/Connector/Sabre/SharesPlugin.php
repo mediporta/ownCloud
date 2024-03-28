@@ -29,8 +29,8 @@ use Sabre\DAV\PropFind;
  * Sabre Plugin to provide share-related properties
  */
 class SharesPlugin extends \Sabre\DAV\ServerPlugin {
-	const NS_OWNCLOUD = 'http://owncloud.org/ns';
-	const SHARETYPES_PROPERTYNAME = '{http://owncloud.org/ns}share-types';
+	public const NS_OWNCLOUD = 'http://owncloud.org/ns';
+	public const SHARETYPES_PROPERTYNAME = '{http://owncloud.org/ns}share-types';
 
 	/**
 	 * Reference to main server object
@@ -92,7 +92,7 @@ class SharesPlugin extends \Sabre\DAV\ServerPlugin {
 	 * @param \Sabre\DAV\Server $server
 	 */
 	public function initialize(\Sabre\DAV\Server $server) {
-		$server->xml->namespacesMap[self::NS_OWNCLOUD] = 'oc';
+		$server->xml->namespaceMap[self::NS_OWNCLOUD] = 'oc';
 		$server->xml->elementMap[self::SHARETYPES_PROPERTYNAME] = 'OCA\\DAV\\Connector\\Sabre\\ShareTypeList';
 		$server->protectedProperties[] = self::SHARETYPES_PROPERTYNAME;
 
@@ -133,14 +133,17 @@ class SharesPlugin extends \Sabre\DAV\ServerPlugin {
 			\OCP\Share::SHARE_TYPE_USER,
 			\OCP\Share::SHARE_TYPE_GROUP,
 			\OCP\Share::SHARE_TYPE_LINK,
-			\OCP\Share::SHARE_TYPE_REMOTE
+			\OCP\Share::SHARE_TYPE_REMOTE,
+			\OCP\Share::SHARE_TYPE_REMOTE_GROUP
+
 		];
 
 		// Query DB for share types for specified node IDs
 		$allShares = $this->shareManager->getAllSharesBy(
 			$this->userId,
 			$requestedShareTypes,
-			$nodeIDs
+			$nodeIDs,
+			true
 		);
 		
 		return $allShares;

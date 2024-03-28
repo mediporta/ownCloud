@@ -33,41 +33,41 @@ if ($_['enableAvatars']) {
 
 if ($_['displayNameChangeSupported']) {
 	?>
-<form id="displaynameform" class="section">
+<form id="displaynameform" class="section" autocapitalize="none">
 	<h2>
 		<label for="displayName"><?php echo $l->t('Full name'); ?></label>
 	</h2>
 	<input type="text" id="displayName" name="displayName"
 		value="<?php p($_['displayName'])?>"
-		autocomplete="on" autocapitalize="off" autocorrect="off" />
+		autocomplete="on" autocorrect="off" />
     <span class="msg"></span>
 	<input type="hidden" id="oldDisplayName" name="oldDisplayName" value="<?php p($_['displayName'])?>" />
 </form>
 <?php
 } else {
-		?>
+	?>
 <div id="displaynameform" class="section">
 	<h2><?php echo $l->t('Full name'); ?></h2>
 	<span><?php if (isset($_['displayName'][0])) {
-			p($_['displayName']);
-		} else {
-			p($l->t('No display name set'));
-		} ?></span>
+		p($_['displayName']);
+	} else {
+		p($l->t('No display name set'));
+	} ?></span>
 </div>
 <?php
-	}
+}
 ?>
 
 <?php
-if ($_['displayNameChangeSupported']) {
+if ($_['mailAddressChangeSupported']) {
 	?>
-<form id="lostpassword" class="section">
+<form id="emailform" class="section" autocapitalize="none">
 	<h2>
 		<label for="email"><?php p($l->t('Email')); ?></label>
 	</h2>
 	<input type="email" name="email" id="email" value="<?php p($_['email']); ?>"
 		placeholder="<?php p($l->t('Your email address')); ?>"
-		autocomplete="on" autocapitalize="off" autocorrect="off" />
+		autocomplete="on" autocorrect="off" />
 	<input id="emailbutton" type="button" value="<?php if (isset($_['email'][0])) {
 		echo $l->t('Change email');
 	} else {
@@ -78,29 +78,31 @@ if ($_['displayNameChangeSupported']) {
 </form>
 <?php
 } else {
-		?>
-<div id="lostpassword" class="section">
+	?>
+<div id="emailform" class="section">
 	<h2><?php echo $l->t('Email'); ?></h2>
 	<span><?php if (isset($_['email'][0])) {
-			p($_['email']);
-		} else {
-			p($l->t('No email address set'));
-		} ?></span>
+		p($_['email']);
+	} else {
+		p($l->t('No email address set'));
+	} ?></span>
 </div>
 <?php
-	}
+}
 ?>
 
 <div id="groups" class="section">
 	<h2><?php p($l->t('Groups')); ?></h2>
 	<?php if (\count($_['groups']) > 0) {
-	?>
+		?>
 		<p><?php p($l->t('You are member of the following groups:')); ?></p>
 		<p>
-			<?php p(\implode(', ', $_['groups'])); ?>
+			<?php p(\implode(', ', \array_map(function ($group) {
+				return $group->getDisplayName();
+			}, $_['groups']))); ?>
 		</p>
 	<?php
-} else {
+	} else {
 		?>
 		<p><?php p($l->t('You are not a member of any groups.')); ?></p>
 	<?php
@@ -108,10 +110,15 @@ if ($_['displayNameChangeSupported']) {
 
 </div>
 
+<div id="username" class="section">
+       <h2 class="username"><?php p($l->t('Username')); ?></h2>
+       <p><?php p($_['username']); ?></p>
+</div>
+
 <?php
 if ($_['passwordChangeSupported']) {
-		script('jquery-showpassword'); ?>
-<form id="passwordform" class="section">
+	script('jquery-showpassword'); ?>
+<form id="passwordform" class="section" autocapitalize="none">
 	<h2 class="inlineblock"><?php p($l->t('Password')); ?></h2>
 	<div class="hidden icon-checkmark" id="password-changed"></div>
 	<div class="hidden msg error" id="password-error"><?php p($l->t('Unable to change your password')); ?></div>
@@ -119,27 +126,45 @@ if ($_['passwordChangeSupported']) {
 	<label for="pass1" class="hidden-visually"><?php echo $l->t('Current password'); ?>: </label>
 	<input type="password" id="pass1" name="oldpassword"
 		placeholder="<?php echo $l->t('Current password'); ?>"
-		autocomplete="off" autocapitalize="off" autocorrect="off" />
+		autocomplete="off" autocorrect="off" />
 	<label for="pass2" class="hidden-visually"><?php echo $l->t('New password'); ?>: </label>
 	<input type="password" id="pass2" name="personal-password"
 		placeholder="<?php echo $l->t('New password'); ?>"
 		data-typetoggle="#personal-show"
-		autocomplete="off" autocapitalize="off" autocorrect="off" />
+		autocomplete="off" autocorrect="off" />
 	<input type="checkbox" id="personal-show" name="show" /><label for="personal-show"></label>
 	<input id="passwordbutton" type="submit" value="<?php echo $l->t('Change password'); ?>" />
 </form>
 <?php
-	}
+}
 ?>
-<form class="section">
+<form id="language" class="section">
 	<h2>
 		<label><?php p($l->t('Language'));?></label>
 	</h2>
 	<?php print_unescaped($_['languageSelector']); ?>
 	<?php if (OC_Util::getEditionString() === OC_Util::EDITION_COMMUNITY): ?>
-	<a href="https://www.transifex.com/projects/p/owncloud/"
+	<a href="https://explore.transifex.com/owncloud-org/"
 	  target="_blank" rel="noreferrer">
 		<em><?php p($l->t('Help translate'));?></em>
 	</a>
 	<?php endif; ?>
 </form>
+
+<?php
+if (!empty($_['legal_privacy_policy']) || !empty($_['legal_imprint'])) {
+	?><div id="legal" class="section">
+        <h2 class="legal"><?php p($l->t('Legal'));?></h2>
+        <?php if (!empty($_['legal_imprint'])) { ?>
+        <p>
+                <label for="legal_imprint"><?php p($l->t('Our imprint conditions:')); ?></label> <a id="legal_imprint" href="<?php p($_['legal_imprint']) ?>" target="_blank" rel="noopener noreferrer"><?php p($_['legal_imprint']) ?></a>
+        </p>
+        <?php } if (!empty($_['legal_privacy_policy'])) { ?>
+        <p>
+                <label for="legal_privacy_policy"><?php p($l->t('Our Privacy Policy conditions:')); ?></label> <a id="legal_privacy_policy" href="<?php p($_['legal_privacy_policy']) ?>" target="_blank" rel="noopener noreferrer"><?php p($_['legal_privacy_policy']) ?></a>
+        </p>
+        <?php } ?>
+</div>
+<?php
+}
+?>

@@ -24,7 +24,6 @@
 
 namespace OC\Files\External;
 
-use OC\Files\Storage\Wrapper\Availability;
 use OCP\Files\Storage;
 use OC\Files\Mount\MountPoint;
 use OCP\Files\Storage\IStorageFactory;
@@ -34,16 +33,13 @@ use OCP\Files\External\Service\IUserStoragesService;
 use OCP\Files\External\Service\IUserGlobalStoragesService;
 use OCP\Files\External\IStorageConfig;
 use OC\Files\Storage\FailedStorage;
-use OCP\Files\StorageNotAvailableException;
 use OCP\IConfig;
-use OCP\Files\ObjectStore\IObjectStore;
 use OCP\ISession;
 
 /**
  * Make the old files_external config work with the new public mount config api
  */
 class ConfigAdapter implements IMountProvider {
-
 	/** @var IConfig */
 	private $config;
 
@@ -81,7 +77,8 @@ class ConfigAdapter implements IMountProvider {
 	private function prepareStorageConfig(IStorageConfig &$storage, IUser $user) {
 		foreach ($storage->getBackendOptions() as $option => $value) {
 			$storage->setBackendOption($option, $this->setUserVars(
-				$user->getUserName(), $value
+				$user->getUserName(),
+				$value
 			));
 		}
 
@@ -125,25 +122,16 @@ class ConfigAdapter implements IMountProvider {
 	public function getMountsForUser(IUser $user, IStorageFactory $loader) {
 		$mounts = [];
 
+		// setUser is in UserTrait.
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$this->userStoragesService->setUser($user);
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$this->userGlobalStoragesService->setUser($user);
 
 		foreach ($this->userGlobalStoragesService->getUniqueStorages() as $storage) {
 			try {
 				$this->prepareStorageConfig($storage, $user);
 				$impl = $this->constructStorage($storage);
-			} catch (\Exception $e) {
-				// propagate exception into filesystem
-				$impl = new FailedStorage(['exception' => $e]);
-			}
-
-			try {
-				$availability = $impl->getAvailability();
-				if (!$availability['available'] && !Availability::shouldRecheck($availability)) {
-					$impl = new FailedStorage([
-						'exception' => new StorageNotAvailableException('Storage with mount id ' . $storage->getId() . ' is not available')
-					]);
-				}
 			} catch (\Exception $e) {
 				// propagate exception into filesystem
 				$impl = new FailedStorage(['exception' => $e]);
@@ -186,7 +174,10 @@ class ConfigAdapter implements IMountProvider {
 			$mounts[$storage->getMountPoint()] = $mount;
 		}
 
+		// resetUser is in UserTrait.
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$this->userStoragesService->resetUser();
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$this->userGlobalStoragesService->resetUser();
 
 		return $mounts;

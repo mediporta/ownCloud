@@ -31,6 +31,25 @@ use OCP\Files\Node;
  * @since 9.0.0
  */
 interface IShareProvider {
+	/**
+	 * The capabilities below refer mainly to storing capabilities allowed
+	 * by the implementing share provider. Validation or enforcement rules
+	 * (for passwords for example) aren't expected to be handled as capabilities
+	 * here because those rules will be checked at API level, not here.
+	 * If a share provider doesn't support any of these capabilities, it should
+	 * either store the value as null or don't store it, and return a null value
+	 * as value when the share is gotten.
+	 */
+	/**
+	 * Store when the share expires. An expired share needs to be automatically
+	 * deleted. If a share won't expire, a "null" value will be used
+	 */
+	public const CAPABILITY_STORE_EXPIRATION = 'shareExpiration';
+	/**
+	 * Store the (hashed) password to protect the share. A value of null means
+	 * that the share isn't protected by a password.
+	 */
+	public const CAPABILITY_STORE_PASSWORD = 'passwordProtected';
 
 	/**
 	 * Return the identifier of this provider.
@@ -116,11 +135,11 @@ interface IShareProvider {
 	 * @since 10.0.0
 	 */
 	public function getAllSharesBy($userId, $shareTypes, $nodeIDs, $reshares);
-	
+
 	/**
 	 * Get share by id
 	 *
-	 * @param int $id
+	 * @param string $id
 	 * @param string|null $recipientId
 	 * @return \OCP\Share\IShare
 	 * @throws ShareNotFound
@@ -149,7 +168,7 @@ interface IShareProvider {
 	 * @since 10.0.0
 	 */
 	public function getAllSharedWith($userId, $node);
-	
+
 	/**
 	 * Get shared with the given user specifying share type predicate for this specific share provider
 	 *
@@ -172,6 +191,17 @@ interface IShareProvider {
 	 * @since 9.0.0
 	 */
 	public function getShareByToken($token);
+
+	/**
+	 * Get the shares which are associated with an invalid or missing fileid.
+	 * This means that the share isn't valid any longer because the source file
+	 * has been deleted.
+	 *
+	 * @param int $limit limit the number of results, -1 to get all results without limit
+	 * @return \OCP\Share\IShare[]
+	 * @since 10.7.0
+	 */
+	public function getSharesWithInvalidFileid(int $limit);
 
 	/**
 	 * A user is deleted from the system
@@ -217,4 +247,25 @@ interface IShareProvider {
 	 * @since 10.0.9
 	 */
 	public function updateForRecipient(\OCP\Share\IShare $share, $recipient);
+
+	/**
+	 * Get the share provider's capabilities. It will return a map with the supported
+	 * share type with the list of capabilities for that share type:
+	 * [
+	 *   \OCP\Share::CONVERT_SHARE_TYPE_TO_STRING[\OCP\Share::SHARE_TYPE_USER] => [
+	 *     IShareProvider::CAPABILITY_STORE_EXPIRATION
+	 *   ],
+	 *   \OCP\Share::CONVERT_SHARE_TYPE_TO_STRING[\OCP\Share::SHARE_TYPE_LINK] => [
+	 *     IShareProvider::CAPABILITY_STORE_EXPIRATION,
+	 *     IShareProvider::CAPABILITY_STORE_PASSWORD
+	 *   ],
+	 *   \OCP\Share::CONVERT_SHARE_TYPE_TO_STRING[\OCP\Share::SHARE_TYPE_GROUP] => []
+	 * ]
+	 * Supported share types by this provider should have the corresponding entry even if
+	 * it doesn't support extra capabilities
+	 *
+	 * @return array
+	 * @since 10.3.2
+	 */
+	public function getProviderCapabilities();
 }

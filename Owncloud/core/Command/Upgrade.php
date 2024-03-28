@@ -30,9 +30,11 @@
 namespace OC\Core\Command;
 
 use OC\Console\TimestampFormatter;
+use OC\License\LicenseFetcher;
 use OC\Updater;
 use OCP\IConfig;
 use OCP\ILogger;
+use \OCP\ICacheFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputInterface;
@@ -41,12 +43,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Upgrade extends Command {
-	const ERROR_SUCCESS = 0;
-	const ERROR_NOT_INSTALLED = 1;
-	const ERROR_MAINTENANCE_MODE = 2;
-	const ERROR_UP_TO_DATE = 3;
-	const ERROR_INVALID_ARGUMENTS = 4;
-	const ERROR_FAILURE = 5;
+	public const ERROR_SUCCESS = 0;
+	public const ERROR_NOT_INSTALLED = 1;
+	public const ERROR_MAINTENANCE_MODE = 2;
+	public const ERROR_UP_TO_DATE = 3;
+	public const ERROR_INVALID_ARGUMENTS = 4;
+	public const ERROR_FAILURE = 5;
 
 	/** @var IConfig */
 	private $config;
@@ -54,14 +56,14 @@ class Upgrade extends Command {
 	/** @var ILogger */
 	private $logger;
 
-	/**
-	 * @param IConfig $config
-	 * @param ILogger $logger
-	 */
-	public function __construct(IConfig $config, ILogger $logger) {
+	/** @var ICacheFactory */
+	private $cacheFactory;
+
+	public function __construct(IConfig $config, ILogger $logger, ICacheFactory $cacheFactory) {
 		parent::__construct();
 		$this->config = $config;
 		$this->logger = $logger;
+		$this->cacheFactory = $cacheFactory;
 	}
 
 	protected function configure() {
@@ -73,6 +75,12 @@ class Upgrade extends Command {
 				null,
 				InputOption::VALUE_NONE,
 				'Skip disabling of third party apps.'
+			)
+			->addOption(
+				'--major',
+				null,
+				InputOption::VALUE_NONE,
+				'Automatically update apps to new major versions during minor updates of ownCloud Server'
 			);
 	}
 
@@ -81,8 +89,10 @@ class Upgrade extends Command {
 	 *
 	 * @param InputInterface $input input interface
 	 * @param OutputInterface $output output interface
+	 *
+	 * @return int
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if ($output->getVerbosity() === OutputInterface::VERBOSITY_NORMAL
 			&& !$input->hasParameterOption('--verbose=0', true)) {
 			// set to more verbose on upgrade if no explicit verbosity was set
@@ -90,18 +100,27 @@ class Upgrade extends Command {
 		}
 
 		if (\OC::checkUpgrade(false)) {
+			$defaultFormat = $output->getFormatter();
 			if (OutputInterface::VERBOSITY_NORMAL < $output->getVerbosity()) {
 				// Prepend each line with a little timestamp
 				$timestampFormatter = new TimestampFormatter($this->config, $output->getFormatter());
 				$output->setFormatter($timestampFormatter);
 			}
+			$license = \OC::$server->query(LicenseFetcher::class)->getOwncloudLicense();
+			if ($license !== null) {
+				$output->setFormatter($defaultFormat);
+				$this->printAdvisory($output);
+			}
 
-			$self = $this;
 			$updater = new Updater(
-					$this->config,
-					\OC::$server->getIntegrityCodeChecker(),
-					$this->logger
+				$this->config,
+				\OC::$server->getIntegrityCodeChecker(),
+				$this->logger
 			);
+
+			if ($input->getOption('major')) {
+				$updater->setForceMajorUpgrade(true);
+			}
 
 			$dispatcher = \OC::$server->getEventDispatcher();
 			$progress = new ProgressBar($output);
@@ -181,7 +200,7 @@ class Upgrade extends Command {
 			$dispatcher->addListener('\OC\Repair::info', $repairListener);
 			$dispatcher->addListener('\OC\Repair::warning', $repairListener);
 			$dispatcher->addListener('\OC\Repair::error', $repairListener);
-			
+
 			$updater->listen('\OC\Updater', 'maintenanceEnabled', function () use ($output) {
 				$output->writeln('<info>Turned on maintenance mode</info>');
 			});
@@ -191,7 +210,9 @@ class Upgrade extends Command {
 			$updater->listen('\OC\Updater', 'maintenanceActive', function () use ($output) {
 				$output->writeln('<info>Maintenance mode is kept active</info>');
 			});
-			$updater->listen('\OC\Updater', 'updateEnd',
+			$updater->listen(
+				'\OC\Updater',
+				'updateEnd',
 				function ($success) use ($output) {
 					if ($success) {
 						$message = "<info>Update successful</info>";
@@ -199,7 +220,8 @@ class Upgrade extends Command {
 						$message = "<error>Update failed</error>";
 					}
 					$output->writeln($message);
-				});
+				}
+			);
 			$updater->listen('\OC\Updater', 'dbUpgradeBefore', function () use ($output) {
 				$output->writeln('<info>Updating database schema</info>');
 			});
@@ -233,7 +255,7 @@ class Upgrade extends Command {
 			$updater->listen('\OC\Updater', 'appUpgrade', function ($app, $version) use ($output) {
 				$output->writeln("<info>Updated <$app> to $version</info>");
 			});
-			$updater->listen('\OC\Updater', 'failure', function ($message) use ($output, $self) {
+			$updater->listen('\OC\Updater', 'failure', function ($message) use ($output) {
 				$output->writeln("<error>$message</error>");
 			});
 			$updater->listen('\OC\Updater', 'setDebugLogLevel', function ($logLevel, $logLevelName) use ($output) {
@@ -257,8 +279,16 @@ class Upgrade extends Command {
 				return self::ERROR_FAILURE;
 			}
 
+			// Clear caches after successful upgrade.
+			// Caches were created before the upgrade, so the cache prefix will be the old one
+			// TODO: Note that only the "create" method is available in the interface. It isn't
+			// possible to create local or distributed caches explicitly
+			$this->cacheFactory->create()->clear();
+
 			return self::ERROR_SUCCESS;
-		} elseif ($this->config->getSystemValue('maintenance', false)) {
+		}
+
+		if ($this->config->getSystemValue('maintenance', false)) {
 			//Possible scenario: ownCloud core is updated but an app failed
 			$output->writeln('<warning>ownCloud is in maintenance mode</warning>');
 			$output->write('<comment>Maybe an upgrade is already in process. Please check the '
@@ -266,10 +296,10 @@ class Upgrade extends Command {
 				. 'upgrade procedure, remove the "maintenance mode" from '
 				. 'config.php and call this script again.</comment>', true);
 			return self::ERROR_MAINTENANCE_MODE;
-		} else {
-			$output->writeln('<info>ownCloud is already latest version</info>');
-			return self::ERROR_UP_TO_DATE;
 		}
+
+		$output->writeln('<info>ownCloud is already latest version</info>');
+		return self::ERROR_UP_TO_DATE;
 	}
 
 	/**
@@ -287,5 +317,43 @@ class Upgrade extends Command {
 				'please set it manually</warning>'
 			);
 		}
+	}
+
+	private function printAdvisory(OutputInterface $output):void {
+		$heading = <<<EOT
+
+  ______             __    __      __                      __         ______   __                        __     
+ /      \           /  |  /  |    /  |                    /  |       /      \ /  |                      /  |    
+/$$$$$$  |  ______  $$/  _$$ |_   $$/   _______   ______  $$ |      /$$$$$$  |$$ |  ______    ______   _$$ |_   
+$$ |  $$/  /      \ /  |/ $$   |  /  | /       | /      \ $$ |      $$ |__$$ |$$ | /      \  /      \ / $$   |  
+$$ |      /$$$$$$  |$$ |$$$$$$/   $$ |/$$$$$$$/  $$$$$$  |$$ |      $$    $$ |$$ |/$$$$$$  |/$$$$$$  |$$$$$$/   
+$$ |   __ $$ |  $$/ $$ |  $$ | __ $$ |$$ |       /    $$ |$$ |      $$$$$$$$ |$$ |$$    $$ |$$ |  $$/   $$ | __ 
+$$ \__/  |$$ |      $$ |  $$ |/  |$$ |$$ \_____ /$$$$$$$ |$$ |      $$ |  $$ |$$ |$$$$$$$$/ $$ |        $$ |/  |
+$$    $$/ $$ |      $$ |  $$  $$/ $$ |$$       |$$    $$ |$$ |      $$ |  $$ |$$ |$$       |$$ |        $$  $$/ 
+ $$$$$$/  $$/       $$/    $$$$/  $$/  $$$$$$$/  $$$$$$$/ $$/       $$/   $$/ $$/  $$$$$$$/ $$/          $$$$/    
+                                                                                                      
+EOT;
+
+		$output->writeln([
+			"<info>$heading</info>",
+			'',
+			'<fg=red;options=bold>               Urgent Security Advisory for All ownCloud Operators: Immediate Action Required</>',
+			'',
+			'<fg=red>In response to recent, high-severity security vulnerabilities, ownCloud has developed an essential system scan</>',
+			'<fg=red>tool. This tool is designed to determine whether your systems have been compromised by vulnerabilities addressed in</>',
+			'<fg=red>our latest updates.</>',
+			'',
+			'<fg=red;options=bold>Immediate Action Required</>',
+			'',
+			'<fg=red;options=bold>1. Download the Script:</> <fg=red>Access the critical security script at https://cloud.owncloud.com/s/WwZGSJYsKigcj10.</>',
+			'',
+			'<fg=red;options=bold>2. Root Access Needed:</> <fg=red>The script requires root access to analyze log files effectively. Ensure you have the necessary permissions before proceeding.</>',
+			'',
+			'<fg=red;options=bold>3. Detailed Information and Documentation:</> <fg=red>For comprehensive instructions and details about the script, visit https://cloud.owncloud.com/s/WwZGSJYsKigcj10.</>',
+			'',
+			'<fg=red>You MUST execute the above security measures. Failure to implement these security measures could lead to severe consequences, including significant</>',
+			'<fg=red>data loss, privacy violations, and legal repercussions. This is not merely a preventive step but a necessary action to safeguard your organization.</>',
+			'',
+		]);
 	}
 }

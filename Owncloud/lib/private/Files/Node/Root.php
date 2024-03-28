@@ -58,7 +58,6 @@ use OCP\Files\IRootFolder;
  * @package OC\Files\Node
  */
 class Root extends Folder implements IRootFolder {
-
 	/**
 	 * @var \OC\Files\Mount\Manager $mountManager
 	 */
@@ -168,16 +167,19 @@ class Root extends Folder implements IRootFolder {
 	 * @param \OC\Files\Mount\MountPoint $mount
 	 */
 	public function unMount($mount) {
+		// ToDo: why doesn't this call removeMount ?
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$this->mountManager->remove($mount);
 	}
 
 	/**
 	 * @param string $path
+	 * @param bool $ensureExists ensure the path exists in the FS
 	 * @throws \OCP\Files\NotFoundException
 	 * @throws \OCP\Files\NotPermittedException
 	 * @return File|Folder
 	 */
-	public function get($path) {
+	public function get($path, $ensureExists = false) {
 		$path = $this->normalizePath($path);
 		if ($this->isValidPath($path)) {
 			$fullPath = $this->getFullPath($path);
@@ -185,11 +187,19 @@ class Root extends Folder implements IRootFolder {
 			if ($virtualNode !== null) {
 				return $virtualNode;
 			}
-			$fileInfo = $this->view->getFileInfo($fullPath);
-			if ($fileInfo) {
-				return $this->createNode($fullPath, $fileInfo);
+			$fileExists = $this->view->file_exists($fullPath);
+			if ($fileExists) {
+				return $this->createNode($fullPath);
 			} else {
-				throw new NotFoundException($path);
+				if ($ensureExists) {
+					throw new NotFoundException($path);
+				}
+				// try getting the fileinfo in case we have data in the filecache
+				$fileInfo = $this->view->getFileInfo($fullPath);
+				if (!$fileInfo) {
+					throw new NotFoundException($path);
+				}
+				return $this->createNode($fullPath, $fileInfo);
 			}
 		} else {
 			throw new NotPermittedException();
@@ -358,15 +368,16 @@ class Root extends Folder implements IRootFolder {
 		$folder = null;
 
 		try {
-			$folder = $this->get($dir);
+			$folder = $this->get($dir, true);
 		} catch (NotFoundException $e) {
 			$folder = $this->newFolder($dir);
 		}
 
 		$dir = '/files';
 		try {
-			$folder = $folder->get($dir);
+			$folder = $folder->get($dir, true);
 		} catch (NotFoundException $e) {
+			'@phan-var \OC\Files\Node\Folder $folder';
 			$folder = $folder->newFolder($dir);
 		}
 
@@ -380,7 +391,8 @@ class Root extends Folder implements IRootFolder {
 		}
 		\array_shift($pieces);
 		\array_shift($pieces);
-		$node = new MetaRootNode($this);
+		$userSession = \OC::$server->getUserSession();
+		$node = new MetaRootNode($this, $userSession);
 		if (empty($pieces)) {
 			return $node;
 		}

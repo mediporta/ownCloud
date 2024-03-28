@@ -236,19 +236,36 @@
 
 			if (xhr.status === 200) {
 				var securityHeaders = {
-					'X-XSS-Protection': '1; mode=block',
+					'X-XSS-Protection': '0',
 					'X-Content-Type-Options': 'nosniff',
-					'X-Robots-Tag': 'none',
+					'X-Robots-Tag': ['none', 'noindex', 'nofollow'],
 					'X-Frame-Options': 'SAMEORIGIN',
 					'X-Download-Options': 'noopen',
 					'X-Permitted-Cross-Domain-Policies': 'none',
 				};
 
 				for (var header in securityHeaders) {
-					if(!xhr.getResponseHeader(header) || xhr.getResponseHeader(header).toLowerCase() !== securityHeaders[header].toLowerCase()) {
+					if (header === 'X-Robots-Tag') {
+						xRobotsTagValues = [];
+						if (xhr.getResponseHeader(header)) {
+							xRobotsTagValues = xhr.getResponseHeader(header).split(',').map(function(item) {
+								return item.trim();
+							});
+						}
+
+						var hasNoneDirective = xRobotsTagValues.indexOf('none') !== -1;
+						var hasNoIndexAndNoFollowDirectives = xRobotsTagValues.indexOf('noindex') !== -1 && xRobotsTagValues.indexOf('nofollow') !== -1;
+
+						if (!hasNoneDirective && !hasNoIndexAndNoFollowDirectives) {
+							messages.push({
+								msg: t('core', 'The "{header}" HTTP header is misconfigured. Expected values are "none" or "noindex, nofollow". This is a potential security or privacy risk and we recommend adjusting this setting.', {header: header}),
+								type: OC.SetupChecks.MESSAGE_TYPE_WARNING
+							});
+						}
+					} else if (!xhr.getResponseHeader(header) || xhr.getResponseHeader(header).toLowerCase() !== securityHeaders[header].toLowerCase()) {
 						messages.push({
-							msg: t('core', 'The "{header}" HTTP header is not configured to equal to "{expected}". This is a potential security or privacy risk and we recommend adjusting this setting.', {header: header, expected: securityHeaders[header]}),
-							type: OC.SetupChecks.MESSAGE_TYPE_WARNING
+						    msg: t('core', 'The "{header}" HTTP header is not configured to equal to "{expected}". This is a potential security or privacy risk and we recommend adjusting this setting.', {header: header, expected: securityHeaders[header]}),
+						    type: OC.SetupChecks.MESSAGE_TYPE_WARNING
 						});
 					}
 				}
@@ -272,6 +289,11 @@
 			var messages = [];
 
 			if (xhr.status === 200) {
+				var docPlaceholderUrl = '';
+				if (oc_defaults && oc_defaults.docPlaceholderUrl) {
+					docPlaceholderUrl = oc_defaults.docPlaceholderUrl;
+				}
+
 				if(OC.getProtocol() === 'https') {
 					// Extract the value of 'Strict-Transport-Security'
 					var transportSecurityValidity = xhr.getResponseHeader('Strict-Transport-Security');
@@ -283,17 +305,20 @@
 							transportSecurityValidity = transportSecurityValidity.substring(8);
 						}
 					}
-
 					var minimumSeconds = 15552000;
 					if(isNaN(transportSecurityValidity) || transportSecurityValidity <= (minimumSeconds - 1)) {
 						messages.push({
-							msg: t('core', 'The "Strict-Transport-Security" HTTP header is not configured to at least "{seconds}" seconds. For enhanced security we recommend enabling HSTS as described in our <a href="{docUrl}" rel="noreferrer">security tips</a>.', {'seconds': minimumSeconds, docUrl: '#admin-tips'}),
+							msg: t('core',
+								'The "Strict-Transport-Security" HTTP header is not configured to at least "{seconds}" seconds. For enhanced security we recommend enabling HSTS as described in our <a href="{docUrl}" rel="noreferrer">security tips</a>.',
+								{'seconds': minimumSeconds, docUrl: docPlaceholderUrl.replace('PLACEHOLDER', 'enable-http-strict-transport-security')}),
 							type: OC.SetupChecks.MESSAGE_TYPE_WARNING
 						});
 					}
 				} else {
 					messages.push({
-						msg: t('core', 'You are accessing this site via HTTP. We strongly suggest you configure your server to require using HTTPS instead as described in our <a href="{docUrl}">security tips</a>.', {docUrl: '#admin-tips'}),
+						msg: t('core',
+							'You are accessing this site via HTTP. We strongly suggest you configure your server to require using HTTPS instead as described in our <a href="{docUrl}">security tips</a>.',
+							{docUrl: docPlaceholderUrl.replace('PLACEHOLDER', 'use-https')}),
 						type: OC.SetupChecks.MESSAGE_TYPE_WARNING
 					});
 				}

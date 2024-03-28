@@ -53,7 +53,7 @@ class SetDefaultModule extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$moduleId = $input->getArgument('module');
 
 		if ($moduleId === $this->encryptionManager->getDefaultEncryptionModuleId()) {
@@ -62,6 +62,8 @@ class SetDefaultModule extends Command {
 			$output->writeln('<info>Set default module to "' . $moduleId . '"</info>');
 		} else {
 			$output->writeln('<error>The specified module "' . $moduleId . '" does not exist</error>');
+			return 1;
 		}
+		return 0;
 	}
 }

@@ -21,6 +21,7 @@
 
 namespace OCP\Share;
 
+use OC\Share\Constants;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -34,7 +35,6 @@ use OCP\Share\Exceptions\IllegalIDChangeException;
  * @since 9.0.0
  */
 interface IShare {
-
 	/**
 	 * Set the internal id of the share
 	 * It is only allowed to set the internal id of a share once.
@@ -170,7 +170,7 @@ interface IShare {
 	 * See \OCP\Constants::PERMISSION_*
 	 *
 	 * @param int $permissions
-	 * @return \OCP\Share\IShare The modified object
+	 * @return IShare The modified object
 	 * @since 9.0.0
 	 */
 	public function setPermissions($permissions);
@@ -185,6 +185,31 @@ interface IShare {
 	public function getPermissions();
 
 	/**
+	 * Create share attributes object
+	 *
+	 * @since 10.2.0
+	 * @return IAttributes;
+	 */
+	public function newAttributes();
+
+	/**
+	 * Set share attributes
+	 *
+	 * @param IAttributes $attributes
+	 * @since 10.2.0
+	 * @return IShare The modified object
+	 */
+	public function setAttributes(IAttributes $attributes);
+
+	/**
+	 * Get share attributes
+	 *
+	 * @since 10.2.0
+	 * @return IAttributes
+	 */
+	public function getAttributes();
+
+	/**
 	 * Set the expiration date
 	 *
 	 * @param \DateTime $expireDate
@@ -194,9 +219,9 @@ interface IShare {
 	public function setExpirationDate($expireDate);
 
 	/**
-	 * Get the expiration date
+	 * Get the expiration date or null if no expiration date has been set
 	 *
-	 * @return \DateTime
+	 * @return \DateTime|null
 	 * @since 9.0.0
 	 */
 	public function getExpirationDate();
@@ -247,11 +272,11 @@ interface IShare {
 	public function setPassword($password);
 
 	/**
-	 * Get the password of this share.
+	 * Get the password of this share or null if no password has been set.
 	 * If this share is obtained via a shareprovider the password is
 	 * hashed.
 	 *
-	 * @return string
+	 * @return string|null
 	 * @since 9.0.0
 	 */
 	public function getPassword();
@@ -364,7 +389,7 @@ interface IShare {
 
 	/**
 	 * @param $status
-	 * @return null
+	 * @return void
 	 * @since 10.0.10
 	 */
 	public function setShouldHashPassword($status);

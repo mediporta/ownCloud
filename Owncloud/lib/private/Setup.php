@@ -66,13 +66,14 @@ class Setup {
 	 * @param ILogger $logger
 	 * @param ISecureRandom $random
 	 */
-	public function __construct(IConfig $config,
-						 IniGetWrapper $iniWrapper,
-						 IL10N $l10n,
-						 \OC_Defaults $defaults,
-						 ILogger $logger,
-						 ISecureRandom $random
-		) {
+	public function __construct(
+		IConfig $config,
+		IniGetWrapper $iniWrapper,
+		IL10N $l10n,
+		\OC_Defaults $defaults,
+		ILogger $logger,
+		ISecureRandom $random
+	) {
 		$this->config = $config;
 		$this->iniWrapper = $iniWrapper;
 		$this->l10n = $l10n;
@@ -149,8 +150,10 @@ class Setup {
 		if ($allowAllDatabases) {
 			$configuredDatabases = \array_keys($availableDatabases);
 		} else {
-			$configuredDatabases = $this->config->getSystemValue('supportedDatabases',
-				['sqlite', 'mysql', 'pgsql']);
+			$configuredDatabases = $this->config->getSystemValue(
+				'supportedDatabases',
+				['sqlite', 'mysql', 'pgsql']
+			);
 		}
 		if (!\is_array($configuredDatabases)) {
 			throw new Exception('Supported databases are not properly configured.');
@@ -274,8 +277,13 @@ class Setup {
 
 		$class = self::$dbSetupClasses[$dbType];
 		/** @var \OC\Setup\AbstractDatabase $dbSetup */
-		$dbSetup = new $class($l, 'db_structure.xml', $this->config,
-			$this->logger, $this->random);
+		$dbSetup = new $class(
+			$l,
+			'db_structure.xml',
+			$this->config,
+			$this->logger,
+			$this->random
+		);
 		$error = \array_merge($error, $dbSetup->validate($options));
 
 		// validate the data directory
@@ -284,6 +292,21 @@ class Setup {
 			!\is_writable($dataDir)
 		) {
 			$error[] = $l->t("Can't create or write into the data directory %s", [$dataDir]);
+		}
+
+		// create the apps-external directory only during installation
+		$appsExternalDir = \OC::$SERVERROOT.'/apps-external';
+		if (!\file_exists($appsExternalDir)) {
+			@\mkdir($appsExternalDir);
+		}
+
+		// validate the apps-external directory
+		if (
+			(!\is_dir($appsExternalDir) and !\mkdir($appsExternalDir)) or
+			!\is_writable($appsExternalDir)
+		) {
+			$htmlAppsExternalDir = \htmlspecialchars_decode($appsExternalDir);
+			$error[] = $l->t("Can't create or write into the apps-external directory %s", $htmlAppsExternalDir);
 		}
 
 		if (\count($error) != 0) {
@@ -369,13 +392,41 @@ class Setup {
 			// out that this is indeed an ownCloud data directory
 			\file_put_contents($config->getSystemValue('datadirectory', \OC::$SERVERROOT.'/data').'/.ocdata', '');
 
-			// Update .htaccess files
-			Setup::updateHtaccess();
+			// check if we can write .htaccess
+			if (\is_file(self::pathToHtaccess())
+				&& \is_writable(self::pathToHtaccess())
+			) {
+				// Update .htaccess files
+				Setup::updateHtaccess();
+			}
 			Setup::protectDataDirectory();
 
 			//try to write logtimezone
 			if (\date_default_timezone_get()) {
 				$config->setSystemValue('logtimezone', \date_default_timezone_get());
+			}
+
+			// add the apps-external directory to config using apps_path
+			// add the key only if it does not exist (protect against overwriting)
+			$apps2Key = \OC::$server->getSystemConfig()->getValue('apps_paths', false);
+
+			if ($apps2Key === false) {
+				$defaultAppsPaths = [
+					'apps_paths' => [
+						[
+							"path" => \OC::$SERVERROOT . '/apps',
+							"url" => "/apps",
+							"writable" => false
+						],
+						[
+							"path" => \OC::$SERVERROOT . '/apps-external',
+							"url" => "/apps-external",
+							"writable" => true
+						]
+					]
+				];
+
+				$config->setSystemValues($defaultAppsPaths);
 			}
 
 			self::installBackgroundJobs();
@@ -385,6 +436,8 @@ class Setup {
 
 			//and we are done
 			$config->setSystemValue('installed', true);
+
+			// finished initial setup
 		}
 
 		return $error;
@@ -397,7 +450,7 @@ class Setup {
 	/**
 	 * @return string Absolute path to htaccess
 	 */
-	private function pathToHtaccess() {
+	public static function pathToHtaccess() {
 		return \OC::$SERVERROOT.'/.htaccess';
 	}
 
@@ -406,6 +459,7 @@ class Setup {
 	 */
 	public static function updateHtaccess() {
 		$config = \OC::$server->getConfig();
+		$il10n = \OC::$server->getL10N('lib');
 
 		// For CLI read the value from overwrite.cli.url
 		if (\OC::$CLI) {
@@ -419,11 +473,13 @@ class Setup {
 			$webRoot = !empty(\OC::$WEBROOT) ? \OC::$WEBROOT : '/';
 		}
 
-		$setupHelper = new \OC\Setup($config, \OC::$server->getIniWrapper(),
-			\OC::$server->getL10N('lib'), new \OC_Defaults(), \OC::$server->getLogger(),
-			\OC::$server->getSecureRandom());
-
-		$htaccessContent = \file_get_contents($setupHelper->pathToHtaccess());
+		$htaccessPath = self::pathToHtaccess();
+		if (\is_dir($htaccessPath)) {
+			throw new \Exception(
+				$il10n->t("Can't update %s - it is a directory", [$htaccessPath])
+			);
+		}
+		$htaccessContent = \file_get_contents($htaccessPath);
 		$content = "#### DO NOT CHANGE ANYTHING ABOVE THIS LINE ####\n";
 		$htaccessContent = \explode($content, $htaccessContent, 2)[0];
 
@@ -436,22 +492,31 @@ class Setup {
 		// Add rewrite rules if the RewriteBase is configured
 		$rewriteBase = $config->getSystemValue('htaccess.RewriteBase', '');
 		if ($rewriteBase !== '') {
+			// Make sure we don't add double slashes
+			$rewriteBaseRe = \preg_quote(\trim($rewriteBase, '/'));
+			if (\strlen($rewriteBaseRe) > 0) {
+				$rewriteBaseRe = '/' . $rewriteBaseRe;
+			}
 			$content .= "\n<IfModule mod_rewrite.c>";
 			$content .= "\n  Options -MultiViews";
+			$content .= "\n  RewriteRule ^favicon.ico$ core/img/favicon.ico [L]";
 			$content .= "\n  RewriteRule ^core/js/oc.js$ index.php [PT,E=PATH_INFO:$1]";
 			$content .= "\n  RewriteRule ^core/preview.png$ index.php [PT,E=PATH_INFO:$1]";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !\\.(css|js|svg|gif|png|html|ttf|woff|ico|jpg|jpeg)$";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !core/img/favicon.ico$";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/remote.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/public.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/cron.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/core/ajax/update.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/status.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/ocs/v1.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/ocs/v2.php";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/updater/";
-			$content .= "\n  RewriteCond %{REQUEST_FILENAME} !/ocs-provider/";
-			$content .= "\n  RewriteCond %{REQUEST_URI} !^/.well-known/(acme-challenge|pki-validation)/.*";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !\\.(css|js|svg|gif|png|html|ttf|woff|ico|jpg|jpeg|json|properties)$";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !\\.(min|js|auto)\\.map$";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/core/img/favicon\\.ico$";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/robots\\.txt$";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/remote\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/public\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/cron\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/core/ajax/update\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/status\\.php$";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/ocs/v1\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/ocs/v2\\.php";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/updater/";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/ocs-provider/";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/ocm-provider/";
+			$content .= "\n  RewriteCond %{REQUEST_URI} !^$rewriteBaseRe/\\.well-known/(acme-challenge|pki-validation)/.*";
 			$content .= "\n  RewriteRule . index.php [PT,E=PATH_INFO:$1]";
 			$content .= "\n  RewriteBase " . $rewriteBase;
 			$content .= "\n  <IfModule mod_env.c>";
@@ -464,8 +529,15 @@ class Setup {
 		}
 
 		if ($content !== '') {
-			//suppress errors in case we don't have permissions for it
-			@\file_put_contents($setupHelper->pathToHtaccess(), $htaccessContent.$content . "\n");
+			$fileWriteResult = @\file_put_contents(
+				$htaccessPath,
+				$htaccessContent . $content . "\n"
+			);
+			if ($fileWriteResult === false) {
+				throw new \Exception(
+					$il10n->t("Can't update %s", [$htaccessPath])
+				);
+			}
 		}
 	}
 

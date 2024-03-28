@@ -25,8 +25,8 @@ namespace OC\Core\Command\Integrity;
 use OC\IntegrityCheck\Checker;
 use OC\IntegrityCheck\Helpers\FileAccessHelper;
 use OCP\IURLGenerator;
-use phpseclib\Crypt\RSA;
-use phpseclib\File\X509;
+use phpseclib3\Crypt\RSA;
+use phpseclib3\File\X509;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -50,9 +50,11 @@ class SignApp extends Command {
 	 * @param FileAccessHelper $fileAccessHelper
 	 * @param IURLGenerator $urlGenerator
 	 */
-	public function __construct(Checker $checker,
-								FileAccessHelper $fileAccessHelper,
-								IURLGenerator $urlGenerator) {
+	public function __construct(
+		Checker $checker,
+		FileAccessHelper $fileAccessHelper,
+		IURLGenerator $urlGenerator
+	) {
 		parent::__construct(null);
 		$this->checker = $checker;
 		$this->fileAccessHelper = $fileAccessHelper;
@@ -71,7 +73,7 @@ class SignApp extends Command {
 	/**
 	 * {@inheritdoc }
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$path = $input->getOption('path');
 		$privateKeyPath = $input->getOption('privateKey');
 		$keyBundlePath = $input->getOption('certificate');
@@ -80,29 +82,30 @@ class SignApp extends Command {
 			$output->writeln('This command requires the --path, --privateKey and --certificate.');
 			$output->writeln('Example: ./occ integrity:sign-app --path="/Users/lukasreschke/Programming/myapp/" --privateKey="/Users/lukasreschke/private/myapp.key" --certificate="/Users/lukasreschke/public/mycert.crt"');
 			$output->writeln('For more information please consult the documentation: '. $documentationUrl);
-			return null;
+			return 1;
 		}
 
 		$privateKey = $this->fileAccessHelper->file_get_contents($privateKeyPath);
 		$keyBundle = $this->fileAccessHelper->file_get_contents($keyBundlePath);
 
 		if ($privateKey === false) {
-			$output->writeln(\sprintf('Private key "%s" does not exists.', $privateKeyPath));
-			return null;
+			$output->writeln(\sprintf('Private key "%s" does not exist.', $privateKeyPath));
+			return 1;
 		}
 
 		if ($keyBundle === false) {
-			$output->writeln(\sprintf('Certificate "%s" does not exists.', $keyBundlePath));
-			return null;
+			$output->writeln(\sprintf('Certificate "%s" does not exist.', $keyBundlePath));
+			return 1;
 		}
 
-		$rsa = new RSA();
-		$rsa->loadKey($privateKey);
+		/** @var RSA $rsa */
+		/** @phan-suppress-next-line PhanUndeclaredMethod */
+		$rsa = RSA::load($privateKey)->withHash('sha1');
 		$x509 = new X509();
-		$x509->loadX509($keyBundle);
-		$x509->setPrivateKey($rsa);
+		$certificate = $x509->loadX509($keyBundle);
+
 		try {
-			$this->checker->writeAppSignature($path, $x509, $rsa);
+			$this->checker->writeAppSignature($path, $certificate, $x509, $rsa);
 			$output->writeln('Successfully signed "'.$path.'"');
 		} catch (\Exception $e) {
 			$output->writeln('Error: ' . $e->getMessage());

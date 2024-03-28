@@ -38,11 +38,14 @@ class Capabilities implements ICapability {
 	}
 
 	public function getCapabilities() {
-		$cap =  [
+		$cap = [
 			'dav' => [
 				'chunking' => '1.0',
 				'reports' => [
 					'search-files',
+				],
+				'propfind' => [
+					'depth_infinity' => $this->config->getSystemValue('dav.propfind.depth_infinity', false),
 				]
 			]
 		];
@@ -50,6 +53,8 @@ class Capabilities implements ICapability {
 		if ($this->config->getSystemValue('dav.enable.async', false)) {
 			$cap['async'] = '1.0';
 		}
+
+		$cap['dav']['trashbin'] = '1.0';
 
 		return $cap;
 	}

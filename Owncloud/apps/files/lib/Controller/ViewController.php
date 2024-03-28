@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use OCP\AppFramework\Http;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Class ViewController
@@ -82,15 +83,16 @@ class ViewController extends Controller {
 	 * @param IAppManager $appManager
 	 * @param Folder $rootFolder
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IURLGenerator $urlGenerator,
-								IL10N $l10n,
-								IConfig $config,
-								EventDispatcherInterface $eventDispatcherInterface,
-								IUserSession $userSession,
-								IAppManager $appManager,
-								Folder $rootFolder
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IURLGenerator $urlGenerator,
+		IL10N $l10n,
+		IConfig $config,
+		EventDispatcherInterface $eventDispatcherInterface,
+		IUserSession $userSession,
+		IAppManager $appManager,
+		Folder $rootFolder
 	) {
 		parent::__construct($appName, $request);
 		$this->appName = $appName;
@@ -113,7 +115,7 @@ class ViewController extends Controller {
 		$content = '';
 		$appPath = \OC_App::getAppPath($appName);
 		$scriptPath = $appPath . '/' . $scriptName;
-		if (\file_exists($scriptPath)) {
+		if ($appPath !== false && \file_exists($scriptPath)) {
 			// TODO: sanitize path / script name ?
 			\ob_start();
 			include $scriptPath;
@@ -173,17 +175,20 @@ class ViewController extends Controller {
 		\OCP\Util::addScript('files', 'favoritesfilelist');
 		\OCP\Util::addScript('files', 'tagsplugin');
 		\OCP\Util::addScript('files', 'favoritesplugin');
+		\OCP\Util::addScript('files', 'filelockplugin');
 
 		\OCP\Util::addScript('files', 'detailfileinfoview');
 		\OCP\Util::addScript('files', 'detailtabview');
 		\OCP\Util::addScript('files', 'mainfileinfodetailview');
 		\OCP\Util::addScript('files', 'detailsview');
 		\OCP\Util::addStyle('files', 'detailsView');
+		\OCP\Util::addScript('files', 'locktabview');
 
 		\OC_Util::addVendorScript('core', 'handlebars/handlebars');
 
 		\OCP\Util::addScript('files', 'fileactions');
 		\OCP\Util::addScript('files', 'fileactionsmenu');
+		\OCP\Util::addScript('files', 'fileactionsapplicationselectmenu');
 		\OCP\Util::addScript('files', 'files');
 		\OCP\Util::addScript('files', 'keyboardshortcuts');
 		\OCP\Util::addScript('files', 'navigation');
@@ -216,7 +221,9 @@ class ViewController extends Controller {
 
 		$user = $this->userSession->getUser()->getUID();
 
-		$navItems = \OCA\Files\App::getNavigationManager()->getAll();
+		$navigationManager = \OCA\Files\App::getNavigationManager();
+		'@phan-var \OC\NavigationManager $navigationManager';
+		$navItems = $navigationManager->getAll();
 		\usort($navItems, function ($item1, $item2) {
 			return $item1['order'] - $item2['order'];
 		});
@@ -237,7 +244,7 @@ class ViewController extends Controller {
 			$contentItems[] = $contentItem;
 		}
 
-		$this->eventDispatcher->dispatch('OCA\Files::loadAdditionalScripts');
+		$this->eventDispatcher->dispatch(new Event(), 'OCA\Files::loadAdditionalScripts');
 
 		$params = [];
 		$params['usedSpacePercent'] = (int)$storageInfo['relative'];
@@ -281,6 +288,7 @@ class ViewController extends Controller {
 	public function showFile($fileId, $details = null) {
 		$uid = $this->userSession->getUser()->getUID();
 		$baseFolder = $this->rootFolder->get($uid . '/files/');
+		'@phan-var \OCP\Files\Folder $baseFolder';
 		$files = $baseFolder->getById($fileId);
 		$params = [];
 
@@ -293,7 +301,7 @@ class ViewController extends Controller {
 				'resolvedWebLink' => null,
 				'resolvedDavLink' => null,
 			]);
-			$this->eventDispatcher->dispatch('files.resolvePrivateLink', $event);
+			$this->eventDispatcher->dispatch($event, 'files.resolvePrivateLink');
 
 			$webUrl = $event->getArgument('resolvedWebLink');
 			$webdavUrl = $event->getArgument('resolvedDavLink');

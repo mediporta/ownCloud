@@ -21,9 +21,8 @@
 
 namespace OC\Files\External;
 
-use phpseclib\Crypt\AES;
+use phpseclib3\Crypt\AES;
 use \OCP\Files\External\IStorageConfig;
-use \OCP\Files\External\Backend\Backend;
 use \OCP\Files\StorageNotAvailableException;
 
 /**
@@ -34,10 +33,10 @@ use \OCP\Files\StorageNotAvailableException;
  * to the public ones.
  */
 class LegacyUtil {
-	const MOUNT_TYPE_GLOBAL = 'global';
-	const MOUNT_TYPE_GROUP = 'group';
-	const MOUNT_TYPE_USER = 'user';
-	const MOUNT_TYPE_PERSONAL = 'personal';
+	public const MOUNT_TYPE_GLOBAL = 'global';
+	public const MOUNT_TYPE_GROUP = 'group';
+	public const MOUNT_TYPE_USER = 'user';
+	public const MOUNT_TYPE_PERSONAL = 'personal';
 
 	// whether to skip backend test (for unit tests, as this static class is not mockable)
 	public static $skipTest = false;
@@ -55,7 +54,9 @@ class LegacyUtil {
 		$mountPoints = [];
 
 		$userGlobalStoragesService = \OC::$server->getUserGlobalStoragesService();
+		'@phan-var \OC\Files\External\Service\UserGlobalStoragesService $userGlobalStoragesService';
 		$userStoragesService = \OC::$server->getUserStoragesService();
+		'@phan-var \OC\Files\External\Service\UserStoragesService $userStoragesService';
 		$user = \OC::$server->getUserManager()->get($uid);
 
 		$userGlobalStoragesService->setUser($user);
@@ -307,7 +308,7 @@ class LegacyUtil {
 	 * @return AES
 	 */
 	private static function getCipher() {
-		$cipher = new AES(AES::MODE_CBC);
+		$cipher = new AES('cbc');
 		$cipher->setKey(\OC::$server->getConfig()->getSystemValue('passwordsalt', null));
 		return $cipher;
 	}

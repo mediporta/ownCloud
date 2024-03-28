@@ -34,7 +34,6 @@ use OCP\Migration\IRepairStep;
  * @package OC\Repair
  */
 class RemoveRootShares implements IRepairStep {
-
 	/** @var IDBConnection */
 	protected $connection;
 
@@ -51,9 +50,11 @@ class RemoveRootShares implements IRepairStep {
 	 * @param IUserManager $userManager
 	 * @param IRootFolder $rootFolder
 	 */
-	public function __construct(IDBConnection $connection,
-								IUserManager $userManager,
-								IRootFolder $rootFolder) {
+	public function __construct(
+		IDBConnection $connection,
+		IUserManager $userManager,
+		IRootFolder $rootFolder
+	) {
 		$this->connection = $connection;
 		$this->userManager = $userManager;
 		$this->rootFolder = $rootFolder;

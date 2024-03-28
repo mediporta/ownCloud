@@ -68,17 +68,6 @@
 	top: 44px;
 }
 
-/* make sure there's enough room for the file actions */
-#body-user #filestable {
-	min-width: 688px;
-	/* 768 (mobile break) - 80 (nav width) */
-}
-
-#body-user #controls {
-	min-width: 688px;
-	/* 768 (mobile break) - 80 (nav width) */
-}
-
 #filestable tbody tr {
 	background-color: #fff;
 	height: 51px;
@@ -389,6 +378,7 @@ table td.upload {
 table td.filename .nametext {
 	float: left;
 	padding: 15px 0;
+	text-overflow: ellipsis;
 }
 
 .column-last > span:first-child,
@@ -405,7 +395,6 @@ table td.filename .nametext {
 	left: 55px;
 	padding: 0;
 	overflow: hidden;
-	text-overflow: ellipsis;
 	max-width: 800px;
 	height: 100%;
 }
@@ -437,6 +426,7 @@ table td.filename .nametext .innernametext {
 	position: relative;
 	display: inline-block;
 	vertical-align: top;
+	white-space: pre;
 }
 
 @media only screen and (min-width: 1500px) {
@@ -497,8 +487,8 @@ table td.filename .nametext .innernametext {
 /* for smaller resolutions - see mobile.css */
 
 table td.filename .uploadtext {
+	position: absolute;
 	font-weight: normal;
-	margin-left: 55px;
 	margin-top: 5px;
 	height: 20px;
 	padding: 10px 0;
@@ -512,7 +502,7 @@ table td.filename .uploadtext {
 }
 
 /* File checkboxes */
-html:not(.ie8) #fileList tr td.filename > .selectCheckBox + label:before {
+#fileList tr td.filename > .selectCheckBox + label:before {
 	opacity: 0;
 	position: absolute;
 	bottom: 4px;
@@ -520,13 +510,21 @@ html:not(.ie8) #fileList tr td.filename > .selectCheckBox + label:before {
 	z-index: 10;
 }
 
-html.ie8 #fileList tr td.filename > .selectCheckBox {
-	filter: alpha(opacity=0);
-	opacity: 0;
-	float: left;
-	top: 0;
-	margin: 32px 0 4px 32px;
-	/* bigger clickable area doesn’t work in FF width:2.8em; height:2.4em;*/
+#fileList tr:not(:hover):not(.selected) td.filename .thumbnail.sharetree-item:after {
+	position: absolute;
+	display: block;
+	content: '';
+	bottom: 0px;
+	right: -5px;
+	z-index: 10;
+	background-image: url(../../../core/img/actions/shared.svg);
+	width: 14px;
+	height: 14px;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 10px;
+	background-color: #bfbfbf;
+	border-radius: 50%;
 }
 
 /* Show checkbox when hovering, checked, or selected */
@@ -686,6 +684,9 @@ a.action > img {
 	padding-right: 15px;
 }
 
+.selectedActions a.delete-selected.mobile.button,
+.selectedActions a.download.mobile.button,
+.selectedActions a.undelete.mobile.button,
 .selectedActions a.hidden {
 	display: none;
 }
@@ -718,7 +719,7 @@ html.ie8 .column-mtime .selectedActions {
 }
 
 #fileList .filesize {
-	padding: 0 15px 0 60px;
+	padding: 0 15px 0 40px;
 }
 
 #fileList .popovermenu {
@@ -880,15 +881,21 @@ html.ie8 #controls .button.new {
 }
 
 .newFileMenu {
-	width: 140px;
+	min-width: 140px;
 	margin-left: -56px;
 	margin-top: 25px;
 	z-index: 1001;
+	right: initial;
 }
 
 .newFileMenu .menuitem {
 	white-space: nowrap;
 	overflow: hidden;
+	display: flex;
+}
+
+.newFileMenu .menuitem .icon{
+	margin-top: 7px;
 }
 
 .newFileMenu.popovermenu .menuitem,
@@ -913,12 +920,8 @@ html.ie8 #controls .button.new {
 	right: auto;
 }
 
-.newFileMenu .filenameform {
-	display: inline-block;
-}
-
-.newFileMenu .filenameform input {
-	width: 100px;
+.newFileMenu .action-menu button {
+	font-size: 11px;
 }
 
 #fileList .popovermenu .action {
@@ -966,6 +969,7 @@ html.ie8 #controls .button.new {
 #app-content-sharingout table td.filename .nametext {
 	position: static;
 	left: inherit;
+	min-width: 50px;
 }
 
 #app-content-files.has-favorites #fileList td.filename a.name,
@@ -982,4 +986,14 @@ html.ie8 #controls .button.new {
 #app-content-sharingout .fileactions {
 	position: inherit;
 	right: inherit;
+}
+
+.fileActionsApplicationSelectMenu.bubble{
+	right: initial;
+	left: 45px !important;
+}
+
+.fileActionsApplicationSelectMenu.bubble:after{
+	right: initial;
+	left: 15px !important;
 }

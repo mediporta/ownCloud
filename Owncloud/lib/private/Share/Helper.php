@@ -31,7 +31,6 @@ namespace OC\Share;
 use OC\HintException;
 
 class Helper extends \OC\Share\Constants {
-
 	/**
 	 * Generate a unique target for the item
 	 * @param string $itemType
@@ -77,7 +76,7 @@ class Helper extends \OC\Share\Constants {
 	 * @param int $parent Id of item to delete
 	 * @param bool $excludeParent If true, exclude the parent from the delete (optional)
 	 * @param string $uidOwner The user that the parent was shared with (optional)
-	 * @param int $newParent new parent for the childrens
+	 * @param int $newParent new parent for the children
 	 * @param bool $excludeGroupChildren exclude group children elements
 	 * @return array of deleted items
 	 */
@@ -246,7 +245,7 @@ class Helper extends \OC\Share\Constants {
 	 */
 	public static function splitUserRemote($id) {
 		if (\strpos($id, '@') === false) {
-			$l = \OC::$server->getL10N('core');
+			$l = \OC::$server->getL10N('lib');
 			$hint = $l->t('Invalid Federated Cloud ID');
 			throw new HintException('Invalid Federated Cloud ID', $hint);
 		}
@@ -282,9 +281,9 @@ class Helper extends \OC\Share\Constants {
 			}
 		}
 
-		$l = \OC::$server->getL10N('core');
+		$l = \OC::$server->getL10N('lib');
 		$hint = $l->t('Invalid Federated Cloud ID');
-		throw new HintException('Invalid Fededrated Cloud ID', $hint);
+		throw new HintException('Invalid Federated Cloud ID', $hint);
 	}
 
 	/**
@@ -302,15 +301,19 @@ class Helper extends \OC\Share\Constants {
 
 		if (\rtrim($normalizedServer1, '/') === \rtrim($normalizedServer2, '/')) {
 			// FIXME this should be a method in the user management instead
+			$user1Handled = false;
+			$user2Handled = false;
+			// the $user1Handled and $user2Handled vars will be sent as reference so the listeners
+			// can use it as a flag in order to know if the event has been processed already or not.
 			\OCP\Util::emitHook(
-					'\OCA\Files_Sharing\API\Server2Server',
-					'preLoginNameUsedAsUserName',
-					['uid' => &$user1]
+				'\OCA\Files_Sharing\API\Server2Server',
+				'preLoginNameUsedAsUserName',
+				['uid' => &$user1, 'hasBeenHandled' => &$user1Handled]
 			);
 			\OCP\Util::emitHook(
-					'\OCA\Files_Sharing\API\Server2Server',
-					'preLoginNameUsedAsUserName',
-					['uid' => &$user2]
+				'\OCA\Files_Sharing\API\Server2Server',
+				'preLoginNameUsedAsUserName',
+				['uid' => &$user2, 'hasBeenHandled' => &$user2Handled]
 			);
 
 			if ($user1 === $user2) {

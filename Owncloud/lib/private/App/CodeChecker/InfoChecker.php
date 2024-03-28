@@ -24,11 +24,14 @@ namespace OC\App\CodeChecker;
 
 use OC\App\InfoParser;
 use OC\Hooks\BasicEmitter;
+use OCP\App\IAppManager;
 
 class InfoChecker extends BasicEmitter {
-
 	/** @var InfoParser */
 	private $infoParser;
+
+	/** @var IAppManager */
+	private $appManager;
 
 	private $mandatoryFields = [
 		'author',
@@ -45,7 +48,6 @@ class InfoChecker extends BasicEmitter {
 		'dependencies', // TODO: Mandatory as of ownCloud 11
 		'documentation',
 		'namespace',
-		'ocsid',
 		'public',
 		'remote',
 		'repository',
@@ -57,12 +59,14 @@ class InfoChecker extends BasicEmitter {
 		'require',
 		'requiremax',
 		'requiremin',
+		'ocsid',
 		'shipped',
 		'standalone',
 	];
 
-	public function __construct(InfoParser $infoParser) {
+	public function __construct(InfoParser $infoParser, IAppManager $appManager) {
 		$this->infoParser = $infoParser;
+		$this->appManager = $appManager;
 	}
 
 	/**
@@ -70,14 +74,24 @@ class InfoChecker extends BasicEmitter {
 	 * @return array
 	 */
 	public function analyse($appId) {
-		$appPath = \OC_App::getAppPath($appId);
+		$appPath = $this->appManager->getAppPath($appId);
 		if ($appPath === false) {
 			throw new \RuntimeException("No app with given id <$appId> known.");
 		}
 
 		$errors = [];
 
-		$info = $this->infoParser->parse($appPath . '/appinfo/info.xml');
+		try {
+			$info = $this->infoParser->parse($appPath . '/appinfo/info.xml');
+		} catch (\Exception $e) {
+			$this->emit('InfoChecker', 'invalidAppInfo', [$appId]);
+			return [
+				[
+					'type' => 'invalidAppInfo',
+					'message' => "App <$appId> has invalid XML in appinfo.xml",
+				]
+			];
+		}
 
 		if (isset($info['dependencies']['owncloud']['@attributes']['min-version']) && ($info['requiremin'] || $info['require'])) {
 			$this->emit('InfoChecker', 'duplicateRequirement', ['min']);
@@ -140,8 +154,11 @@ class InfoChecker extends BasicEmitter {
 			$version = \trim(\file_get_contents($versionFile));
 			if (isset($info['version'])) {
 				if ($info['version'] !== $version) {
-					$this->emit('InfoChecker', 'differentVersions',
-						[$version, $info['version']]);
+					$this->emit(
+						'InfoChecker',
+						'differentVersions',
+						[$version, $info['version']]
+					);
 					$errors[] = [
 						'type' => 'differentVersions',
 						'message' => 'appinfo/version: ' . $version .

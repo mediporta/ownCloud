@@ -109,7 +109,7 @@ class Version<version> implements ISqlMigration {
 		parent::configure();
 	}
 
-	public function execute(InputInterface $input, OutputInterface $output) {
+	public function execute(InputInterface $input, OutputInterface $output): int {
 		$appName = $input->getArgument('app');
 		$ms = new MigrationService($appName, $this->connection, new ConsoleOutput($output));
 
@@ -118,6 +118,7 @@ class Version<version> implements ISqlMigration {
 		$path = $this->generateMigration($ms, $version, $kind);
 
 		$output->writeln("New migration class has been generated to <info>$path</info>");
+		return 0;
 	}
 
 	/**

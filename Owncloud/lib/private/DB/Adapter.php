@@ -35,7 +35,6 @@ use Doctrine\DBAL\Platforms\OraclePlatform;
  * handled by the database abstraction layer.
  */
 class Adapter {
-
 	/**
 	 * @var \OC\DB\Connection $conn
 	 */
@@ -82,7 +81,7 @@ class Adapter {
 	}
 
 	/**
-	 * Insert a row if the matching row does not exists.
+	 * Insert a row if the matching row does not exist.
 	 *
 	 * @param string $table The table name (will replace *PREFIX* with the actual prefix)
 	 * @param array $input data that should be inserted into the table  (column name => value)
@@ -147,13 +146,17 @@ class Adapter {
 					$qbu->andWhere(
 						$qbu->expr()->eq(
 							// needs to cast to char in order to compare with char
-							$qbu->createFunction('to_char(`'.$key.'`)'), // TODO does this handle empty strings on oracle correclty
-							$qbu->expr()->literal($input[$key])));
+							$qbu->createFunction('to_char(`'.$key.'`)'), // TODO does this handle empty strings on oracle correctly
+							$qbu->expr()->literal($input[$key])
+						)
+					);
 				} else {
 					$qbu->andWhere(
 						$qbu->expr()->eq(
 							$key,
-							$qbu->expr()->literal($input[$key])));
+							$qbu->expr()->literal($input[$key])
+						)
+					);
 				}
 			}
 		}

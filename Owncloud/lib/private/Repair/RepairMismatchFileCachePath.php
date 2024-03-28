@@ -35,7 +35,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
  * Repairs file cache entry which path do not match the parent-child relationship
  */
 class RepairMismatchFileCachePath implements IRepairStep {
-	const CHUNK_SIZE = 10000;
+	public const CHUNK_SIZE = 10000;
 
 	/** @var IDBConnection */
 	protected $connection;
@@ -64,10 +64,12 @@ class RepairMismatchFileCachePath implements IRepairStep {
 	/**
 	 * @param \OCP\IDBConnection $connection
 	 */
-	public function __construct(IDBConnection $connection,
-								IMimeTypeLoader $mimeLoader,
-								ILogger $logger,
-								IConfig $config) {
+	public function __construct(
+		IDBConnection $connection,
+		IMimeTypeLoader $mimeLoader,
+		ILogger $logger,
+		IConfig $config
+	) {
 		$this->connection = $connection;
 		$this->mimeLoader = $mimeLoader;
 		$this->logger = $logger;
@@ -108,7 +110,6 @@ class RepairMismatchFileCachePath implements IRepairStep {
 	 * @param string $wrongPath wrong path of the entry to fix
 	 * @param int $correctStorageNumericId numeric idea of the correct storage
 	 * @param string $correctPath value to which to set the path of the entry
-	 * @return bool true for success
 	 */
 	private function fixEntryPath(IOutput $out, $fileId, $wrongPath, $correctStorageNumericId, $correctPath) {
 		// delete target if exists
@@ -206,10 +207,10 @@ class RepairMismatchFileCachePath implements IRepairStep {
 		}
 	}
 
-	private function countResultsToProcessParentIdWrongPath($storageNumericId = null) {
+	private function countResultsToProcessParentIdWrongPath() {
 		$qb = $this->connection->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*)'));
-		$this->addQueryConditionsParentIdWrongPath($qb, $storageNumericId);
+		$this->addQueryConditionsParentIdWrongPath($qb);
 		$results = $qb->execute();
 		$count = $results->fetchColumn(0);
 		$results->closeCursor();
@@ -243,9 +244,10 @@ class RepairMismatchFileCachePath implements IRepairStep {
 
 		$storageIds = [];
 		foreach ($rows as $row) {
-			$storageIds[] = $row['storage'];
+			$storageIds[$row['storage']] = true;
 		}
 
+		$storageIds = \array_keys($storageIds);
 		if (!empty($storageIds)) {
 			$out->warning('The file cache contains entries with invalid path values for the following storage numeric ids: ' . \implode(' ', $storageIds));
 			$out->warning('Please run `occ files:scan --all --repair` to repair'
@@ -271,9 +273,10 @@ class RepairMismatchFileCachePath implements IRepairStep {
 
 		$storageIds = [];
 		foreach ($rows as $row) {
-			$storageIds[] = $row['storage'];
+			$storageIds[$row['storage']] = true;
 		}
 
+		$storageIds = \array_keys($storageIds);
 		if (!empty($storageIds)) {
 			$out->warning('The file cache contains entries where the parent id does not point to any existing entry for the following storage numeric ids: ' . \implode(' ', $storageIds));
 			$out->warning('Please run `occ files:scan --all --repair` to repair all affected storages');
@@ -301,7 +304,7 @@ class RepairMismatchFileCachePath implements IRepairStep {
 			->selectAlias('fc.parent', 'wrongparentid')
 			->selectAlias('fcp.storage', 'parentstorage')
 			->selectAlias('fcp.path', 'parentpath');
-		$this->addQueryConditionsParentIdWrongPath($qb, $storageNumericId);
+		$this->addQueryConditionsParentIdWrongPath($qb);
 		$qb->setMaxResults(self::CHUNK_SIZE);
 
 		do {
@@ -552,11 +555,9 @@ class RepairMismatchFileCachePath implements IRepairStep {
 			$this->reportAffectedStoragesParentIdWrongPath($out);
 			$this->reportAffectedStoragesNonExistingParentIdEntry($out);
 		} else {
-			$brokenPathEntries = $this->countResultsToProcessParentIdWrongPath($this->storageNumericId);
+			$brokenPathEntries = $this->countResultsToProcessParentIdWrongPath();
 			$brokenParentIdEntries = $this->countResultsToProcessNonExistingParentIdEntry($this->storageNumericId);
 			$out->startProgress($brokenPathEntries + $brokenParentIdEntries);
-
-			$totalFixed = 0;
 
 			/*
 			 * This repair itself might overwrite existing target parent entries and create

@@ -51,13 +51,15 @@ try {
 	$userFolder = \OC::$server->getRootFolder()->getUserFolder(\OC_User::getUser());
 	/** @var \OCP\Files\Folder $trashFolder */
 	$trashFolder = $userFolder->getParent()->get('files_trashbin/files');
+	'@phan-var \OCP\Files\Folder $trashFolder';
 	/** @var \OCP\Files\File | \OCP\Files\IPreviewNode $file */
-	$file = $trashFolder->get($file);
+	$fileNode = $trashFolder->get($file);
+	'@phan-var \OCP\Files\FileInfo | \OCP\Files\IPreviewNode $fileNode';
 
-	if ($file->getType() === \OCP\Files\FileInfo::TYPE_FOLDER) {
+	if ($fileNode->getType() === \OCP\Files\FileInfo::TYPE_FOLDER) {
 		$mimetype = 'httpd/unix-directory';
 	} else {
-		$pathInfo = \pathinfo(\ltrim($file->getName(), '/'));
+		$pathInfo = \pathinfo(\ltrim($file, '/'));
 		$fileName = $pathInfo['basename'];
 		// if in root dir
 		if ($pathInfo['dirname'] === '.') {
@@ -70,7 +72,7 @@ try {
 		$mimetype = \OC::$server->getMimeTypeDetector()->detectPath($fileName);
 	}
 
-	$image = $file->getThumbnail([
+	$image = $fileNode->getThumbnail([
 		'x' => $maxX,
 		'y' => $maxY,
 		'scalingup' => $scalingUp,
@@ -80,5 +82,5 @@ try {
 	$image->show();
 } catch (\Exception $e) {
 	\OC_Response::setStatus(500);
-	\OCP\Util::writeLog('core', $e->getmessage(), \OCP\Util::DEBUG);
+	\OCP\Util::writeLog('core', $e->getmessage(), \OCP\Util::ERROR);
 }

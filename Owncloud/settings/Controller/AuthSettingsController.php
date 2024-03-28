@@ -35,7 +35,6 @@ use OCP\Security\ISecureRandom;
 use OCP\Session\Exceptions\SessionNotAvailableException;
 
 class AuthSettingsController extends Controller {
-
 	/** @var IProvider */
 	private $tokenProvider;
 
@@ -60,8 +59,15 @@ class AuthSettingsController extends Controller {
 	 * @param ISecureRandom $random
 	 * @param string $uid
 	 */
-	public function __construct($appName, IRequest $request, IProvider $tokenProvider, IUserManager $userManager,
-		ISession $session, ISecureRandom $random, $uid) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IProvider $tokenProvider,
+		IUserManager $userManager,
+		ISession $session,
+		ISecureRandom $random,
+		$uid
+	) {
 		parent::__construct($appName, $request);
 		$this->tokenProvider = $tokenProvider;
 		$this->userManager = $userManager;

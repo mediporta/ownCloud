@@ -31,7 +31,6 @@ use OCP\Settings\ISettings;
 use OCP\Template;
 
 class SecurityWarning implements ISettings {
-
 	/** @var IL10N */
 	protected $l;
 	/** @var IConfig */
@@ -43,11 +42,13 @@ class SecurityWarning implements ISettings {
 	/** @var ILockingProvider */
 	protected $lockingProvider;
 
-	public function __construct(IL10N $l,
-								IConfig $config,
-								IDBConnection $dbconnection,
-								Helper $helper,
-								ILockingProvider $lockingProvider) {
+	public function __construct(
+		IL10N $l,
+		IConfig $config,
+		IDBConnection $dbconnection,
+		Helper $helper,
+		ILockingProvider $lockingProvider
+	) {
 		$this->l = $l;
 		$this->config = $config;
 		$this->dbconnection = $dbconnection;

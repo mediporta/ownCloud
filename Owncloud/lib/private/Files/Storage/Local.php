@@ -256,7 +256,7 @@ class Local extends Common {
 		}
 
 		if (!$this->file_exists($path1)) {
-			\OCP\Util::writeLog('core', 'unable to rename, file does not exists : ' . $path1, \OCP\Util::ERROR);
+			\OCP\Util::writeLog('core', 'unable to rename, file does not exist : ' . $path1, \OCP\Util::ERROR);
 			return false;
 		}
 
@@ -305,7 +305,7 @@ class Local extends Common {
 	public function free_space($path) {
 		$sourcePath = $this->getSourcePath($path);
 		// using !is_dir because $sourcePath might be a part file or
-		// non-existing file, so we'd still want to use the parent dir
+		// nonexistent file, so we'd still want to use the parent dir
 		// in such cases
 		if (!\is_dir($sourcePath)) {
 			// disk_free_space doesn't work on files
@@ -384,7 +384,7 @@ class Local extends Common {
 		}
 		$pathToResolve = $fullPath;
 		$realPath = \realpath($pathToResolve);
-		while ($realPath === false) { // for non existing files check the parent directory
+		while (!\is_string($realPath)) { // for non existing files check the parent directory
 			$pathToResolve = \dirname($pathToResolve);
 			$realPath = \realpath($pathToResolve);
 		}
@@ -445,6 +445,7 @@ class Local extends Common {
 			 * @var \OC\Files\Storage\Local $sourceStorage
 			 */
 			$rootStorage = new Local(['datadir' => '/']);
+			'@phan-var \OC\Files\Storage\Local $sourceStorage';
 			return $rootStorage->copy($sourceStorage->getSourcePath($sourceInternalPath), $this->getSourcePath($targetInternalPath));
 		}
 

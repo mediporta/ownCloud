@@ -32,8 +32,19 @@ OCP\User::checkLoggedIn();
 $filename = $_GET["file"];
 
 if (!\OC\Files\Filesystem::file_exists($filename)) {
-	\header("HTTP/1.0 404 Not Found");
+	\http_response_code(404);
 	$tmpl = new OCP\Template('', '404', 'guest');
+	$tmpl->assign('file', $filename);
+	$tmpl->printPage();
+	exit;
+}
+
+//Dispatch an event to see if any apps have problem with download
+$event = new \Symfony\Component\EventDispatcher\GenericEvent(null, ['path' => $filename]);
+OC::$server->getEventDispatcher()->dispatch($event, 'file.beforeGetDirect');
+if ($event->hasArgument('errorMessage')) {
+	\http_response_code(403);
+	$tmpl = new OCP\Template('', '403', 'guest');
 	$tmpl->assign('file', $filename);
 	$tmpl->printPage();
 	exit;

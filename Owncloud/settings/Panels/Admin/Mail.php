@@ -22,21 +22,27 @@
 namespace OC\Settings\Panels\Admin;
 
 use OC\Settings\Panels\Helper;
+use OCP\IUserSession;
 use OCP\Settings\ISettings;
 use OCP\Template;
 use OCP\IConfig;
 
 class Mail implements ISettings {
-
 	/** @var IConfig  */
 	protected $config;
 	/** @var Helper  */
 	protected $helper;
+	/** @var IUserSession  */
+	protected $userSession;
 
-	public function __construct(IConfig $config,
-								Helper $helper) {
+	public function __construct(
+		IConfig $config,
+		Helper $helper,
+		IUserSession $userSession
+	) {
 		$this->config = $config;
 		$this->helper = $helper;
+		$this->userSession = $userSession;
 	}
 
 	public function getPriority() {
@@ -58,7 +64,7 @@ class Mail implements ISettings {
 		$template->assign('mail_smtpauthtype', $this->config->getSystemValue("mail_smtpauthtype", ''));
 		$template->assign('mail_smtpauth', $this->config->getSystemValue("mail_smtpauth", false));
 		$template->assign('mail_smtpname', $this->config->getSystemValue("mail_smtpname", ''));
-		$template->assign('mail_smtppassword', $this->config->getSystemValue("mail_smtppassword", ''));
+		$template->assign('mail_user_email', $this->userSession->getUser()->getEMailAddress());
 		return $template;
 	}
 

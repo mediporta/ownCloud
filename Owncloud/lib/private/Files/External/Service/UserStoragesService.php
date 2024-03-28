@@ -34,6 +34,7 @@ use OCP\Files\External\IStorageConfig;
 use OCP\Files\External\NotFoundException;
 use OCP\Files\External\IStoragesBackendService;
 use OCP\Files\External\Service\IUserStoragesService;
+use OCP\Security\ICrypto;
 
 /**
  * Service class to manage user external storages
@@ -54,11 +55,12 @@ class UserStoragesService extends StoragesService implements IUserStoragesServic
 		IStoragesBackendService $backendService,
 		DBConfigService $dbConfig,
 		IUserSession $userSession,
-		IUserMountCache $userMountCache
+		IUserMountCache $userMountCache,
+		ICrypto $crypto
 	) {
 		$this->userSession = $userSession;
 		$this->userMountCache = $userMountCache;
-		parent::__construct($backendService, $dbConfig, $userMountCache);
+		parent::__construct($backendService, $dbConfig, $userMountCache, $crypto);
 	}
 
 	protected function readDBConfig() {
@@ -150,6 +152,7 @@ class UserStoragesService extends StoragesService implements IUserStoragesServic
 	 */
 	public function deleteAllMountsForUser(IUser $user) {
 		$getUserMounts = $this->userMountCache->getMountsForUser($user);
+		$allMounts = $this->dbConfig->getAllMounts();
 		$result = false;
 		if (\count($getUserMounts) > 0) {
 			foreach ($getUserMounts as $userMount) {
@@ -158,6 +161,30 @@ class UserStoragesService extends StoragesService implements IUserStoragesServic
 				$result = true;
 			}
 		}
+		if (\count($allMounts)) {
+			foreach ($allMounts as $userMount) {
+				/**
+				 * Remove any mounts which are applicable to only this user
+				 * Specifically targeted to, mounts created by the user.
+				 */
+				if (\count($userMount['applicable']) === 1) {
+					foreach ($userMount['applicable'] as $applicableUser) {
+						if ($applicableUser['value'] === $user->getUID()) {
+							$this->dbConfig->removeMount($applicableUser['mount_id']);
+						}
+					}
+				}
+			}
+		}
 		return $result;
+	}
+
+	public function removeStorage($id) {
+		$mount = $this->dbConfig->getPersonalMountById($id, $this->getUser()->getUID());
+		if (!\is_array($mount)) {
+			throw new NotFoundException('Storage with id "' . $id . '" not found');
+		}
+
+		parent::removeStorage($id);
 	}
 }

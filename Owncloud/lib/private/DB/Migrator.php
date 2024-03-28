@@ -40,7 +40,6 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Migrator {
-
 	/** @var \Doctrine\DBAL\Connection $connection */
 	protected $connection;
 
@@ -62,10 +61,12 @@ class Migrator {
 	 * @param IConfig $config
 	 * @param EventDispatcher $dispatcher
 	 */
-	public function __construct(\Doctrine\DBAL\Connection $connection,
-								ISecureRandom $random,
-								IConfig $config,
-								EventDispatcher $dispatcher = null) {
+	public function __construct(
+		\Doctrine\DBAL\Connection $connection,
+		ISecureRandom $random,
+		IConfig $config,
+		EventDispatcher $dispatcher = null
+	) {
 		$this->connection = $connection;
 		$this->random = $random;
 		$this->config = $config;
@@ -241,13 +242,13 @@ class Migrator {
 		if ($this->dispatcher === null) {
 			return;
 		}
-		$this->dispatcher->dispatch('\OC\DB\Migrator::executeSql', new GenericEvent($sql, [$step+1, $max]));
+		$this->dispatcher->dispatch(new GenericEvent($sql, [$step+1, $max]), '\OC\DB\Migrator::executeSql');
 	}
 
 	private function emitCheckStep($tableName, $step, $max) {
 		if ($this->dispatcher === null) {
 			return;
 		}
-		$this->dispatcher->dispatch('\OC\DB\Migrator::checkTable', new GenericEvent($tableName, [$step+1, $max]));
+		$this->dispatcher->dispatch(new GenericEvent($tableName, [$step+1, $max]), '\OC\DB\Migrator::checkTable');
 	}
 }

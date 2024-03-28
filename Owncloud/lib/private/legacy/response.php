@@ -29,14 +29,14 @@
  */
 
 class OC_Response {
-	const STATUS_FOUND = 304;
-	const STATUS_NOT_MODIFIED = 304;
-	const STATUS_TEMPORARY_REDIRECT = 307;
-	const STATUS_BAD_REQUEST = 400;
-	const STATUS_FORBIDDEN = 403;
-	const STATUS_NOT_FOUND = 404;
-	const STATUS_INTERNAL_SERVER_ERROR = 500;
-	const STATUS_SERVICE_UNAVAILABLE = 503;
+	public const STATUS_FOUND = 304;
+	public const STATUS_NOT_MODIFIED = 304;
+	public const STATUS_TEMPORARY_REDIRECT = 307;
+	public const STATUS_BAD_REQUEST = 400;
+	public const STATUS_FORBIDDEN = 403;
+	public const STATUS_NOT_FOUND = 404;
+	public const STATUS_INTERNAL_SERVER_ERROR = 500;
+	public const STATUS_SERVICE_UNAVAILABLE = 503;
 
 	/**
 	* Enable response caching by sending correct HTTP headers
@@ -53,7 +53,7 @@ class OC_Response {
 				\header('Cache-Control: max-age='.$cache_time.', must-revalidate');
 			} else {
 				self::setExpiresHeader(0);
-				\header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+				\header('Cache-Control: no-cache, no-store, must-revalidate, post-check=0, pre-check=0');
 			}
 		} else {
 			\header('Cache-Control: cache');
@@ -114,11 +114,13 @@ class OC_Response {
 	}
 
 	/**
-	* Set response expire time
-	* @param string|DateTime $expires date-time when the response expires
-	*  string for DateInterval from now
-	*  DateTime object when to expire response
-	*/
+	 * Set response expire time
+	 *
+	 * @param string|DateTime $expires date-time when the response expires
+	 *  string for DateInterval from now
+	 *  DateTime object when to expire response
+	 * @throws Exception
+	 */
 	public static function setExpiresHeader($expires) {
 		if (\is_string($expires) && $expires[0] == 'P') {
 			$interval = $expires;
@@ -184,7 +186,8 @@ class OC_Response {
 				\OC\AppFramework\Http\Request::USER_AGENT_IE,
 				\OC\AppFramework\Http\Request::USER_AGENT_ANDROID_MOBILE_CHROME,
 				\OC\AppFramework\Http\Request::USER_AGENT_FREEBOX,
-			])) {
+			]
+		)) {
 			\header('Content-Disposition: ' . \rawurlencode($type) . '; filename="' . \rawurlencode($filename) . '"');
 		} else {
 			\header('Content-Disposition: ' . \rawurlencode($type) . '; filename*=UTF-8\'\'' . \rawurlencode($filename)
@@ -256,7 +259,7 @@ class OC_Response {
 		// Send fallback headers for installations that don't have the possibility to send
 		// custom headers on the webserver side
 		if (\getenv('modHeadersAvailable') !== 'true') {
-			\header('X-XSS-Protection: 1; mode=block'); // Enforce browser based XSS filters
+			\header('X-XSS-Protection: 0'); // Disable browser based XSS filters: https://github.com/owncloud/core/issues/38236
 			\header('X-Content-Type-Options: nosniff'); // Disable sniffing the content type for IE
 			\header('X-Frame-Options: SAMEORIGIN'); // Disallow iFraming from other domains
 			\header('X-Robots-Tag: none'); // https://developers.google.com/webmasters/control-crawl-index/docs/robots_meta_tag
@@ -288,17 +291,18 @@ class OC_Response {
 		}
 		// first check if any of the global CORS domains matches
 		$globalAllowedDomains = $config->getSystemValue('cors.allowed-domains', []);
-		$isCorsRequest = (\is_array($globalAllowedDomains) && \in_array($domain, $globalAllowedDomains));
-		if (!$isCorsRequest) {
+		$isCorsRequest = (\is_array($globalAllowedDomains) && \in_array($domain, $globalAllowedDomains, true));
+		if (!$isCorsRequest && $userId !== null) {
 			// check if any of the user specific CORS domains matches
-			$allowedDomains = \json_decode($config->getUserValue($userId, 'core', 'domains'));
-			$isCorsRequest = (\is_array($allowedDomains) && \in_array($domain, $allowedDomains));
+			$allowedDomains = \json_decode($config->getUserValue($userId, 'core', 'domains'), true);
+			$isCorsRequest = (\is_array($allowedDomains) && \in_array($domain, $allowedDomains, true));
 		}
 		if ($isCorsRequest) {
 			// TODO: infer allowed verbs from existing known routes
-			$allHeaders['Access-Control-Allow-Headers'] = ["authorization", "OCS-APIREQUEST", "Origin", "X-Requested-With", "Content-Type", "Access-Control-Allow-Origin"];
+			$allHeaders['Access-Control-Allow-Headers'] = self::getAllowedCorsHeaders($config);
+			$allHeaders['Access-Control-Expose-Headers'] = self::getExposeCorsHeaders();
 			$allHeaders['Access-Control-Allow-Origin'] = [$domain];
-			$allHeaders['Access-Control-Allow-Methods'] =["GET", "OPTIONS", "POST", "PUT", "DELETE", "MKCOL", "PROPFIND", "PATCH", "PROPPATCH", "REPORT"];
+			$allHeaders['Access-Control-Allow-Methods'] =['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE', 'MKCOL', 'PROPFIND', 'PATCH', 'PROPPATCH', 'REPORT'];
 
 			foreach ($headers as $key => $value) {
 				if (\array_key_exists($key, $allHeaders)) {
@@ -324,13 +328,14 @@ class OC_Response {
 	 *     "Access-Control-Allow-Methods": ["a", "b", "c"]
 	 * ]
 	 *
+	 * @param \OCP\IConfig|null $config
 	 * @return Sabre\HTTP\ResponseInterface $response
 	 */
-	public static function setOptionsRequestHeaders($response, $headers = []) {
+	public static function setOptionsRequestHeaders($response, $headers = [], \OCP\IConfig $config = null) {
 		// TODO: infer allowed verbs from existing known routes
-		$allHeaders['Access-Control-Allow-Headers'] = ["authorization", "OCS-APIREQUEST", "Origin", "X-Requested-With", "Content-Type", "Access-Control-Allow-Origin"];
+		$allHeaders['Access-Control-Allow-Headers'] = self::getAllowedCorsHeaders($config);
 		$allHeaders['Access-Control-Allow-Origin'] = ['*'];
-		$allHeaders['Access-Control-Allow-Methods'] =["GET", "OPTIONS", "POST", "PUT", "DELETE", "MKCOL", "PROPFIND", "PATCH", "PROPPATCH", "REPORT"];
+		$allHeaders['Access-Control-Allow-Methods'] =['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE', 'MKCOL', 'PROPFIND', 'PATCH', 'PROPPATCH', 'REPORT'];
 
 		foreach ($headers as $key => $value) {
 			if (\array_key_exists($key, $allHeaders)) {
@@ -339,9 +344,102 @@ class OC_Response {
 		}
 
 		foreach ($allHeaders as $key => $value) {
-			$response->addHeader($key, \implode(",", $value));
+			$response->addHeader($key, \implode(',', $value));
 		}
 
 		return $response;
+	}
+
+	/**
+	 * These are the header which a browser can access from javascript code.
+	 * Simple headers are always accessible.
+	 * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
+	 *
+	 * @return array
+	 */
+	private static function getExposeCorsHeaders() {
+		return [
+			'Content-Location',
+			'DAV',
+			'ETag',
+			'Link',
+			'Lock-Token',
+			'OC-ETag',
+			'OC-Checksum',
+			'OC-FileId',
+			'OC-JobStatus-Location',
+			'OC-RequestAppPassword',
+			'Vary',
+			'Webdav-Location',
+			'X-Sabre-Status',
+		];
+	}
+
+	/**
+	 * These are the headers the browser is allowed to ask for in a CORS request.
+	 * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
+	 *
+	 * @param \OCP\IConfig $config
+	 * @return array|mixed
+	 */
+	private static function getAllowedCorsHeaders(\OCP\IConfig $config = null) {
+		if ($config === null) {
+			$config = \OC::$server->getConfig();
+		}
+		$allowedDefaultHeaders = [
+			// own headers
+			'OC-Checksum',
+			'OC-Total-Length',
+			'OCS-APIREQUEST',
+			'X-OC-Mtime',
+			'OC-RequestAppPassword',
+			// as used in sabre
+			'Accept',
+			'Authorization',
+			'Brief',
+			'Content-Length',
+			'Content-Range',
+			'Content-Type',
+			'Date',
+			'Depth',
+			'Destination',
+			'Host',
+			'If',
+			'If-Match',
+			'If-Modified-Since',
+			'If-None-Match',
+			'If-Range',
+			'If-Unmodified-Since',
+			'Location',
+			'Lock-Token',
+			'Overwrite',
+			'Prefer',
+			'Range',
+			'Schedule-Reply',
+			'Timeout',
+			'User-Agent',
+			'X-Expected-Entity-Length',
+			// generally used headers in core
+			'Accept-Language',
+			'Access-Control-Request-Method',
+			'Access-Control-Allow-Origin',
+			'Cache-Control',
+			'ETag',
+			'OC-Autorename',
+			'OC-CalDav-Import',
+			'OC-Chunked',
+			'OC-Etag',
+			'OC-FileId',
+			'OC-LazyOps',
+			'OC-Total-File-Length',
+			'OC-Total-Length',
+			'Origin',
+			'X-Request-ID',
+			'X-Requested-With'
+		];
+		$corsAllowedHeaders = $config->getSystemValue('cors.allowed-headers', []);
+		$corsAllowedHeaders = \array_merge($corsAllowedHeaders, $allowedDefaultHeaders);
+		$corsAllowedHeaders = \array_unique(\array_values($corsAllowedHeaders));
+		return $corsAllowedHeaders;
 	}
 }

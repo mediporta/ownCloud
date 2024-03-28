@@ -45,7 +45,7 @@ use OCP\ILogger;
  * @package OC\Files\Utils
  */
 class Scanner extends PublicEmitter {
-	const MAX_ENTRIES_TO_COMMIT = 10000;
+	public const MAX_ENTRIES_TO_COMMIT = 10000;
 
 	/**
 	 * @var string $user
@@ -184,9 +184,10 @@ class Scanner extends PublicEmitter {
 			return false;
 		}
 
-		// if the home storage isn't writable then the scanner is run as the wrong user
+		// if the home storage isn't readable then the scanner is run as the wrong user
+		// (guests will have a read-only home storage)
 		if ($storage->instanceOfStorage('\OC\Files\Storage\Home') and
-			(!$storage->isCreatable('') or !$storage->isCreatable('files'))
+			(!$storage->isReadable('') or !$storage->isReadable('files'))
 		) {
 			if ($storage->file_exists('') or $storage->getCache()->inCache('')) {
 				throw new ForbiddenException();

@@ -60,11 +60,12 @@ class Import extends Base {
 	/** @var IStoragesBackendService */
 	private $backendService;
 
-	public function __construct(IGlobalStoragesService $globalService,
-						 IUserStoragesService $userService,
-						 IUserSession $userSession,
-						 IUserManager $userManager,
-						 IStoragesBackendService $backendService
+	public function __construct(
+		IGlobalStoragesService $globalService,
+		IUserStoragesService $userService,
+		IUserSession $userSession,
+		IUserManager $userManager,
+		IStoragesBackendService $backendService
 	) {
 		parent::__construct();
 		$this->globalService = $globalService;
@@ -98,7 +99,7 @@ class Import extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $input->getOption('user');
 		$path = $input->getArgument('path');
 		if ($path === '-') {

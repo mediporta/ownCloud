@@ -4,6 +4,7 @@
  * @author Joas Schilling <coding@schilljs.com>
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  * @author Vincent Petry <pvince81@owncloud.com>
+ * @author Piotr Mrowczynski <piotr@owncloud.com>
  *
  * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
@@ -28,9 +29,11 @@ use OC\Encryption\Manager;
 use OC\Files\Filesystem;
 use OC\Files\View;
 use OC\Share20\ProviderFactory;
+use OC\User\NoUserException;
 use OCP\Files\FileInfo;
+use OCP\Files\IRootFolder;
 use OCP\Files\Mount\IMountManager;
-use OCP\ILogger;
+use OCP\Files\NotFoundException;
 use OCP\IUserManager;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
@@ -40,9 +43,9 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 
 class TransferOwnership extends Command {
-
 	/** @var IUserManager $userManager */
 	private $userManager;
 
@@ -52,11 +55,11 @@ class TransferOwnership extends Command {
 	/** @var IMountManager */
 	private $mountManager;
 
+	/** @var IRootFolder */
+	private $rootFolder;
+
 	/** @var Manager  */
 	private $encryptionManager;
-
-	/** @var ILogger  */
-	private $logger;
 
 	/** @var ProviderFactory  */
 	private $shareProviderFactory;
@@ -85,12 +88,19 @@ class TransferOwnership extends Command {
 	/** @var string */
 	private $finalTarget;
 
-	public function __construct(IUserManager $userManager, IManager $shareManager, IMountManager $mountManager, Manager $encryptionManager, ILogger $logger, ProviderFactory $shareProviderFactory) {
+	public function __construct(
+		IUserManager $userManager,
+		IManager $shareManager,
+		IMountManager $mountManager,
+		IRootFolder $rootFolder,
+		Manager $encryptionManager,
+		ProviderFactory $shareProviderFactory
+	) {
 		$this->userManager = $userManager;
 		$this->shareManager = $shareManager;
 		$this->mountManager = $mountManager;
+		$this->rootFolder = $rootFolder;
 		$this->encryptionManager = $encryptionManager;
-		$this->logger = $logger;
 		$this->shareProviderFactory = $shareProviderFactory;
 		parent::__construct();
 	}
@@ -114,10 +124,22 @@ class TransferOwnership extends Command {
 				null,
 				InputOption::VALUE_REQUIRED,
 				'selectively provide the path to transfer. For example --path="folder_name"'
+			)
+			->addOption(
+				'accept-skipped-shares',
+				's',
+				InputOption::VALUE_NONE,
+				'always confirm to continue in case of skipped shares.'
+			)
+			->addOption(
+				'destination-use-user-folder',
+				'u',
+				InputOption::VALUE_NONE,
+				'if destination user never logged in and thus has no mounts transfer directly to top-level user folder.'
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$sourceUserObject = $this->userManager->get($input->getArgument('source-user'));
 		$destinationUserObject = $this->userManager->get($input->getArgument('destination-user'));
 		if ($sourceUserObject === null) {
@@ -135,14 +157,17 @@ class TransferOwnership extends Command {
 		$this->inputPath = \ltrim($this->inputPath, '/');
 
 		// target user has to be ready
-		if (!\OC::$server->getEncryptionManager()->isReadyForUser($this->destinationUser)) {
+		if ($destinationUserObject->getLastLogin() === 0) {
+			// based on \OC\User\Session->prepareUserLogin
+			\OC_Util::setupFS($this->destinationUser);
+			$userFolder = $this->rootFolder->getUserFolder($this->destinationUser);
+			\OC_Util::copySkeleton($this->destinationUser, $userFolder);  // exceptions might be thrown here
+			\OC_Util::tearDownFS();
+		}
+		if (!$this->encryptionManager->isReadyForUser($this->destinationUser)) {
 			$output->writeln("<error>The target user is not ready to accept files. The user has at least to be logged in once.</error>");
 			return 2;
 		}
-
-		// use a date format compatible across client OS
-		$date = \date('Ymd_his');
-		$this->finalTarget = "$this->destinationUser/files/transferred from $this->sourceUser on $date";
 
 		// setup filesystem
 		Filesystem::initMountPoints($this->sourceUser);
@@ -167,7 +192,33 @@ class TransferOwnership extends Command {
 		}
 
 		// collect all the shares
-		$this->collectUsersShares($output);
+		$hasSkipped = $this->collectUsersShares($input, $output);
+
+		if ($hasSkipped && !$input->getOption('accept-skipped-shares')) {
+			// ask (if possible) how to handle missing accounts. Disable the accounts by default.
+			$helper = $this->getHelper('question');
+			$question = new ChoiceQuestion(
+				'There are user shares that cannot be transferred. Do you want to continue with the transfer and skip these shares?',
+				['yes', 'no'],
+				0
+			);
+			$continue = $helper->ask($input, $output, $question);
+			if ($continue == 'no') {
+				$output->writeln("<comment>Execution terminated</comment>");
+				return 1;
+			}
+		}
+		// prepare and validate final destination
+		if ($input->getOption('destination-use-user-folder') && $destinationUserObject->getLastLogin() === 0) {
+			$this->finalTarget = "$this->destinationUser/files";
+		} elseif ($input->getOption('destination-use-user-folder') && $destinationUserObject->getLastLogin() !== 0) {
+			$output->writeln("<error>Cannot use top-level user folder as destination folder if user already logged in</error>");
+			return 1;
+		} else {
+			// use a date format compatible across client OS
+			$date = \date('Ymd_his');
+			$this->finalTarget = "$this->destinationUser/files/transferred from $this->sourceUser on $date";
+		}
 
 		// transfer the files
 		$this->transfer($output);
@@ -196,7 +247,6 @@ class TransferOwnership extends Command {
 		$output->writeln("Analysing files of $this->sourceUser ...");
 		$progress = new ProgressBar($output);
 		$progress->start();
-		$self = $this;
 		$walkPath = "$this->sourceUser/files";
 		if (\strlen($this->inputPath) > 0) {
 			if ($this->inputPath !== "$this->sourceUser/files") {
@@ -205,33 +255,36 @@ class TransferOwnership extends Command {
 			}
 		}
 
-		$this->walkFiles($view, $walkPath,
-				function (FileInfo $fileInfo) use ($progress, $self) {
-					if ($fileInfo->getType() === FileInfo::TYPE_FOLDER) {
-						// only analyze into folders from main storage,
-						// sub-storages have an empty internal path
-						if ($fileInfo->getInternalPath() === '' && $fileInfo->getPath() !== '') {
-							return false;
-						}
+		$this->walkFiles(
+			$view,
+			$walkPath,
+			function (FileInfo $fileInfo) use ($progress) {
+				if ($fileInfo->getType() === FileInfo::TYPE_FOLDER) {
+					// only analyze into folders from main storage,
+					// sub-storages have an empty internal path
+					if ($fileInfo->getInternalPath() === '' && $fileInfo->getPath() !== '') {
+						return false;
+					}
 
-						$this->foldersExist = true;
+					$this->foldersExist = true;
+					return true;
+				}
+				$progress->advance();
+				$this->filesExist = true;
+				if ($fileInfo->isEncrypted()) {
+					if (\OC::$server->getAppConfig()->getValue('encryption', 'useMasterKey', 0) !== 0) {
+						/**
+						 * We are not going to add this to encryptedFiles array.
+						 * Because its encrypted with masterKey and hence it doesn't
+						 * require user's specific password.
+						 */
 						return true;
 					}
-					$progress->advance();
-					$this->filesExist = true;
-					if ($fileInfo->isEncrypted()) {
-						if (\OC::$server->getAppConfig()->getValue('encryption', 'useMasterKey', 0) !== 0) {
-							/**
-							 * We are not going to add this to encryptedFiles array.
-							 * Because its encrypted with masterKey and hence it doesn't
-							 * require user's specific password.
-							 */
-							return true;
-						}
-						$this->encryptedFiles[] = $fileInfo;
-					}
-					return true;
-				});
+					$this->encryptedFiles[] = $fileInfo;
+				}
+				return true;
+			}
+		);
 		$progress->finish();
 		$output->writeln('');
 
@@ -247,28 +300,83 @@ class TransferOwnership extends Command {
 	}
 
 	/**
+	 * @param InputInterface $input
 	 * @param OutputInterface $output
+	 * @return boolean if there were some skipped shares
 	 */
-	private function collectUsersShares(OutputInterface $output) {
+	private function collectUsersShares(InputInterface $input, OutputInterface $output) {
 		$output->writeln("Collecting all share information for files and folder of $this->sourceUser ...");
 
+		$skipped = 0;
 		$progress = new ProgressBar($output, \count($this->shares));
 		foreach ([\OCP\Share::SHARE_TYPE_GROUP, \OCP\Share::SHARE_TYPE_USER, \OCP\Share::SHARE_TYPE_LINK, \OCP\Share::SHARE_TYPE_REMOTE] as $shareType) {
 			$offset = 0;
 			while (true) {
 				$sharePage = $this->shareManager->getSharesBy($this->sourceUser, $shareType, null, true, 50, $offset);
-				$progress->advance(\count($sharePage));
 				if (empty($sharePage)) {
 					break;
 				}
 
-				$this->shares = \array_merge($this->shares, $sharePage);
+				if (\strlen($this->inputPath)>1) {
+					$inputPathWithEndingSlash = \rtrim($this->inputPath, '/') . '/';
+					/**
+					 * filter only shares within the source folder
+					 */
+					$filteredShares = [];
+					foreach ($sharePage as $share) {
+						/**
+						 * trim sharePath, because `/` character trimmed with ltrim in inputPath
+						 */
+						try {
+							$trimmedSharePath = \ltrim($share->getNode()->getPath(), '/');
+							if ($trimmedSharePath === $this->inputPath || (\strpos($trimmedSharePath, $inputPathWithEndingSlash) === 0)) {
+								$filteredShares[] = $share;
+							}
+						} catch (NotFoundException | NoUserException $e) {
+							$skipped++;
+							$output->writeln("<error>Share with id {$share->getId()} and type {$share->getShareType()} points at deleted file or share that is no longer accessible, skipping</error>");
+							$progress->advance(1);
+						}
+					}
+				} else {
+					$filteredShares = $sharePage;
+				}
+
+				// filter out the reshares as transfer ownership only transfers
+				// files owned by the user - in case of reshares source
+				// user is not file owner
+				$filteredShares = \array_filter($filteredShares, function (IShare $share) use ($output) {
+					if ($share->getShareOwner() === $this->sourceUser) {
+						// due to lazy loading of the file info the information wouldn't be
+						// available for the share transfer because the file has been moved before.
+						// Transfer steps are:
+						// 1. Get shares (with the info)
+						// 2. Transfer files
+						// 3. Transfer shares (requires info from step1)
+						// ShareManager's generalChecks checks for the node to be shareable during
+						// share update. This info could be lost in step3 because the file has been
+						// transferred already
+						try {
+							$share->getNode()->getId();  // force loading the fileinfo
+						} catch (NotFoundException | NoUserException $e) {
+							$output->writeln("<error>Share with id {$share->getId()} and type {$share->getShareType()} points at deleted file or share that is no longer accessible, skipping</error>");
+							return false;
+						}
+						return true;
+					}
+					return false;
+				});
+
+				$progress->advance(\count($filteredShares));
+				$this->shares = \array_merge($this->shares, $filteredShares);
 				$offset += 50;
 			}
 		}
 
 		$progress->finish();
 		$output->writeln('');
+
+		return $skipped > 0;
 	}
 
 	/**
@@ -315,6 +423,7 @@ class TransferOwnership extends Command {
 				 */
 				if ($share->getSharedWith() === $this->destinationUser) {
 					$provider = $this->shareProviderFactory->getProviderForType($share->getShareType());
+					'@phan-var \OC\Share20\DefaultShareProvider $provider';
 					foreach ($provider->getChildren($share) as $child) {
 						$childShares[] = $child->getId();
 					}
@@ -332,8 +441,8 @@ class TransferOwnership extends Command {
 					}
 				}
 				$this->shareManager->transferShare($share, $this->sourceUser, $this->destinationUser, $this->finalTarget);
-			} catch (\OCP\Files\NotFoundException $e) {
-				$output->writeln('<error>Share with id ' . $share->getId() . ' points at deleted file, skipping</error>');
+			} catch (NotFoundException | NoUserException $e) {
+				$output->writeln("error>Share with id {$share->getId()} and type {$share->getShareType()} points at deleted file or share that is no longer accessible, skipping</error>");
 			} catch (\Exception $e) {
 				$output->writeln('<error>Could not restore share with id ' . $share->getId() . ':' . $e->getTraceAsString() . '</error>');
 				$status = 1;

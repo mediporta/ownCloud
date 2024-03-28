@@ -28,7 +28,7 @@ namespace OC\Files\External\Service;
 
 use OC\Files\Filesystem;
 use OC\Files\External\StorageConfig;
-
+use OCP\Files\External\DefinitionParameter;
 use OCP\Files\External\IStorageConfig;
 use OCP\Files\External\Backend\Backend;
 use OCP\Files\External\Auth\AuthMechanism;
@@ -39,12 +39,12 @@ use OCP\Files\External\NotFoundException;
 use OCP\Files\External\Service\IStoragesService;
 use OCP\Files\External\Backend\InvalidBackend;
 use OCP\Files\External\Auth\InvalidAuth;
+use OCP\Security\ICrypto;
 
 /**
  * Service class to manage external storages
  */
 abstract class StoragesService implements IStoragesService {
-
 	/** @var IStoragesBackendService */
 	protected $backendService;
 
@@ -58,15 +58,24 @@ abstract class StoragesService implements IStoragesService {
 	 */
 	protected $userMountCache;
 
+	/** @var ICrypto */
+	protected $crypto;
+
 	/**
 	 * @param IStoragesBackendService $backendService
 	 * @param DBConfigService $dbConfigService
 	 * @param IUserMountCache $userMountCache
 	 */
-	public function __construct(IStoragesBackendService $backendService, DBConfigService $dbConfigService, IUserMountCache $userMountCache) {
+	public function __construct(
+		IStoragesBackendService $backendService,
+		DBConfigService $dbConfigService,
+		IUserMountCache $userMountCache,
+		ICrypto $crypto
+	) {
 		$this->backendService = $backendService;
 		$this->dbConfig = $dbConfigService;
 		$this->userMountCache = $userMountCache;
+		$this->crypto = $crypto;
 	}
 
 	protected function readDBConfig() {
@@ -101,6 +110,14 @@ abstract class StoragesService implements IStoragesService {
 			);
 			$config->setType($mount['type']);
 			$config->setId((int)$mount['mount_id']);
+
+			$backend = $config->getBackend();
+			foreach ($config->getBackendOptions() as $key => $value) {
+				$newValue = $this->decryptIfPassword($backend, $config->getAuthMechanism(), $key, $value);
+				if ($newValue !== $value) {
+					$config->setBackendOption($key, $newValue);
+				}
+			}
 			return $config;
 		} catch (\UnexpectedValueException $e) {
 			// don't die if a storage backend doesn't exist
@@ -263,7 +280,9 @@ abstract class StoragesService implements IStoragesService {
 		foreach ($newStorage->getApplicableGroups() as $group) {
 			$this->dbConfig->addApplicable($configId, DBConfigService::APPLICABLE_TYPE_GROUP, $group);
 		}
+		$backend = $newStorage->getBackend();
 		foreach ($newStorage->getBackendOptions() as $key => $value) {
+			$value = $this->encryptIfPassword($backend, $newStorage->getAuthMechanism(), $key, $value);
 			$this->dbConfig->setConfig($configId, $key, $value);
 		}
 		foreach ($newStorage->getMountOptions() as $key => $value) {
@@ -340,7 +359,7 @@ abstract class StoragesService implements IStoragesService {
 	 * Triggers the given hook signal for all the applicables given
 	 *
 	 * @param string $signal signal
-	 * @param string $mountPoint hook mount pount param
+	 * @param string $mountPoint hook mount point param
 	 * @param string $mountType hook mount type param
 	 * @param array $applicableArray array of applicable users/groups for which to trigger the hook
 	 */
@@ -396,8 +415,9 @@ abstract class StoragesService implements IStoragesService {
 
 		$oldStorage = $this->getStorageConfigFromDBMount($existingMount);
 
-		if ($oldStorage->getBackend() instanceof InvalidBackend) {
-			throw new NotFoundException('Storage config with id "' . $id . '" and backend id "' . $oldStorage->getBackend()->getInvalidId() . '" cannot be edited due to missing backend');
+		$oldStorageBackend = $oldStorage->getBackend();
+		if ($oldStorageBackend instanceof InvalidBackend) {
+			throw new NotFoundException('Storage config with id "' . $id . '" and backend id "' . $oldStorageBackend->getInvalidId() . '" cannot be edited due to missing backend');
 		}
 
 		$removedUsers = \array_diff($oldStorage->getApplicableUsers(), $updatedStorage->getApplicableUsers());
@@ -434,8 +454,15 @@ abstract class StoragesService implements IStoragesService {
 		$changedConfig = \array_diff_assoc($updatedStorage->getBackendOptions(), $oldStorage->getBackendOptions());
 		$changedOptions = \array_diff_assoc($updatedStorage->getMountOptions(), $oldStorage->getMountOptions());
 
+		$backend = $updatedStorage->getBackend();
 		foreach ($changedConfig as $key => $value) {
-			$this->dbConfig->setConfig($id, $key, $value);
+			if ((\strpos($key, 'password') === false && $key !== 'secret') || $value !== IStoragesService::REDACTED_PASSWORD) {
+				// check if we should change the password.
+				// Note that the key MUST contain "password", so some other keys that could be hidden in
+				// the UI such as the oAuth2 secret or private / public keys won't be affected
+				$value = $this->encryptIfPassword($backend, $updatedStorage->getAuthMechanism(), $key, $value);
+				$this->dbConfig->setConfig($id, $key, $value);
+			}
 		}
 		foreach ($changedOptions as $key => $value) {
 			$this->dbConfig->setOption($id, $key, $value);
@@ -514,7 +541,7 @@ abstract class StoragesService implements IStoragesService {
 			}
 		}
 
-		// note: similar to ConfigAdapter->prepateStorageConfig()
+		// note: similar to ConfigAdapter->prepareStorageConfig()
 		$storageConfig->getAuthMechanism()->manipulateStorageConfig($storageConfig);
 		$storageConfig->getBackend()->manipulateStorageConfig($storageConfig);
 
@@ -539,10 +566,49 @@ abstract class StoragesService implements IStoragesService {
 			// auth mechanism should fire first
 			$storage = $storageConfig->getBackend()->wrapStorage($storage);
 			$storage = $storageConfig->getAuthMechanism()->wrapStorage($storage);
+			'@phan-var \OC\Files\Storage\Storage $storage';
 
 			return $storage->getStorageCache()->getNumericId();
 		} catch (\Exception $e) {
 			return -1;
 		}
+	}
+
+	private function encryptIfPassword(Backend $backend, AuthMechanism $auth, $key, $value) {
+		$backendParameters = $backend->getParameters();
+		$authParameters = $auth->getParameters();
+		if (
+			(
+				isset($backendParameters[$key]) &&
+				$backendParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			) || (
+				isset($authParameters[$key]) &&
+				$authParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			)
+		) {
+			$value = $this->crypto->encrypt($value);
+		}
+		return $value;
+	}
+
+	private function decryptIfPassword(Backend $backend, AuthMechanism $auth, $key, $value) {
+		$backendParameters = $backend->getParameters();
+		$authParameters = $auth->getParameters();
+		if (
+			(
+				isset($backendParameters[$key]) &&
+				$backendParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			) || (
+				isset($authParameters[$key]) &&
+				$authParameters[$key]->getType() === DefinitionParameter::VALUE_PASSWORD
+			)
+		) {
+			try {
+				$value = $this->crypto->decrypt($value);
+			} catch (\Exception $e) {
+				// assume the value isn't encrypted
+			}
+		}
+		return $value;
 	}
 }

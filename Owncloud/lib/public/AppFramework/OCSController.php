@@ -33,6 +33,7 @@
 namespace OCP\AppFramework;
 
 use OC\OCS\Result;
+use OCP\API;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\OCSResponse;
 use OCP\AppFramework\Http\Response;
@@ -43,7 +44,6 @@ use OCP\IRequest;
  * @since 8.1.0
  */
 abstract class OCSController extends ApiController {
-
 	/**
 	 * constructor of the controller
 	 * @param string $appName the name of the app
@@ -58,13 +58,20 @@ abstract class OCSController extends ApiController {
 	 * request should be cached, defaults to 1728000 seconds
 	 * @since 8.1.0
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								$corsMethods='PUT, POST, GET, DELETE, PATCH',
-								$corsAllowedHeaders='Authorization, Content-Type, Accept',
-								$corsMaxAge=1728000) {
-		parent::__construct($appName, $request, $corsMethods,
-							$corsAllowedHeaders, $corsMaxAge);
+	public function __construct(
+		$appName,
+		IRequest $request,
+		$corsMethods='PUT, POST, GET, DELETE, PATCH',
+		$corsAllowedHeaders='Authorization, Content-Type, Accept',
+		$corsMaxAge=1728000
+	) {
+		parent::__construct(
+			$appName,
+			$request,
+			$corsMethods,
+			$corsAllowedHeaders,
+			$corsMaxAge
+		);
 		$this->registerResponder('json', function ($data) {
 			return $this->buildOCSResponse('json', $data);
 		});
@@ -106,9 +113,13 @@ abstract class OCSController extends ApiController {
 		$isV2 = \substr($this->request->getScriptName(), -11) === '/ocs/v2.php';
 
 		$resp = new OCSResponse(
-			$format, $params['statuscode'],
-			$params['message'], $params['data'],
-			$params['itemscount'], $params['itemsperpage'], $isV2
+			$format,
+			$params['statuscode'],
+			$params['message'],
+			$params['data'],
+			$params['itemscount'],
+			$params['itemsperpage'],
+			$isV2
 		);
 		if (isset($data['headers'])) {
 			foreach ($data['headers'] as $key => $value) {
@@ -135,6 +146,7 @@ abstract class OCSController extends ApiController {
 		}
 		/** @var OCSResponse $resp */
 		$resp = parent::buildResponse($response, $format);
+		'@phan-var \OCP\AppFramework\Http\OCSResponse $resp';
 		$script = $this->request->getScriptName();
 
 		if (\substr($script, -11) === '/ocs/v2.php') {
@@ -145,6 +157,11 @@ abstract class OCSController extends ApiController {
 				// OCS code
 				$resp->setStatusCode($statusCode);
 			}
+		}
+
+		if ($resp->getStatusCode() === API::RESPOND_UNAUTHORISED) {
+			// HTTP code
+			$resp->setStatus(401);
 		}
 
 		return $resp;

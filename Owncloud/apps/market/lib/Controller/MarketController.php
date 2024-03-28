@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
+ * @author Ilja Neumann <ineumann@owncloud.com>
  *
  * @copyright Copyright (c) 2017, ownCloud GmbH
  * @license AGPL-3.0
@@ -30,26 +31,33 @@ use OCP\AppFramework\Http\DataResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 
 class MarketController extends Controller {
-
 	/** @var MarketService */
 	private $marketService;
 
 	/** @var IL10N */
 	private $l10n;
 
+	/** @var IURLGenerator */
+	private $urlGenerator;
+
 	/** @var IConfig */
 	private $config;
 
-	public function __construct($appName,
-								IRequest $request,
-								MarketService $marketService,
-								IL10N $l10n,
-								IConfig $config) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		MarketService $marketService,
+		IL10N $l10n,
+		IURLGenerator $urlGenerator,
+		IConfig $config
+	) {
 		parent::__construct($appName, $request);
 		$this->marketService = $marketService;
 		$this->l10n = $l10n;
+		$this->urlGenerator = $urlGenerator;
 		$this->config = $config;
 	}
 
@@ -62,8 +70,10 @@ class MarketController extends Controller {
 		try {
 			return $this->marketService->getCategories();
 		} catch (\Exception $ex) {
-			return new DataResponse(['message' => $ex->getMessage() ],
-				Http::STATUS_SERVICE_UNAVAILABLE);
+			return new DataResponse(
+				['message' => $ex->getMessage() ],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
 		}
 	}
 
@@ -75,8 +85,8 @@ class MarketController extends Controller {
 	public function bundles() {
 		try {
 			$bundles = $this->marketService->getBundles();
-			$bundles = array_map(function ($bundle) {
-				$bundle['products'] = array_map(function ($product) {
+			$bundles = \array_map(function ($bundle) {
+				$bundle['products'] = \array_map(function ($product) {
 					return $this->enrichApp($product);
 				}, $bundle['products']);
 				return $bundle;
@@ -88,8 +98,10 @@ class MarketController extends Controller {
 				'message' => $ex->getMessage()
 			]);
 		} catch (\Exception $ex) {
-			return new DataResponse(['message' => $ex->getMessage() ],
-				Http::STATUS_SERVICE_UNAVAILABLE);
+			return new DataResponse(
+				['message' => $ex->getMessage() ],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
 		}
 	}
 
@@ -106,8 +118,10 @@ class MarketController extends Controller {
 				'message' => $ex->getMessage()
 			]);
 		} catch (\Exception $ex) {
-			return new DataResponse(['message' => $ex->getMessage() ],
-				Http::STATUS_SERVICE_UNAVAILABLE);
+			return new DataResponse(
+				['message' => $ex->getMessage() ],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
 		}
 	}
 
@@ -122,8 +136,10 @@ class MarketController extends Controller {
 			$info = $this->marketService->getAppInfo($appId);
 			return $this->enrichApp($info);
 		} catch (\Exception $ex) {
-			return new DataResponse(['message' => $ex->getMessage() ],
-				Http::STATUS_SERVICE_UNAVAILABLE);
+			return new DataResponse(
+				['message' => $ex->getMessage() ],
+				Http::STATUS_SERVICE_UNAVAILABLE
+			);
 		}
 	}
 
@@ -135,9 +151,9 @@ class MarketController extends Controller {
 		try {
 			$this->marketService->installApp($appId);
 			return [
-				'message' => $this->l10n->t('App %s installed successfully', $appId)
+				'message' => $this->l10n->t('App %s installed successfully', [$appId])
 			];
-		} catch(\Exception $ex) {
+		} catch (\Exception $ex) {
 			return new DataResponse([
 				'message' => $ex->getMessage()
 			], Http::STATUS_BAD_REQUEST);
@@ -147,18 +163,27 @@ class MarketController extends Controller {
 	/**
 	 * @NoCSRFRequired
 	 *
-	 * @param $apiKey
+	 * @param string $apiKey
 	 * @return array|mixed
 	 */
 	public function changeApiKey($apiKey) {
 		if (!$this->marketService->isApiKeyValid($apiKey)) {
-			return new DataResponse([
+			return new DataResponse(
+				[
 					'message' => $this->l10n->t('The api key is not valid.')
 				]
 			);
 		}
+
+		// Don't update on GET
+		if ($this->request->getMethod() === 'GET') {
+			return (new Http\Response())
+				->setStatus(\OC\AppFramework\Http::STATUS_OK);
+		}
+
 		if (!$this->marketService->setApiKey($apiKey)) {
-			return new DataResponse([
+			return new DataResponse(
+				[
 					'message' => $this->l10n->t('Can not change api key because it is configured in config.php')
 				]
 			);
@@ -174,11 +199,15 @@ class MarketController extends Controller {
 	 * @return array|mixed
 	 */
 	public function getApiKey() {
-
-		return new DataResponse( [
-			'apiKey' => $this->marketService->getApiKey(),
+		$responseBody = [
 			'changeable' => $this->marketService->isApiKeyChangeableByUser(),
-		], Http::STATUS_OK);
+		];
+
+		if ($this->marketService->isApiKeyChangeableByUser()) {
+			$responseBody['apiKey'] = $this->marketService->getApiKey();
+		}
+
+		return new DataResponse($responseBody, Http::STATUS_OK);
 	}
 
 	/**
@@ -189,9 +218,9 @@ class MarketController extends Controller {
 		try {
 			$this->marketService->uninstallApp($appId);
 			return [
-				'message' => $this->l10n->t('App %s uninstalled successfully', $appId)
+				'message' => $this->l10n->t('App %s uninstalled successfully', [$appId])
 			];
-		} catch(\Exception $ex) {
+		} catch (\Exception $ex) {
 			return new DataResponse([
 				'message' => $ex->getMessage()
 			], Http::STATUS_BAD_REQUEST);
@@ -203,15 +232,17 @@ class MarketController extends Controller {
 	 * @return array | DataResponse
 	 */
 	public function update($appId) {
+		$targetVersion = $this->request->getParam('toVersion');
 		try {
-			$this->marketService->updateApp($appId);
+			$this->marketService->updateApp($appId, $targetVersion);
 			return [
-				'message' => $this->l10n->t('App %s updated successfully', $appId)
+				'message' => $this->l10n->t('App %s updated successfully', [$appId])
 			];
-		} catch(\Exception $ex) {
-			return new DataResponse([
-				'message' => $ex->getMessage()
-			], Http::STATUS_BAD_REQUEST);
+		} catch (\Exception $ex) {
+			return new DataResponse(
+				['message' => $ex->getMessage()],
+				Http::STATUS_BAD_REQUEST
+			);
 		}
 	}
 
@@ -222,46 +253,63 @@ class MarketController extends Controller {
 	protected function queryData($category = null) {
 		$apps = $this->marketService->listApps($category);
 
-		return array_map(function ($app) {
+		$apps = \array_map(function ($app) {
 			return $this->enrichApp($app);
 		}, $apps);
+		return $apps;
 	}
 
 	private function enrichApp($app) {
 		$app['installed'] = $this->marketService->isAppInstalled($app['id']);
-		$releases = array_map(function ($release) {
-			$missing = $this->marketService->getMissingDependencies($release);
-			$release['canInstall'] = empty($missing);
-			$release['missingDependencies'] = $missing;
-			return $release;
-		}, $app['releases']);
+		$releases = \array_map(
+			function ($release) {
+				$missing = $this->marketService->getMissingDependencies($release);
+				$release['canInstall'] = empty($missing);
+				$release['missingDependencies'] = $missing;
+				return $release;
+			},
+			$app['releases']
+		);
 		unset($app['releases']);
+
+		$app['minorUpdate'] = false;
+		$app['majorUpdate'] = false;
 		if ($app['installed']) {
 			$app['installInfo'] = $this->marketService->getInstalledAppInfo($app['id']);
-			$app['updateInfo'] = $this->marketService->getAvailableUpdateVersion($app['id']);
-
-			$filteredReleases = array_filter($releases, function ($release) use ($app) {
-				if (empty($app['updateInfo'])) {
-					return $release['version'] === $app['updateInfo'];
+			$app['updateInfo'] = $this->marketService->getAvailableUpdateVersions($app['id']);
+			$app['updateTo'] = $app['updateInfo']['minor'] !== false
+				? $app['updateInfo']['minor']
+				: $app['updateInfo']['major'];
+			\array_walk(
+				$releases,
+				function ($release) use (&$app) {
+					if ($release['version'] === $app['updateInfo']['major']) {
+						$app['majorUpdate'] = $release;
+					}
+					if ($release['version'] === $app['updateInfo']['minor']) {
+						$app['minorUpdate'] = $release;
+					}
 				}
-				return $release['version'] === $app['updateInfo'];
-			});
-			$app['release'] = array_pop($filteredReleases);
+			);
 		} else {
-			$app['updateInfo'] = false;
-			usort($releases, function ($a, $b) {
-				return version_compare($a['version'], $b['version'], '>');
-			});
+			\usort(
+				$releases,
+				function ($a, $b) {
+					return \version_compare($a['version'], $b['version']);
+				}
+			);
 			if (!empty($releases)) {
-				$app['release'] = array_pop($releases);
+				$app['release'] = \array_pop($releases);
 			}
 		}
+		$app['updateInfo'] = $app['majorUpdate'] !== false || $app['minorUpdate'] !== false;
 		return $app;
 	}
 
 	/**
-	 * @return string
 	 * @NoCSRFRequired
+	 *
+	 * @return DataResponse
 	 */
 	public function getConfig() {
 		$licenseKeyAvailable = $this->marketService->hasLicenseKey();
@@ -310,6 +358,47 @@ class MarketController extends Controller {
 		}
 	}
 
+	/**
+	 * @NoCSRFRequired
+	 */
+	public function startMarketplaceLogin() {
+		$codeChallenge = $this->marketService->startMarketplaceLogin();
+		$callbackUrl = $this->urlGenerator->linkToRouteAbsolute('market.page.indexHash');
+		$appStoreUrl = $this->config->getSystemValue('appstoreurl', 'https://marketplace.owncloud.com');
+
+		return new DataResponse([
+			'loginUrl' => "$appStoreUrl/login?callbackUrl=$callbackUrl&codeChallenge=$codeChallenge"
+		]);
+	}
+
+	/**
+	 * Redirect from marketplace with login-token in the query
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @param string $token
+	 * @return DataResponse
+	 */
+	public function receiveMarketplaceLoginToken($token) {
+		if (!$token) {
+			return new DataResponse([
+				'message' => $this->l10n->t('Token is missing')
+			], Http::STATUS_BAD_REQUEST);
+		}
+
+		try {
+			$apiKey =  $this->marketService->loginViaMarketplace($token);
+		} catch (\Exception $ex) {
+			return new DataResponse(
+				[
+				'message' => $this->l10n->t('Could not login via marketplace')],
+				Http::STATUS_UNAUTHORIZED
+			);
+		}
+
+		return new DataResponse(['apiKey' => $apiKey]);
+	}
+
 	public function invalidateCache() {
 		$this->marketService->invalidateCache();
 		return new DataResponse(
@@ -318,6 +407,5 @@ class MarketController extends Controller {
 			],
 			Http::STATUS_OK
 		);
-
 	}
 }

@@ -23,12 +23,10 @@ namespace OCA\Market\Command;
 
 use OCA\Market\MarketService;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ListApps extends Command {
-
 	private $marketService;
 
 	public function __construct(MarketService $marketService) {
@@ -42,7 +40,7 @@ class ListApps extends Command {
 			->setDescription('Lists apps as available on the marketplace.');
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		try {
 			$apps = $this->marketService->listApps();
 		} catch (\Exception $ex) {
@@ -50,12 +48,13 @@ class ListApps extends Command {
 			return 1;
 		}
 
-		usort($apps, function ($a, $b) {
-			return strcmp($a['id'], $b['id']);
+		\usort($apps, function ($a, $b) {
+			return \strcmp($a['id'], $b['id']);
 		});
 
 		foreach ($apps as $app) {
 			$output->writeln("{$app['id']}");
 		}
+		return 0;
 	}
 }

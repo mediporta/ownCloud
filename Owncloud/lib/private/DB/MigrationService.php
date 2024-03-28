@@ -36,7 +36,6 @@ use Doctrine\DBAL\Types\Type;
 use OCP\ILogger;
 
 class MigrationService {
-
 	/** @var boolean */
 	private $migrationTableCreated;
 	/** @var array */
@@ -49,21 +48,28 @@ class MigrationService {
 	private $appName;
 	/** @var ILogger */
 	private $logger;
+	/** @var string  */
+	private $migrationsPath;
+	/** @var string  */
+	private $migrationsNamespace;
 
 	/**
 	 * MigrationService constructor.
 	 *
 	 * @param $appName
 	 * @param IDBConnection $connection
-	 * @param AppLocator $appLocator
 	 * @param IOutput|null $output
-	 * @throws \Exception
+	 * @param AppLocator $appLocator
+	 * @param ILogger|null $logger
+	 * @throws \OC\NeedsUpdateException
 	 */
-	public function __construct($appName,
-						IDBConnection $connection,
-						IOutput $output = null,
-						AppLocator $appLocator = null,
-						ILogger $logger = null) {
+	public function __construct(
+		$appName,
+		IDBConnection $connection,
+		IOutput $output = null,
+		AppLocator $appLocator = null,
+		ILogger $logger = null
+	) {
 		$this->appName = $appName;
 		$this->connection = $connection;
 		$this->output = $output;
@@ -90,7 +96,7 @@ class MigrationService {
 		if (!\is_dir($this->migrationsPath)) {
 			if (!\mkdir($this->migrationsPath)) {
 				throw new \Exception("Could not create migration folder \"{$this->migrationsPath}\"");
-			};
+			}
 		}
 
 		// load the app so that app code can be used during migrations
@@ -184,11 +190,12 @@ class MigrationService {
 				\RecursiveIteratorIterator::LEAVES_ONLY
 			),
 			'#^.+\\/Version[^\\/]{1,255}\\.php$#i',
-			\RegexIterator::GET_MATCH);
+			\RegexIterator::GET_MATCH
+		);
 
 		$files = \array_keys(\iterator_to_array($iterator));
 		\uasort($files, function ($a, $b) {
-			return (\basename($a) < \basename($b)) ? -1 : 1;
+			return \strcmp(\basename($a), \basename($b));
 		});
 
 		$migrations = [];
@@ -296,7 +303,9 @@ class MigrationService {
 			case 'latest':
 				$this->ensureMigrationsAreLoaded();
 
-				return @\end($this->getAvailableVersions());
+				// A variable must be used because \end() must pass the array by reference
+				$availableVersionsArray = $this->getAvailableVersions();
+				return @\end($availableVersionsArray);
 		}
 		return '0';
 	}
@@ -328,7 +337,9 @@ class MigrationService {
 		if (\count($m) === 0) {
 			return '0';
 		}
-		return @\end(\array_values($m));
+		// A variable must be used because \end() must pass the array by reference
+		$migratedVersionsArray = \array_values($m);
+		return @\end($migratedVersionsArray);
 	}
 
 	/**

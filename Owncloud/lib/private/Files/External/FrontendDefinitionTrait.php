@@ -30,7 +30,6 @@ use OCP\Files\External\IStorageConfig;
  * Trait for objects that have a frontend representation
  */
 trait FrontendDefinitionTrait {
-
 	/** @var string human-readable mechanism name */
 	private $text;
 
@@ -54,15 +53,6 @@ trait FrontendDefinitionTrait {
 	public function setText($text) {
 		$this->text = $text;
 		return $this;
-	}
-
-	/**
-	 * @param FrontendDefinitionTrait $a
-	 * @param FrontendDefinitionTrait $b
-	 * @return int
-	 */
-	public static function lexicalCompare(FrontendDefinitionTrait $a, FrontendDefinitionTrait $b) {
-		return \strcmp($a->getText(), $b->getText());
 	}
 
 	/**
@@ -93,14 +83,14 @@ trait FrontendDefinitionTrait {
 	}
 
 	/**
-	 * @return string[]
+	 * @return string[]|array
 	 */
 	public function getCustomJs() {
 		return $this->customJs;
 	}
 
 	/**
-	 * @param string $custom
+	 * @param string|array $custom
 	 * @return self
 	 */
 	public function addCustomJs($custom) {
@@ -109,7 +99,7 @@ trait FrontendDefinitionTrait {
 	}
 
 	/**
-	 * @param string $custom
+	 * @param string|array $custom
 	 * @return self
 	 * @deprecated 9.1.0, use addCustomJs() instead
 	 */
@@ -150,11 +140,7 @@ trait FrontendDefinitionTrait {
 				if (!$parameter->validateValue($value)) {
 					return false;
 				}
-				if (($name === 'public_key') || ($name === 'private_key')) {
-					$storage->setBackendOption($name, \base64_encode($value));
-				} else {
-					$storage->setBackendOption($name, $value);
-				}
+				$storage->setBackendOption($name, $value);
 			}
 		}
 		return true;

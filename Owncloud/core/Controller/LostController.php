@@ -36,6 +36,7 @@ use \OCP\IURLGenerator;
 use \OCP\IRequest;
 use \OCP\IL10N;
 use \OCP\IConfig;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Security\ISecureRandom;
@@ -50,7 +51,6 @@ use OC\User\Session;
  * @package OC\Core\Controller
  */
 class LostController extends Controller {
-
 	/** @var IURLGenerator */
 	protected $urlGenerator;
 	/** @var IUserManager */
@@ -93,20 +93,22 @@ class LostController extends Controller {
 	 * @param ILogger $logger
 	 * @param Session $userSession
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IURLGenerator $urlGenerator,
-								IUserManager $userManager,
-								OC_Defaults $defaults,
-								IL10N $l10n,
-								IConfig $config,
-								ISecureRandom $secureRandom,
-								$from,
-								$isDataEncrypted,
-								IMailer $mailer,
-								ITimeFactory $timeFactory,
-								ILogger $logger,
-								Session $userSession) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IURLGenerator $urlGenerator,
+		IUserManager $userManager,
+		OC_Defaults $defaults,
+		IL10N $l10n,
+		IConfig $config,
+		ISecureRandom $secureRandom,
+		$from,
+		$isDataEncrypted,
+		IMailer $mailer,
+		ITimeFactory $timeFactory,
+		ILogger $logger,
+		Session $userSession
+	) {
 		parent::__construct($appName, $request);
 		$this->urlGenerator = $urlGenerator;
 		$this->userManager = $userManager;
@@ -137,7 +139,9 @@ class LostController extends Controller {
 			$this->checkPasswordResetToken($token, $userId);
 		} catch (\Exception $e) {
 			return new TemplateResponse(
-				'core', 'error', [
+				'core',
+				'error',
+				[
 					"errors" => [["error" => $e->getMessage()]]
 				],
 				'guest'
@@ -186,7 +190,7 @@ class LostController extends Controller {
 	 * @return array
 	 */
 	private function error($message, array $additional= []) {
-		return \array_merge(['status' => 'error', 'msg' => $message], $additional);
+		return \array_merge(['status' => 'error', 'msg' => \htmlspecialchars($message)], $additional);
 	}
 
 	/**
@@ -203,6 +207,22 @@ class LostController extends Controller {
 	 * @return array
 	 */
 	public function email($user) {
+		try {
+			$userObject = $this->userManager->get($user);
+			if ($userObject === null) {
+				$users = $this->userManager->getByEmail($user);
+				// we only allow login by email if unique
+				if (\count($users) === 1) {
+					$user = $users[0]->getUID();
+				}
+			}
+			if ($userObject instanceof IUser) {
+				$user = $userObject->getUID();
+			}
+		} catch (\Exception $e) {
+			// Do not disclose any information during User lookup
+			return $this->success();
+		}
 		// FIXME: use HTTP error codes
 		try {
 			list($link, $token) = $this->generateTokenAndLink($user);
@@ -259,16 +279,20 @@ class LostController extends Controller {
 	protected function sendNotificationMail($userId) {
 		$user = $this->userManager->get($userId);
 		$email = $user->getEMailAddress();
+		$name = $user->getDisplayName();
 
 		if ($email !== '') {
 			$tmpl = new \OC_Template('core', 'lostpassword/notify');
 			$msg = $tmpl->fetchPage();
+			$tmplAlt = new \OC_Template('core', 'lostpassword/altnotify');
+			$msgAlt = $tmplAlt->fetchPage();
 
 			try {
 				$message = $this->mailer->createMessage();
-				$message->setTo([$email => $userId]);
+				$message->setTo([$email => $name]);
 				$message->setSubject($this->l10n->t('%s password changed successfully', [$this->defaults->getName()]));
-				$message->setPlainBody($msg);
+				$message->setPlainBody($msgAlt);
+				$message->setHtmlBody($msg);
 				$message->setFrom([$this->from => $this->defaults->getName()]);
 				$this->mailer->send($message);
 			} catch (\Exception $e) {
@@ -284,10 +308,12 @@ class LostController extends Controller {
 	 * @return array
 	 */
 	public function generateTokenAndLink($userId) {
-		$token = $this->secureRandom->generate(21,
+		$token = $this->secureRandom->generate(
+			21,
 			ISecureRandom::CHAR_DIGITS .
 			ISecureRandom::CHAR_LOWER .
-			ISecureRandom::CHAR_UPPER);
+			ISecureRandom::CHAR_UPPER
+		);
 
 		$link = $this->urlGenerator->linkToRouteAbsolute('core.lost.resetform', ['userId' => $userId, 'token' => $token]);
 		return [$link, $token];
@@ -318,8 +344,9 @@ class LostController extends Controller {
 					return false;
 				case 1:
 					$this->logger->info('User with input as email address found. User: {user}', ['app' => 'core', 'user' => $user]);
-					$email = $users[0]->getEMailAddress();
-					$user = $users[0]->getUID();
+					$userObject = $users[0];
+					$email = $userObject->getEMailAddress();
+					$user = $userObject->getUID();
 					break;
 				default:
 					$this->logger->error('Could not send reset email because the email id is not unique. User: {user}', ['app' => 'core', 'user' => $user]);
@@ -344,10 +371,11 @@ class LostController extends Controller {
 		$tmplAlt = new \OC_Template('core', 'lostpassword/altemail');
 		$tmplAlt->assign('link', $link);
 		$msgAlt = $tmplAlt->fetchPage();
+		$name = $userObject->getDisplayName();
 
 		try {
 			$message = $this->mailer->createMessage();
-			$message->setTo([$email => $user]);
+			$message->setTo([$email => $name]);
 			$message->setSubject($this->l10n->t('%s password reset', [$this->defaults->getName()]));
 			$message->setPlainBody($msgAlt);
 			$message->setHtmlBody($msg);

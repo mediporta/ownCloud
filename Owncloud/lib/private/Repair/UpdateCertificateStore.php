@@ -49,8 +49,10 @@ class UpdateCertificateStore implements IRepairStep {
 	 * @param Server $server
 	 * @param IConfig $config
 	 */
-	public function __construct(Server $server,
-								IConfig $config) {
+	public function __construct(
+		Server $server,
+		IConfig $config
+	) {
 		$this->server = $server;
 		$this->config = $config;
 	}
@@ -82,6 +84,10 @@ class UpdateCertificateStore implements IRepairStep {
 				 */
 				// Regenerate the certificates
 				$certificateManager = $this->server->getCertificateManager($uid);
+				// ICertificateManager does not have createCertificateBundle
+				// But CertificateManager has createCertificateBundle
+				// ToDo: sort that out
+				'@phan-var \OC\Security\CertificateManager $certificateManager';
 				$certificateManager->createCertificateBundle();
 			}
 		}

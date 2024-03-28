@@ -33,13 +33,14 @@ class ListUsers extends Base {
 	/** @var \OCP\IUserManager */
 	protected $userManager;
 
-	const ATTRIBUTES = [
+	public const ATTRIBUTES = [
 		'uid',
 		'displayName',
 		'email',
 		'quota',
 		'enabled',
 		'lastLogin',
+		'creationTime',
 		'home',
 		'backend',
 		'cloudId',
@@ -72,6 +73,12 @@ class ListUsers extends Base {
 				'Attributes to include from '.\implode(', ', self::ATTRIBUTES),
 				['displayName']
 			)
+			->addOption(
+				'show-all-attributes',
+				's',
+				InputOption::VALUE_NONE,
+				'All attributes to include from '.\implode(', ', self::ATTRIBUTES),
+			)
 		;
 	}
 
@@ -86,14 +93,15 @@ class ListUsers extends Base {
 		}
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$userNameSubString = $input->getArgument('search-pattern');
 		$attributes = \array_map('mb_strtolower', $input->getOption('attributes'));
+		$showAllAttributes = $input->getOption('show-all-attributes');
 		$useKey = \count($attributes) > 1
 			|| $input->getOption('output') !== self::OUTPUT_FORMAT_PLAIN;
-		$users = $this->userManager->search($userNameSubString);
-		$users = \array_map(function (IUser $user) use ($output, $attributes, $useKey) {
-			if ($output->isVerbose()) {
+		$users = $this->userManager->search($userNameSubString, null, null, true);
+		$users = \array_map(function (IUser $user) use ($output, $attributes, $useKey, $showAllAttributes) {
+			if ($output->isVerbose() || $showAllAttributes) {
 				// include all attributes
 				$row = [
 					'uid' => $user->getUID(),
@@ -102,6 +110,7 @@ class ListUsers extends Base {
 					'quota' => $user->getQuota(),
 					'enabled' => $user->isEnabled(),
 					'lastLogin' => $user->getLastLogin(),
+					'creationTime' => $user->getCreationTime(),
 					'home' => $user->getHome(),
 					'backend' => $user->getBackendClassName(),
 					'cloudId' => $user->getCloudId(),
@@ -130,6 +139,9 @@ class ListUsers extends Base {
 						case 'lastlogin':
 							$this->add($row, 'lastLogin', $user->getLastLogin(), $useKey);
 							break;
+						case 'creationtime':
+							$this->add($row, 'creationTime', $user->getCreationTime(), $useKey);
+							break;
 						case 'home':
 							$this->add($row, 'home', $user->getHome(), $useKey);
 							break;
@@ -150,5 +162,6 @@ class ListUsers extends Base {
 			return $row;
 		}, $users);
 		parent::writeArrayInOutputFormat($input, $output, $users, self::DEFAULT_OUTPUT_PREFIX, true);
+		return 0;
 	}
 }

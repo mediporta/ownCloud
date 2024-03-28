@@ -38,14 +38,12 @@ use Sabre\CardDAV\Backend\BackendInterface;
 use Sabre\CardDAV\Backend\SyncSupport;
 use Sabre\CardDAV\Plugin;
 use Sabre\DAV\Exception\BadRequest;
-use Sabre\HTTP\URLUtil;
 use Sabre\VObject\Component\VCard;
 use Sabre\VObject\Reader;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class CardDavBackend implements BackendInterface, SyncSupport {
-
 	/** @var Principal */
 	private $principalBackend;
 
@@ -83,11 +81,13 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	 * @param EventDispatcherInterface $dispatcher
 	 * @param bool $legacyMode
 	 */
-	public function __construct(IDBConnection $db,
-								Principal $principalBackend,
-								GroupPrincipalBackend $groupPrincipalBackend,
-								EventDispatcherInterface $dispatcher = null,
-								$legacyMode = false) {
+	public function __construct(
+		IDBConnection $db,
+		Principal $principalBackend,
+		GroupPrincipalBackend $groupPrincipalBackend,
+		EventDispatcherInterface $dispatcher = null,
+		$legacyMode = false
+	) {
 		$this->db = $db;
 		$this->principalBackend = $principalBackend;
 		$this->dispatcher = $dispatcher;
@@ -163,18 +163,25 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$principals = $this->principalBackend->getGroupMembership($principalUri, true);
 		$principals[]= $principalUri;
 
+		$addressBooksIds[] = -1;
+		foreach ($addressBooks as $book) {
+			$addressBooksIds[] = $book['id'];
+		}
+
 		$query = $this->db->getQueryBuilder();
 		$result = $query->select(['a.id', 'a.uri', 'a.displayname', 'a.principaluri', 'a.description', 'a.synctoken', 's.access'])
 			->from('dav_shares', 's')
 			->join('s', 'addressbooks', 'a', $query->expr()->eq('s.resourceid', 'a.id'))
 			->where($query->expr()->in('s.principaluri', $query->createParameter('principaluri')))
+			->andWhere($query->expr()->notIn('a.id', $query->createParameter('ownaddressbookids')))
 			->andWhere($query->expr()->eq('s.type', $query->createParameter('type')))
 			->setParameter('type', 'addressbook')
+			->setParameter('ownaddressbookids', $addressBooksIds, IQueryBuilder::PARAM_INT_ARRAY)
 			->setParameter('principaluri', $principals, IQueryBuilder::PARAM_STR_ARRAY)
 			->execute();
 
 		while ($row = $result->fetch()) {
-			list(, $name) = URLUtil::splitPath($row['principaluri']);
+			list(, $name) = \Sabre\Uri\split($row['principaluri']);
 			$uri = $row['uri'] . '_shared_by_' . $name;
 			$displayName = $row['displayname'] . " ($name)";
 			if (!isset($addressBooks[$row['id']])) {
@@ -398,7 +405,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	 *   * size - The size of the card in bytes.
 	 *
 	 * If these last two properties are provided, less time will be spent
-	 * calculating them. If they are specified, you can also ommit carddata.
+	 * calculating them. If they are specified, you can also omit carddata.
 	 * This may speed up certain requests, especially with large cards.
 	 *
 	 * @param mixed $addressBookId
@@ -544,11 +551,13 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$this->updateProperties($addressBookId, $cardUri, $cardData);
 
 		if ($this->dispatcher !== null) {
-			$this->dispatcher->dispatch('\OCA\DAV\CardDAV\CardDavBackend::createCard',
+			$this->dispatcher->dispatch(
 				new GenericEvent(null, [
 					'addressBookId' => $addressBookId,
 					'cardUri' => $cardUri,
-					'cardData' => $cardData]));
+					'cardData' => $cardData]),
+				'\OCA\DAV\CardDAV\CardDavBackend::createCard',
+			);
 		}
 
 		return '"' . $etag . '"';
@@ -595,11 +604,13 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$this->updateProperties($addressBookId, $cardUri, $cardData);
 
 		if ($this->dispatcher !== null) {
-			$this->dispatcher->dispatch('\OCA\DAV\CardDAV\CardDavBackend::updateCard',
+			$this->dispatcher->dispatch(
 				new GenericEvent(null, [
 					'addressBookId' => $addressBookId,
 					'cardUri' => $cardUri,
-					'cardData' => $cardData]));
+					'cardData' => $cardData]),
+				'\OCA\DAV\CardDAV\CardDavBackend::updateCard'
+			);
 		}
 
 		return '"' . $etag . '"';
@@ -627,10 +638,12 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$this->addChange($addressBookId, $cardUri, 3);
 
 		if ($this->dispatcher !== null) {
-			$this->dispatcher->dispatch('\OCA\DAV\CardDAV\CardDavBackend::deleteCard',
+			$this->dispatcher->dispatch(
 				new GenericEvent(null, [
 					'addressBookId' => $addressBookId,
-					'cardUri' => $cardUri]));
+					'cardUri' => $cardUri]),
+				'\OCA\DAV\CardDAV\CardDavBackend::deleteCard'
+			);
 		}
 
 		if ($ret === 1) {
@@ -806,21 +819,60 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 	 * @return array an array of contacts which are arrays of key-value-pairs
 	 */
 	public function search($addressBookId, $pattern, $searchProperties, $limit = 100, $offset = 0) {
+		return $this->searchEx($addressBookId, $pattern, $searchProperties, [], $limit, $offset);
+	}
+
+	/**
+	 * search contact with options
+	 *
+	 * @param int $addressBookId
+	 * @param string $pattern which should match within the $searchProperties
+	 * @param array $searchProperties defines the properties within the query pattern should match
+	 * @param array $options
+	 * 			available options:
+	 * 				'matchMode'
+	 * 					- 'ANY' (default) - pattern can be anywhere in property value
+	 * 					- 'START' - property value should start with pattern
+	 * 					- 'END' - property value should end with pattern
+	 * 					- 'EXACT' - property value should match the pattern exactly
+	 * @param int $limit
+	 * @param int $offset
+	 * @return array an array of contacts which are arrays of key-value-pairs
+	 */
+	public function searchEx($addressBookId, $pattern, $searchProperties, $options, $limit = 100, $offset = 0) {
 		$query = $this->db->getQueryBuilder();
-		$query2 = $this->db->getQueryBuilder();
-		$query2->selectDistinct('cp.cardid')->from($this->dbCardsPropertiesTable, 'cp');
+		$cardIdSelect = $this->db->getQueryBuilder();
+		$cardIdSelect->selectDistinct('cp.cardid')->from($this->dbCardsPropertiesTable, 'cp');
+
+		$matchMode = $options['matchMode'] ?? 'any';
+		switch ($matchMode) {
+			case 'START':
+				$searchPattern = $this->db->escapeLikeParameter($pattern) . '%';
+				break;
+			case 'END':
+				$searchPattern = '%' . $this->db->escapeLikeParameter($pattern);
+				break;
+			case 'EXACT':
+				$searchPattern = $this->db->escapeLikeParameter($pattern);
+				break;
+			case 'ANY':
+			default:
+				$searchPattern = '%' . $this->db->escapeLikeParameter($pattern) . '%';
+		}
+
 		foreach ($searchProperties as $property) {
-			$query2->orWhere(
-				$query2->expr()->andX(
-					$query2->expr()->eq('cp.name', $query->createNamedParameter($property)),
-					$query2->expr()->iLike('cp.value', $query->createNamedParameter('%' . $this->db->escapeLikeParameter($pattern) . '%'))
+			$cardIdSelect->orWhere(
+				$cardIdSelect->expr()->andX(
+					$cardIdSelect->expr()->eq('cp.name', $query->createNamedParameter($property)),
+					$cardIdSelect->expr()->iLike('cp.value', $query->createNamedParameter($searchPattern))
 				)
 			);
 		}
-		$query2->andWhere($query2->expr()->eq('cp.addressbookid', $query->createNamedParameter($addressBookId)));
+		$cardIdSelect->andWhere($cardIdSelect->expr()->eq('cp.addressbookid', $query->createNamedParameter($addressBookId)));
 
 		$query->select('c.carddata', 'c.uri')->from($this->dbCardsTable, 'c')
-			->where($query->expr()->in('c.id', $query->createFunction($query2->getSQL())));
+				->where($query->expr()->in('c.id', $query->createFunction($cardIdSelect->getSQL())))
+				->andWhere($query->expr()->eq('c.addressbookid', $query->createNamedParameter($addressBookId)));
 
 		$query->setFirstResult($offset)->setMaxResults($limit);
 		$query->orderBy('c.uri');
@@ -873,7 +925,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$result->closeCursor();
 
 		if (!isset($uri['uri'])) {
-			throw new \InvalidArgumentException('Card does not exists: ' . $id);
+			throw new \InvalidArgumentException('Card does not exist: ' . $id);
 		}
 
 		return $uri['uri'];
@@ -1010,7 +1062,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 		$result->closeCursor();
 
 		if (!isset($cardIds['id'])) {
-			throw new \InvalidArgumentException('Card does not exists: ' . $uri);
+			throw new \InvalidArgumentException('Card does not exist: ' . $uri);
 		}
 
 		return (int)$cardIds['id'];
@@ -1028,7 +1080,7 @@ class CardDavBackend implements BackendInterface, SyncSupport {
 
 	private function convertPrincipal($principalUri, $toV2 = null) {
 		if ($this->principalBackend->getPrincipalPrefix() === 'principals') {
-			list(, $name) = URLUtil::splitPath($principalUri);
+			list(, $name) = \Sabre\Uri\split($principalUri);
 			$toV2 = $toV2 === null ? !$this->legacyMode : $toV2;
 			if ($toV2) {
 				return "principals/users/$name";

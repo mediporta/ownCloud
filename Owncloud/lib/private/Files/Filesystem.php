@@ -61,14 +61,12 @@ namespace OC\Files;
 
 use OC\Cache\CappedMemoryCache;
 use OC\Files\Config\MountProviderCollection;
-use OC\Files\Mount\MountPoint;
 use OC\Files\Storage\StorageFactory;
 use OCP\Files\Config\IMountProvider;
 use OCP\Files\NotFoundException;
 use OCP\IUserManager;
 
 class Filesystem {
-
 	/**
 	 * @var Mount\Manager $mounts
 	 */
@@ -90,7 +88,7 @@ class Filesystem {
 	 * classname which used for hooks handling
 	 * used as signalclass in OC_Hooks::emit()
 	 */
-	const CLASSNAME = 'OC_Filesystem';
+	public const CLASSNAME = 'OC_Filesystem';
 
 	/**
 	 * signalname emitted before file renaming
@@ -98,7 +96,7 @@ class Filesystem {
 	 * @param string $oldpath
 	 * @param string $newpath
 	 */
-	const signal_rename = 'rename';
+	public const signal_rename = 'rename';
 
 	/**
 	 * signal emitted after file renaming
@@ -106,7 +104,7 @@ class Filesystem {
 	 * @param string $oldpath
 	 * @param string $newpath
 	 */
-	const signal_post_rename = 'post_rename';
+	public const signal_post_rename = 'post_rename';
 
 	/**
 	 * signal emitted before file/dir creation
@@ -114,7 +112,7 @@ class Filesystem {
 	 * @param string $path
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_create = 'create';
+	public const signal_create = 'create';
 
 	/**
 	 * signal emitted after file/dir creation
@@ -122,7 +120,7 @@ class Filesystem {
 	 * @param string $path
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_post_create = 'post_create';
+	public const signal_post_create = 'post_create';
 
 	/**
 	 * signal emits before file/dir copy
@@ -131,7 +129,7 @@ class Filesystem {
 	 * @param string $newpath
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_copy = 'copy';
+	public const signal_copy = 'copy';
 
 	/**
 	 * signal emits after file/dir copy
@@ -139,7 +137,7 @@ class Filesystem {
 	 * @param string $oldpath
 	 * @param string $newpath
 	 */
-	const signal_post_copy = 'post_copy';
+	public const signal_post_copy = 'post_copy';
 
 	/**
 	 * signal emits before file/dir save
@@ -147,14 +145,14 @@ class Filesystem {
 	 * @param string $path
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_write = 'write';
+	public const signal_write = 'write';
 
 	/**
 	 * signal emits after file/dir save
 	 *
 	 * @param string $path
 	 */
-	const signal_post_write = 'post_write';
+	public const signal_post_write = 'post_write';
 
 	/**
 	 * signal emitted before file/dir update
@@ -162,7 +160,7 @@ class Filesystem {
 	 * @param string $path
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_update = 'update';
+	public const signal_update = 'update';
 
 	/**
 	 * signal emitted after file/dir update
@@ -170,38 +168,38 @@ class Filesystem {
 	 * @param string $path
 	 * @param bool $run changing this flag to false in hook handler will cancel event
 	 */
-	const signal_post_update = 'post_update';
+	public const signal_post_update = 'post_update';
 
 	/**
 	 * signal emits when reading file/dir
 	 *
 	 * @param string $path
 	 */
-	const signal_read = 'read';
+	public const signal_read = 'read';
 
 	/**
 	 * signal emits when removing file/dir
 	 *
 	 * @param string $path
 	 */
-	const signal_delete = 'delete';
+	public const signal_delete = 'delete';
 
 	/**
 	 * parameters definitions for signals
 	 */
-	const signal_param_path = 'path';
-	const signal_param_oldpath = 'oldpath';
-	const signal_param_newpath = 'newpath';
+	public const signal_param_path = 'path';
+	public const signal_param_oldpath = 'oldpath';
+	public const signal_param_newpath = 'newpath';
 
 	/**
 	 * run - changing this flag to false in hook handler will cancel event
 	 */
-	const signal_param_run = 'run';
+	public const signal_param_run = 'run';
 
-	const signal_create_mount = 'create_mount';
-	const signal_delete_mount = 'delete_mount';
-	const signal_param_mount_type = 'mounttype';
-	const signal_param_users = 'users';
+	public const signal_create_mount = 'create_mount';
+	public const signal_delete_mount = 'delete_mount';
+	public const signal_param_mount_type = 'mounttype';
+	public const signal_param_users = 'users';
 
 	/**
 	 * @var \OC\Files\Storage\StorageFactory $loader
@@ -229,7 +227,7 @@ class Filesystem {
 	 */
 	public static function addStorageWrapper($wrapperName, $wrapper, $priority = 50) {
 		if (self::$logWarningWhenAddingStorageWrapper) {
-			\OC::$server->getLogger()->warning("Storage wrapper '{wrapper}' was not registered via the 'OC_Filesystem - preSetup' hook which could cause potential problems.", [
+			\OC::$server->getLogger()->debug("Storage wrapper '{wrapper}' was not registered via the 'OC_Filesystem - preSetup' hook which could cause potential problems.", [
 				'wrapper' => $wrapperName,
 				'app' => 'filesystem',
 			]);
@@ -359,7 +357,7 @@ class Filesystem {
 		}
 	}
 
-	public static function init($user, $root) {
+	public static function init($user, $root, $fullInit = true) {
 		if (self::$defaultInstance) {
 			return false;
 		}
@@ -371,7 +369,7 @@ class Filesystem {
 		}
 
 		//load custom mount config
-		self::initMountPoints($user);
+		self::initMountPoints($user, $fullInit);
 
 		self::$loaded = true;
 
@@ -390,7 +388,7 @@ class Filesystem {
 	 * @param string $user
 	 * @throws \OC\User\NoUserException if the user is not available
 	 */
-	public static function initMountPoints($user = '') {
+	public static function initMountPoints($user = '', $fullInit = true) {
 		if ($user == '') {
 			$user = \OC_User::getUser();
 		}
@@ -419,7 +417,7 @@ class Filesystem {
 		// workaround in case of different casings
 		if ($user !== $realUid) {
 			$stack = \json_encode(\debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 50));
-			\OCP\Util::writeLog('files', 'initMountPoints() called with wrong user casing. This could be a bug. Expected: "' . $realUid . '" got "' . $user . '". Stack: ' . $stack, \OCP\Util::WARN);
+			\OCP\Util::writeLog('files', 'initMountPoints() called with wrong user casing. This could be a bug. Expected: "' . $realUid . '" got "' . $user . '". Stack: ' . $stack, \OCP\Util::DEBUG);
 			$user = $realUid;
 
 			// again with the correct casing
@@ -432,24 +430,27 @@ class Filesystem {
 
 		/** @var \OC\Files\Config\MountProviderCollection $mountConfigManager */
 		$mountConfigManager = \OC::$server->getMountProviderCollection();
+		'@phan-var \OC\Files\Config\MountProviderCollection $mountConfigManager';
 
-		// home mounts are handled seperate since we need to ensure this is mounted before we call the other mount providers
+		// home mounts are handled separate since we need to ensure this is mounted before we call the other mount providers
 		$homeMount = $mountConfigManager->getHomeMountForUser($userObject);
 
 		self::getMountManager()->addMount($homeMount);
 
 		\OC\Files\Filesystem::getStorage($user);
 
-		// Chance to mount for other storages
-		if ($userObject) {
-			$mounts = $mountConfigManager->getMountsForUser($userObject);
-			\array_walk($mounts, [self::$mounts, 'addMount']);
-			$mounts[] = $homeMount;
-			$mountConfigManager->registerMounts($userObject, $mounts);
-		}
+		if ($fullInit) {
+			// Chance to mount for other storages
+			if ($userObject) {
+				$mounts = $mountConfigManager->getMountsForUser($userObject);
+				\array_walk($mounts, [self::$mounts, 'addMount']);
+				$mounts[] = $homeMount;
+				$mountConfigManager->registerMounts($userObject, $mounts);
+			}
 
-		self::listenForNewMountProviders($mountConfigManager, $userManager);
-		\OC_Hook::emit('OC_Filesystem', 'post_initMountPoints', ['user' => $user]);
+			self::listenForNewMountProviders($mountConfigManager, $userManager);
+			\OC_Hook::emit('OC_Filesystem', 'post_initMountPoints', ['user' => $user]);
+		}
 	}
 
 	/**
@@ -601,7 +602,7 @@ class Filesystem {
 	}
 
 	/**
-	 * depriciated, replaced by isForbiddenFileOrDir
+	 * deprecated, replaced by isForbiddenFileOrDir
 	 * @param string $filename
 	 * @return boolean
 	 */
@@ -624,50 +625,168 @@ class Filesystem {
 	}
 
 	/**
-	* Check if the directory path / file name contains a Blacklisted or Excluded name
+	* Return a string describing the last regex error cause.
+	 *
+	* @return string
+	* @see https://www.php.net/manual/function.preg-last-error.php
+	*/
+	private static function pregErrorText() {
+		$errors = [
+			PREG_NO_ERROR               => 'Code 0 : No errors',
+			PREG_INTERNAL_ERROR         => 'Code 1 : Internal PCRE error, most likely a syntax error',
+			PREG_BACKTRACK_LIMIT_ERROR  => 'Code 2 : Backtrack limit was exhausted',
+			PREG_RECURSION_LIMIT_ERROR  => 'Code 3 : Recursion limit was exhausted',
+			PREG_BAD_UTF8_ERROR         => 'Code 4 : The offset did not correspond to the beginning of a valid UTF-8 code point',
+			PREG_BAD_UTF8_OFFSET_ERROR  => 'Code 5 : Malformed UTF-8 data',
+			PREG_JIT_STACKLIMIT_ERROR   => 'Code 6 : Just-in-time compiler stack limit reached',
+		];
+		return $errors[\preg_last_error()];
+	}
+
+	/**
+	 * Regex validity check.
+	 *
+	 * @param string $regexToBeChecked regex to be checked
+	 * @param string $callerMessage message from the calling function to identify where it is coming from
+	 * @return boolean
+	 */
+	private static function regexValidityCheck($regexToBeChecked, $callerMessage = '') {
+		if (\preg_last_error() !== PREG_NO_ERROR) {
+			\OC::$server->getLogger()->error(
+				'Regex error: ' . $regexToBeChecked . ' - ' . $callerMessage . ': ' . self::pregErrorText(),
+				['app' => __CLASS__]
+			);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Manage regex against Folder or File.
+	 *
+	 * @param array $regexList Regex array as defined in Config file
+	 * @param array $path Folder path or File contained in an array
+	 * @param string $callerMessage Message from the calling function to identify where a possible error is coming from
+	 * @return boolean folder or file regex status
+	 */
+	private static function checkRegexAgainstFolderOrFile($regexList, $path, $callerMessage = '') {
+		foreach ($regexList as $item) {
+			// check if the first and last character is a '/' and add one if not
+			// terminate with i == case insensitive
+			$newItem = $item;
+			if (\substr($item, 0, 1) !== '/') {
+				$newItem = '/' . $item;
+			}
+			if (\substr($item, -1) !== '/') {
+				$newItem = $newItem . '/i';
+			} else {
+				$newItem = $newItem . 'i';
+			}
+			@\preg_match($newItem, null);
+			if (self::regexValidityCheck($item, $callerMessage)) {
+				foreach ($path as $pathPart) {
+					if (@\preg_match($newItem, $pathPart)
+						&& self::regexValidityCheck(
+							$item,
+							'Checked string: ' . $pathPart
+						)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	*
+	* Check if the directory path / file name contains a Blacklisted or Excluded name as defined in config.
 	* config.php parameter arrays can contain file names to be blacklisted or directory names to be excluded
-	* Blacklist ... files that may harm the owncloud environment like a foreign .htaccess file
-	* Excluded  ... directories that are excluded from beeing further processed, like snapshot directories
-	* The parameter $ed is only used in conjunction with unit tests as we handover here the excluded
-	* directory name to be tested against. $ed and the query with can be redesigned if filesystem.php will get
+	* Blacklist ... files that may harm the owncloud environment like a foreign `.htaccess` file or other unwanted files
+	* Excluded  ... directories that are excluded from being further processed, like snapshot directories
+	* The parameter $excluded and the query with can be redesigned if filesystem.php will get
 	* a constructor where it is then possible to define the excluded directory names for unit tests.
-	* @param string $FileOrDir
-	* @param array $ed
+	 *
+	* @param string $FileOrDir is an array describing full folder path or full filename
+	* @param array $excluded is only used in conjunction with unit tests as we handover here the blacklisted / excluded
+	* directory name to be tested against
 	* @return boolean
 	*/
-	public static function isForbiddenFileOrDir($FileOrDir, $ed = []) {
-		$excluded = [];
-		$blacklist = [];
-		$path_parts = [];
-		$ppx = [];
-		$blacklist = \OC::$server->getSystemConfig()->getValue('blacklisted_files', ['.htaccess']);
-		if ($ed) {
-			$excluded = $ed;
+	public static function isForbiddenFileOrDir($FileOrDir, $excluded = []) {
+		$blacklistArray = [];
+		$pathParts = [];
+
+		// force blacklist/exclude arraylist/arrayRegex for unit tests
+		if ($excluded) {
+			$excludeFolders = $excluded;
+			$excludeFoldersRegex = $excluded;
+			$blacklistFiles = $excluded;
+			$blacklistFilesRegex = $excluded;
 		} else {
-			$excluded = \OC::$server->getSystemConfig()->getValue('excluded_directories', $ed);
+			$config = \OC::$server->getSystemConfig();
+			$excludeFolders = $config->getValue('excluded_directories', []);
+			$excludeFoldersRegex = $config->getValue('excluded_directories_regex', []);
+			$blacklistFiles = $config->getValue('blacklisted_files', ['.htaccess']);
+			$blacklistFilesRegex = $config->getValue('blacklisted_files_regex', []);
 		}
+
+		// empty array elements ('') will cause an infinite loop
+		// remove double or empty array elements and add exactly one '.htaccess' if not present.
+		// important, because if you define an empty config value, '.htaccess' will not be added...
+		// prevents misuse with a fake config value
+		$blacklistFiles[] = '.htaccess';
+		$blacklistFiles = \array_unique($blacklistFiles);
+		$blacklistFiles = \array_values(\array_filter($blacklistFiles));
+		// removes double or empty array elements
+		$excludeFolders = \array_unique($excludeFolders);
+		$excludeFolders = \array_values(\array_filter($excludeFolders));
+		$excludeFoldersRegex = \array_unique($excludeFoldersRegex);
+		$excludeFoldersRegex = \array_values(\array_filter($excludeFoldersRegex));
+		$blacklistFilesRegex = \array_unique($blacklistFilesRegex);
+		$blacklistFilesRegex = \array_values(\array_filter($blacklistFilesRegex));
+
 		// explode '/'
 		$ppx = \array_filter(\explode('/', $FileOrDir), 'strlen');
 		$ppx = \array_map('strtolower', $ppx);
+
 		// further explode each array element with '\' and add to result array if found
 		foreach ($ppx as $pp) {
 			// only add an array element if strlen != 0
-			$path_parts = \array_merge($path_parts, \array_filter(\explode('\\', $pp), 'strlen'));
+			$pathParts = \array_merge($pathParts, \array_filter(\explode('\\', $pp), 'strlen'));
 		}
-		if ($excluded) {
-			$excluded = \array_map('trim', $excluded);
-			$excluded = \array_map('strtolower', $excluded);
-			$match = \array_intersect($path_parts, $excluded);
-			if ($match) {
-				return true;
-			}
-		}
-		$blacklist = \array_map('trim', $blacklist);
-		$blacklist = \array_map('strtolower', $blacklist);
-		$match = \array_intersect($path_parts, $blacklist);
-		if ($match) {
+
+		// force that the last element (possibly the filename) is an entry in an array
+		// this is necessary for the called functions which expect this to be an array
+		$blacklistArray[] = \end($pathParts);
+
+		// first, check if the folder is excluded
+		$excludeFolders= \array_map('trim', $excludeFolders);
+		$excludeFolders= \array_map('strtolower', $excludeFolders);
+		if (\array_intersect($excludeFolders, $pathParts)) {
 			return true;
 		}
+
+		if (self::checkRegexAgainstFolderOrFile(
+			$excludeFoldersRegex,
+			$pathParts,
+			"Check excluded_directories_regex variable in config file"
+		)) {
+			return true;
+		}
+
+		// second, check if the file is blacklisted
+		if (\array_intersect($blacklistFiles, $blacklistArray)) {
+			return true;
+		}
+
+		if (self::checkRegexAgainstFolderOrFile(
+			$blacklistFilesRegex,
+			$blacklistArray,
+			"Check blacklisted_files_regex variable in config file"
+		)) {
+			return true;
+		}
+
 		return false;
 	}
 
@@ -969,5 +1088,20 @@ class Filesystem {
 	 */
 	public static function getETag($path) {
 		return self::$defaultInstance->getETag($path);
+	}
+
+	/**
+	 * Determines whether primary object storage is enabled on the instance
+	 *
+	 * @return bool
+	 */
+	public static function isPrimaryObjectStorageEnabled(): bool {
+		$config = \OC::$server->getConfig();
+		$appManager = \OC::$server->getAppManager();
+
+		$objectStorageAppEnabled = $appManager->isEnabledForUser('files_primary_s3');
+		$objectStorage = $config->getSystemValue('objectstore', null);
+
+		return $objectStorageAppEnabled && $objectStorage !== null;
 	}
 }

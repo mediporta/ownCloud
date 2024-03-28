@@ -34,7 +34,6 @@ use Sabre\HTTP\ClientHttpException;
 use Sabre\VObject\Reader;
 
 class SyncService {
-
 	/** @var CardDavBackend */
 	private $backend;
 
@@ -247,6 +246,37 @@ class SyncService {
 	}
 
 	/**
+	 * Delete the card owned by the user if the userId is unique
+	 * Returns:
+	 *   - true if the card is deleted (the user was unique)
+	 *   - false if there are 2 or more cards found with the same uid
+	 *   - null if no card was found with that uid
+	 * @param string $userId the user Id
+	 * @return bool|null
+	 */
+	public function deleteUserByUidIfUnique($userId) {
+		$systemAddressBook = $this->getLocalSystemAddressBook();
+		$contacts = $this->backend->searchEx(
+			$systemAddressBook['id'],
+			$userId,
+			['UID'],
+			['matchMode' => 'EXACT'],
+			2
+		);
+
+		$contactsFound = \count($contacts);
+		switch ($contactsFound) {
+			case 1:
+				// if there is only one contact found, delete it
+				$this->backend->deleteCard($systemAddressBook['id'], $contacts[0]['uri']);
+				return true;
+			case 2:
+				// if there are 2 or more (search was limited to 2 results), do nothing and return false
+				return false;
+		}
+	}
+
+	/**
 	 * @return array|null
 	 */
 	public function getLocalSystemAddressBook() {
@@ -262,7 +292,7 @@ class SyncService {
 
 	public function syncInstance(\Closure $progressCallback = null) {
 		$systemAddressBook = $this->getLocalSystemAddressBook();
-		$this->userManager->callForAllUsers(function ($user) use ($systemAddressBook, $progressCallback) {
+		$this->userManager->callForAllUsers(function ($user) use ($progressCallback) {
 			$this->updateUser($user);
 			if ($progressCallback !== null) {
 				$progressCallback();

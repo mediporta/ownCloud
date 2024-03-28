@@ -50,6 +50,9 @@ class ExceptionLoggerPlugin extends \Sabre\DAV\ServerPlugin {
 		// not available
 		'Sabre\DAV\Exception\StorageNotAvailableException' => true,
 		'OCP\Files\StorageNotAvailableException' => true,
+		// Locked exceptions could be fine if the file is truly locked
+		'Sabre\DAV\Exception\Locked' => true,
+		'OCA\DAV\Connector\Sabre\Exception\FileLocked' => true,  // thrown by the LockPlugin
 		//If the exception is InsufficientStorage, then log a debug message
 		'Sabre\DAV\Exception\InsufficientStorage' => true
 	];
@@ -88,7 +91,7 @@ class ExceptionLoggerPlugin extends \Sabre\DAV\ServerPlugin {
 	 * Log exception
 	 *
 	 */
-	public function logException(\Exception $ex) {
+	public function logException(\Throwable $ex) {
 		if ($ex->getPrevious() instanceof FileContentNotAllowedException) {
 			//Don't log because its already been logged may be by different
 			//app or so.

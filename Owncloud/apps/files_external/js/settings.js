@@ -19,11 +19,15 @@ var MOUNT_OPTIONS_DROPDOWN_TEMPLATE =
 	'		<label for="mountOptionsEncrypt">{{t "files_external" "Enable encryption"}}</label>' +
 	'	</div>' +
 	'	<div class="optionRow">' +
+	'		<input id="mountOptionsReadonly" name="read_only" type="checkbox" value="true"/>' +
+	'		<label for="mountOptionsReadonly">{{t "files_external" "Set read-only"}}</label>' +
+	'	</div>' +
+	'	<div class="optionRow">' +
 	'		<input id="mountOptionsPreviews" name="previews" type="checkbox" value="true" checked="checked"/>' +
 	'		<label for="mountOptionsPreviews">{{t "files_external" "Enable previews"}}</label>' +
 	'	</div>' +
-	'	<div class="optionRow">' +
-	'		<input id="mountOptionsSharing" name="enable_sharing" type="checkbox" value="true"/>' +
+	'	<div class="optionRow" title="{{mountOptionsSharingTitle}}">' +
+	'		<input id="mountOptionsSharing" name="enable_sharing" type="checkbox" value="true" {{#if sharingDisabled}}disabled{{/if}}/>' +
 	'		<label for="mountOptionsSharing">{{t "files_external" "Enable sharing"}}</label>' +
 	'	</div>' +
 	'	<div class="optionRow">' +
@@ -95,7 +99,7 @@ function addSelect2 ($elements, userListLimit) {
 		multiple: true,
 		//minimumInputLength: 1,
 		ajax: {
-			url: OC.generateUrl('apps/files_external/applicable'),
+			url: OC.generateUrl('apps/files_external/applicable/search'),
 			dataType: 'json',
 			quietMillis: 100,
 			data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -112,13 +116,13 @@ function addSelect2 ($elements, userListLimit) {
 					var userCount = 0; // users is an object
 
 					// add groups
-					$.each(data.groups, function(i, group) {
-						results.push({name:group+'(group)', displayname:group, type:'group' });
+					$.each(data.groups, function(id, group) {
+						results.push({name:'g:'+id, displayname:group, type:'group'});
 					});
 					// add users
 					$.each(data.users, function(id, user) {
 						userCount++;
-						results.push({name:id, displayname:user, type:'user' });
+						results.push({name:'u:'+id, displayname:user, type:'user'});
 					});
 
 
@@ -130,31 +134,38 @@ function addSelect2 ($elements, userListLimit) {
 			}
 		},
 		initSelection: function(element, callback) {
-			var users = {};
-			users['users'] = [];
-			var toSplit = element.val().split(",");
-			for (var i = 0; i < toSplit.length; i++) {
-				users['users'].push(toSplit[i]);
-			}
-
-			$.ajax(OC.generateUrl('displaynames'), {
-				type: 'POST',
-				contentType: 'application/json',
-				data: JSON.stringify(users),
-				dataType: 'json'
-			}).done(function(data) {
+			var storageConfig = element.closest('tr').data('storageConfig');
+			$.when(
+				$.ajax(OC.generateUrl('apps/files_external/applicable/users'), {
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({'users' : storageConfig.applicableUsers}),
+					dataType: 'json'
+				}),
+				$.ajax(OC.generateUrl('apps/files_external/applicable/groups'), {
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({'groups' : storageConfig.applicableGroups}),
+					dataType: 'json'
+				})
+			).done(function (d1, d2) {
 				var results = [];
-				if (data.status === 'success') {
-					$.each(data.users, function(user, displayname) {
-						if (displayname !== false) {
-							results.push({name:user, displayname:displayname, type:'user'});
-						}
+				if (d1[0].status === 'success') {
+					$.each(d1[0].users, function(user, displayname) {
+						results.push({name:'u:'+user, displayname:displayname, type:'user'});
 					});
-					callback(results);
 				} else {
 					//FIXME add error handling
 				}
-			});
+				if (d2[0].status === 'success') {
+					$.each(d2[0].groups, function(group, displayname) {
+						results.push({name:'g:'+group, displayname:displayname, type:'group'});
+					});
+				} else {
+					//FIXME add error handling
+				}
+				callback(results);
+			})
 		},
 		id: function(element) {
 			return element.name;
@@ -183,9 +194,22 @@ function addSelect2 ($elements, userListLimit) {
 		$.each($('.avatardiv'), function(i, div) {
 			var $div = $(div);
 			if ($div.data('type') === 'user') {
-				$div.avatar($div.data('name'),32);
+				$div.avatar($div.data('name').substring(2),32); // need to remove the 'u:' prefix
 			}
 		});
+	});
+
+	var $selectAll = $elements.closest('tr').find('.select2-drop').
+	prepend(
+		'<ul class="select2-controls">' +
+		'	<li class="selectAllApplicableUsers">' +
+		'		<div class="avatardiv"><img width="32" height="32" src="'+OC.imagePath('core','places/contacts-dark')+'"></div>' +
+		'		<span>'+t('files_external', 'All users')+'</span>' +
+		'	</li>' +
+		'</ul>');
+
+	$selectAll.on('click', function (){
+		$($elements).val(null).trigger('change');
 	});
 }
 
@@ -483,8 +507,9 @@ MountOptionsDropdown.prototype = {
 	 * @param {Object} $container container
 	 * @param {Object} mountOptions mount options
 	 * @param {Array} visibleOptions enabled mount options
+	 * @param {GlobalStorageConfig} storageConfig
 	 */
-	show: function($container, mountOptions, visibleOptions) {
+	show: function($container, mountOptions, visibleOptions, storageConfig) {
 		if (MountOptionsDropdown._last) {
 			MountOptionsDropdown._last.hide();
 		}
@@ -495,8 +520,12 @@ MountOptionsDropdown.prototype = {
 			MountOptionsDropdown._template = template;
 		}
 
+		var sharingDisabled = storageConfig.authMechanism === 'password::sessioncredentials';
+
 		var $el = $(template({
 			mountOptionsEncodingLabel: t('files_external', 'Compatibility with Mac NFD encoding (slow)'),
+			mountOptionsSharingTitle: sharingDisabled ? t('files_external', 'Sharing cannot be enabled due to the chosen authentication method') : '',
+			sharingDisabled: sharingDisabled,
 		}));
 		this.$el = $el;
 
@@ -760,7 +789,7 @@ MountConfigListView.prototype = _.extend({
 		$tr = this.newStorage(storageConfig, onCompletion);
 		onCompletion.resolve();
 
-		$tr.find('td.configuration').children().not('[type=hidden]').first().focus();
+		$tr.find('td.applicable').children().first().select2('open');
 		this.saveStorageConfig($tr);
 	},
 
@@ -905,7 +934,7 @@ MountConfigListView.prototype = _.extend({
 		var selectAuthMechanism = $('<select class="selectAuthMechanism"></select>');
 		var neededVisibility = (this._isPersonal) ? StorageConfig.Visibility.PERSONAL : StorageConfig.Visibility.ADMIN;
 		$.each(this._allAuthMechanisms, function(authIdentifier, authMechanism) {
-			if (backend.authSchemes[authMechanism.scheme] && (authMechanism.visibility & neededVisibility)) {
+			if ((backend.authSchemes[authMechanism.scheme] || backend.authSchemes[authMechanism.identifier]) && (authMechanism.visibility & neededVisibility)) {
 				selectAuthMechanism.append(
 					$('<option value="'+authMechanism.identifier+'" data-scheme="'+authMechanism.scheme+'">'+authMechanism.name+'</option>')
 				);
@@ -940,12 +969,16 @@ MountConfigListView.prototype = _.extend({
 
 		var applicable = [];
 		if (storageConfig.applicableUsers) {
-			applicable = applicable.concat(storageConfig.applicableUsers);
+			applicable = applicable.concat(
+				_.map(storageConfig.applicableUsers, function(user) {
+					return 'u:'+user;
+				})
+			);
 		}
 		if (storageConfig.applicableGroups) {
 			applicable = applicable.concat(
 				_.map(storageConfig.applicableGroups, function(group) {
-					return group+'(group)';
+					return 'g:'+group;
 				})
 			);
 		}
@@ -960,6 +993,7 @@ MountConfigListView.prototype = _.extend({
 			// FIXME default backend mount options
 			$tr.find('input.mountOptions').val(JSON.stringify({
 				'encrypt': true,
+				'read_only': false,
 				'previews': true,
 				'enable_sharing': false,
 				'filesystem_check_changes': 1,
@@ -1076,7 +1110,7 @@ MountConfigListView.prototype = _.extend({
 
 		var trimmedPlaceholder = placeholder.value;
 		if (placeholder.type === MountConfigListView.ParameterTypes.PASSWORD) {
-			newElement = $('<input type="password" class="'+classes.join(' ')+'" data-parameter="'+parameter+'" placeholder="'+ trimmedPlaceholder+'" />');
+			newElement = $('<input type="password" class="'+classes.join(' ')+'" data-parameter="'+parameter+'" placeholder="'+ trimmedPlaceholder+'" autocomplete="off" />');
 		} else if (placeholder.type === MountConfigListView.ParameterTypes.BOOLEAN) {
 			var checkboxId = _.uniqueId('checkbox_');
 			newElement = $('<div><label><input type="checkbox" id="'+checkboxId+'" class="'+classes.join(' ')+'" data-parameter="'+parameter+'" />'+ trimmedPlaceholder+'</label></div>');
@@ -1149,11 +1183,11 @@ MountConfigListView.prototype = _.extend({
 			var users = [];
 			var multiselect = getSelection($tr);
 			$.each(multiselect, function(index, value) {
-				var pos = (value.indexOf)?value.indexOf('(group)'): -1;
-				if (pos !== -1) {
-					groups.push(value.substr(0, pos));
+				if (value.startsWith('g:')) {
+					groups.push(value.substring(2));
 				} else {
-					users.push(value);
+					// only option left is that value.startsWith('u:'), so no need to check
+					users.push(value.substring(2));
 				}
 			});
 			// FIXME: this should be done in the multiselect change event instead
@@ -1228,12 +1262,24 @@ MountConfigListView.prototype = _.extend({
 					if (_.isFunction(callback)) {
 						callback(storage);
 					}
+
+					if (result.status === StorageConfig.Status.ERROR) {
+						OC.Notification.show(t('files_external', 'An error occurred while adding the external storage, please check the logs or contact the administrator'),
+							{ type: "error", timeout: 7 });
+					}
+
+					if (result.status === StorageConfig.Status.SUCCESS) {
+						OC.Notification.show(t('files_external', 'External storage has been added successfully'),
+							{ timeout: 7 });
+					}
 				}
 			},
 			error: function() {
 				if (concurrentTimer === undefined
 					|| $tr.data('save-timer') === concurrentTimer
 				) {
+					OC.Notification.show(t('files_external', 'An error occurred while adding the external storage please check the logs'),
+					{ type: "error", timeout: 7 });
 					self.updateStatus($tr, StorageConfig.Status.ERROR);
 				}
 			}
@@ -1249,6 +1295,7 @@ MountConfigListView.prototype = _.extend({
 	recheckStorageConfig: function($tr) {
 		var self = this;
 		var storage = this.getStorageConfig($tr);
+
 		if (!storage.validate()) {
 			return false;
 		}
@@ -1257,11 +1304,36 @@ MountConfigListView.prototype = _.extend({
 		storage.recheck({
 			success: function(result) {
 				self.updateStatus($tr, result.status, result.statusMessage);
+				self.onRecheckStorageConfig($tr, result.status);
 			},
 			error: function() {
 				self.updateStatus($tr, StorageConfig.Status.ERROR);
+				self.onRecheckStorageConfig($tr, StorageConfig.Status.ERROR);
 			}
 		});
+	},
+
+	/**
+	 * On recheck storage config handler
+	 *
+	 * @param {jQuery} $tr storage row
+	 * @param {number} status storage status
+	 */
+	onRecheckStorageConfig: function($tr, status){
+		if(status !== StorageConfig.Status.ERROR){
+			return;
+		}
+
+		var $mountPointName = $tr.find('input[name="mountPoint"]').val();
+
+		OC.Notification.show(
+			t('files_external', 'An error occurred while loading external mount point: {name}',
+				{name: $mountPointName}),
+			{
+				type: 'error',
+				timeout: 10,
+			}
+		);
 	},
 
 	/**
@@ -1342,6 +1414,7 @@ MountConfigListView.prototype = _.extend({
 		var $toggle = $tr.find('.mountOptionsToggle');
 		var dropDown = new MountOptionsDropdown();
 		var visibleOptions = [
+			'read_only',
 			'previews',
 			'filesystem_check_changes',
 			'encoding_compatibility'
@@ -1353,7 +1426,7 @@ MountConfigListView.prototype = _.extend({
 			visibleOptions.push('enable_sharing');
 		}
 
-		dropDown.show($toggle, storage.mountOptions || [], visibleOptions);
+		dropDown.show($toggle, storage.mountOptions || [], visibleOptions, storage);
 		$('body').on('mouseup.mountOptionsDropdown', function(event) {
 			var $target = $(event.target);
 			if ($toggle.has($target).length) {
@@ -1583,8 +1656,8 @@ OCA.External.Settings.OAuth2.verifyCode = function (backendUrl, data) {
 		}, function (result) {
 			if (result && result.status == 'success') {
 				$(token).val(result.data.token);
-				$(configured).val('true');	
-				
+				$(configured).val('true');
+
 				OCA.External.Settings.mountConfig.saveStorageConfig($tr, function(status) {
 					if (status) {
 						$tr.find('.configuration input.auth-param')

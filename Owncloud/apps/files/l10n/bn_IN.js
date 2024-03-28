@@ -1,7 +1,6 @@
 OC.L10N.register(
     "files",
     {
-    "Saved" : "সংরক্ষিত",
     "Close" : "বন্ধ",
     "Uploading..." : "আপলোডইং ...",
     "Download" : "ডাউনলোড করুন",
@@ -14,6 +13,7 @@ OC.L10N.register(
     "Size" : "আকার",
     "Folder" : "ফোল্ডার",
     "New folder" : "নতুন ফোল্ডার",
+    "Cancel" : "বাতিল করা",
     "A new file or folder has been <strong>created</strong>" : "একটি নতুন ফাইল বা ফোল্ডার হয়েছে <strong>তৈরি</strong>",
     "A file or folder has been <strong>changed</strong>" : "একটি নতুন ফাইল বা ফোল্ডার <strong>বদলানো হয়েছে</strong>",
     "A file or folder has been <strong>deleted</strong>" : "একটি নতুন ফাইল বা ফোল্ডার <strong>মুছে ফেলা হয়েছে</strong>",
@@ -23,7 +23,6 @@ OC.L10N.register(
     "%2$s changed %1$s" : "%2$s পরিবর্তন করেছে %1$s কে",
     "You deleted %1$s" : "আপনি %1$s কে মুছেছেন",
     "%2$s deleted %1$s" : "%2$s মুছেছে %1$s কে",
-    "Save" : "সেভ",
     "Settings" : "সেটিংস"
 },
 "nplurals=2; plural=(n != 1);");

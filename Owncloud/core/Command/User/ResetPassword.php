@@ -32,21 +32,16 @@ use OC\Core\Controller\LostController;
 use OC\Helper\EnvironmentHelper;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
-use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\IUserManager;
-use OCP\Mail\IMailer;
-use OCP\Security\ISecureRandom;
-use OCP\Util;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
+use Laminas\Validator\EmailAddress;
 
 class ResetPassword extends Command {
-
 	/** @var IUserManager */
 	protected $userManager;
 	/** @var IConfig  */
@@ -58,11 +53,13 @@ class ResetPassword extends Command {
 	/** @var LostController */
 	private $lostController;
 
-	public function __construct(IUserManager $userManager,
-						IConfig $config,
-						ITimeFactory $timeFactory,
-						EnvironmentHelper $environmentHelper,
-						LostController $lostController) {
+	public function __construct(
+		IUserManager $userManager,
+		IConfig $config,
+		ITimeFactory $timeFactory,
+		EnvironmentHelper $environmentHelper,
+		LostController $lostController
+	) {
 		$this->userManager = $userManager;
 		$this->config = $config;
 		$this->timeFactory = $timeFactory;
@@ -101,7 +98,7 @@ class ResetPassword extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$username = $input->getArgument('user');
 		$emailLink = $input->getOption('send-email');
 		$displayLink = $input->getOption('output-link');
@@ -123,7 +120,7 @@ class ResetPassword extends Command {
 			$userId = $user->getUID();
 			list($link, $token) = $this->lostController->generateTokenAndLink($userId);
 
-			if ($emailLink && $user->getEMailAddress() !== null) {
+			if ($emailLink && $this->hasValidEmailAddress($user->getEMailAddress())) {
 				try {
 					$this->config->deleteUserValue($userId, 'owncloud', 'lostpassword');
 					$this->lostController->sendEmail($userId, $token, $link);
@@ -143,6 +140,7 @@ class ResetPassword extends Command {
 		} elseif ($input->isInteractive()) {
 			/** @var $dialog \Symfony\Component\Console\Helper\QuestionHelper */
 			$dialog = $this->getHelperSet()->get('question');
+			'@phan-var \Symfony\Component\Console\Helper\QuestionHelper $dialog';
 
 			if (\OCP\App::isEnabled('encryption')) {
 				$output->writeln(
@@ -174,6 +172,24 @@ class ResetPassword extends Command {
 			return 1;
 		}
 
+		if ($emailLink) {
+			$userId = $user->getUID();
+			list(, $token) = $this->lostController->generateTokenAndLink($userId);
+			if (!$this->hasValidEmailAddress($user->getEMailAddress())) {
+				$output->writeln('<error>Email address is not set for the user ' . $user->getUID() . '</error>');
+				return 1;
+			}
+			$this->config->setUserValue($userId, 'owncloud', 'lostpassword', $this->timeFactory->getTime() . ':' . $token);
+			$success = $this->lostController->setPassword($token, $userId, $password, false);
+			if (\is_array($success) && isset($success['status']) && $success['status'] === 'success') {
+				$output->writeln("<info>Successfully reset password for {$username}</info>");
+				return 0;
+			} else {
+				$output->writeln("<error>Error while resetting password!</error>");
+				return 1;
+			}
+		}
+
 		$success = $user->setPassword($password);
 		if ($success) {
 			$output->writeln("<info>Successfully reset password for " . $username . "</info>");
@@ -181,5 +197,16 @@ class ResetPassword extends Command {
 			$output->writeln("<error>Error while resetting password!</error>");
 			return 1;
 		}
+		return 0;
+	}
+
+	/**
+	 * Determines if the user's email address is valid.
+	 *
+	 * @param string $emailAddress
+	 * @return bool
+	 */
+	protected function hasValidEmailAddress($emailAddress) {
+		return (new EmailAddress())->isValid($emailAddress);
 	}
 }

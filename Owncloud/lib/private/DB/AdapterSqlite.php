@@ -26,7 +26,6 @@
 namespace OC\DB;
 
 class AdapterSqlite extends Adapter {
-
 	/**
 	 * @param string $tableName
 	 */
@@ -49,7 +48,7 @@ class AdapterSqlite extends Adapter {
 	}
 
 	/**
-	 * Insert a row if the matching row does not exists.
+	 * Insert a row if the matching row does not exist.
 	 *
 	 * @param string $table The table name (will replace *PREFIX* with the actual prefix)
 	 * @param array $input data that should be inserted into the table  (column name => value)

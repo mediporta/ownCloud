@@ -30,7 +30,6 @@ use OCP\IGroup;
 use OCP\IUser;
 
 class Groups {
-
 	/** @var \OCP\IGroupManager */
 	private $groupManager;
 
@@ -45,9 +44,11 @@ class Groups {
 	 * @param \OCP\IUserSession $userSession
 	 * @param \OCP\IRequest $request
 	 */
-	public function __construct(\OCP\IGroupManager $groupManager,
-								\OCP\IUserSession $userSession,
-								\OCP\IRequest $request) {
+	public function __construct(
+		\OCP\IGroupManager $groupManager,
+		\OCP\IUserSession $userSession,
+		\OCP\IRequest $request
+	) {
 		$this->groupManager = $groupManager;
 		$this->userSession = $userSession;
 		$this->request = $request;
@@ -103,6 +104,7 @@ class Groups {
 		$isSubadminOfGroup = false;
 		$group = $this->groupManager->get($groupId);
 		if ($group !== null) {
+			'@phan-var \OC\Group\Manager $this->groupManager';
 			$isSubadminOfGroup =$this->groupManager->getSubAdmin()->isSubAdminofGroup($user, $group);
 		}
 
@@ -131,6 +133,10 @@ class Groups {
 		$groupId = $this->request->getParam('groupid', '');
 		if (($groupId === '') || $groupId === null || ($groupId === false)) {
 			\OCP\Util::writeLog('provisioning_api', 'Group name not supplied', \OCP\Util::ERROR);
+			return new OC_OCS_Result(null, 101, 'Invalid group name');
+		}
+		if (\trim($groupId) !== $groupId) {
+			\OCP\Util::writeLog('provisioning_api', 'Group name must not start or end with white space', \OCP\Util::ERROR);
 			return new OC_OCS_Result(null, 101, 'Invalid group name');
 		}
 		// Check if it exists
@@ -178,6 +184,7 @@ class Groups {
 			return new OC_OCS_Result(null, 101, 'Group does not exist');
 		}
 
+		'@phan-var \OC\Group\Manager $this->groupManager';
 		$subadmins = $this->groupManager->getSubAdmin()->getGroupsSubAdmins($targetGroup);
 		// New class returns IUser[] so convert back
 		$uids = [];

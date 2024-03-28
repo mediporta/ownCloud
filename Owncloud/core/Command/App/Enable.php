@@ -32,7 +32,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Enable extends Command {
-
 	/** @var IAppManager */
 	protected $manager;
 
@@ -62,7 +61,7 @@ class Enable extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appId = $input->getArgument('app-id');
 
 		if (!\OC_App::getAppPath($appId)) {

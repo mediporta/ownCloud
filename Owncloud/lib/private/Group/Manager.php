@@ -151,7 +151,7 @@ class Manager extends PublicEmitter implements IGroupManager {
 		$this->backends = [];
 		$this->clearCaches();
 	}
-	
+
 	protected function clearCaches() {
 		$this->cachedGroups = [];
 		$this->cachedUserGroups = [];
@@ -159,7 +159,7 @@ class Manager extends PublicEmitter implements IGroupManager {
 
 	/**
 	 * @param string $gid
-	 * @return \OC\Group\Group
+	 * @return \OC\Group\Group|null
 	 */
 	public function get($gid) {
 		if (isset($this->cachedGroups[$gid])) {
@@ -171,21 +171,22 @@ class Manager extends PublicEmitter implements IGroupManager {
 	/**
 	 * @param string $gid
 	 * @param string $displayName
-	 * @return \OCP\IGroup
+	 * @return \OC\Group\Group|null
 	 */
 	protected function getGroupObject($gid, $displayName = null) {
 		$backends = [];
 		foreach ($this->backends as $backend) {
-			if ($backend->implementsActions(\OC\Group\Backend::GROUP_DETAILS)) {
-				$groupData = $backend->getGroupDetails($gid);
-				if (\is_array($groupData)) {
-					// take the display name from the first backend that has a non-null one
-					if ($displayName === null && isset($groupData['displayName'])) {
-						$displayName = $groupData['displayName'];
+			if ($backend->groupExists($gid)) {
+				if ($backend->implementsActions(\OC\Group\Backend::GROUP_DETAILS)) {
+					/* @phan-suppress-next-line PhanUndeclaredMethod */
+					$groupData = $backend->getGroupDetails($gid);
+					if (\is_array($groupData)) {
+						// take the display name from the first backend that has a non-null one
+						if ($displayName === null && isset($groupData['displayName'])) {
+							$displayName = $groupData['displayName'];
+						}
 					}
-					$backends[] = $backend;
 				}
-			} elseif ($backend->groupExists($gid)) {
 				$backends[] = $backend;
 			}
 		}
@@ -209,19 +210,20 @@ class Manager extends PublicEmitter implements IGroupManager {
 	 * @return \OC\Group\Group
 	 */
 	public function createGroup($gid) {
-		if ($gid === '' || $gid === null) {
+		if ($gid === '' || $gid === null || \trim($gid) !== $gid) {
 			return false;
 		} elseif ($group = $this->get($gid)) {
 			return $group;
 		} else {
 			$this->emit('\OC\Group', 'preCreate', [$gid]);
-			$this->eventDispatcher->dispatch('group.preCreate', new GenericEvent(null, ['gid' => $gid]));
+			$this->eventDispatcher->dispatch(new GenericEvent(null, ['gid' => $gid]), 'group.preCreate');
 			foreach ($this->backends as $backend) {
 				if ($backend->implementsActions(\OC\Group\Backend::CREATE_GROUP)) {
+					/* @phan-suppress-next-line PhanUndeclaredMethod */
 					$backend->createGroup($gid);
 					$group = $this->getGroupObject($gid);
 					$this->emit('\OC\Group', 'postCreate', [$group]);
-					$this->eventDispatcher->dispatch('group.postCreate', new GenericEvent($group, ['gid' => $gid]));
+					$this->eventDispatcher->dispatch(new GenericEvent($group, ['gid' => $gid]), 'group.postCreate');
 					return $group;
 				}
 			}
@@ -234,11 +236,12 @@ class Manager extends PublicEmitter implements IGroupManager {
 	 * @param int|null $limit limit
 	 * @param int|null $offset offset
 	 * @param string|null $scope scope string
+	 * @param bool $alwaysReturnAllMatches
 	 * @return \OC\Group\Group[] groups
 	 */
-	public function search($search, $limit = null, $offset = null, $scope = null) {
+	public function search($search, $limit = null, $offset = null, $scope = null, $alwaysReturnAllMatches = false) {
 		$groups = [];
-		if ($this->userSearch->isSearchable($search)) {
+		if ($alwaysReturnAllMatches || $this->userSearch->isSearchable($search)) {
 			foreach ($this->backends as $backend) {
 				if (!$backend->isVisibleForScope($scope)) {
 					// skip backend
@@ -343,7 +346,12 @@ class Manager extends PublicEmitter implements IGroupManager {
 	 * @return bool if admin
 	 */
 	public function isAdmin($userId) {
-		return $this->isInGroup($userId, 'admin');
+		$user = $this->userManager->get($userId);
+		if ($user === null) {
+			return false;
+		}
+		$adminGroup = $this->get('admin');
+		return $adminGroup->inGroup($user);
 	}
 
 	/**
@@ -493,5 +501,13 @@ class Manager extends PublicEmitter implements IGroupManager {
 			return $group->inGroup($user);
 		}
 		return false;
+	}
+
+	/**
+	 * Get the active backends
+	 * @return \OCP\GroupInterface[]
+	 */
+	public function getBackends() {
+		return $this->backends;
 	}
 }

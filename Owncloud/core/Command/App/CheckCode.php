@@ -28,6 +28,7 @@ use OC\App\CodeChecker\CodeChecker;
 use OC\App\CodeChecker\EmptyCheck;
 use OC\App\CodeChecker\InfoChecker;
 use OC\App\InfoParser;
+use OCP\App\IAppManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -35,9 +36,11 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CheckCode extends Command {
-
 	/** @var InfoParser */
 	private $infoParser;
+
+	/** @var IAppManager */
+	private $appManager;
 
 	protected $checkers = [
 		'private' => '\OC\App\CodeChecker\PrivateCheck',
@@ -45,9 +48,10 @@ class CheckCode extends Command {
 		'strong-comparison' => '\OC\App\CodeChecker\StrongComparisonCheck',
 	];
 
-	public function __construct(InfoParser $infoParser) {
+	public function __construct(InfoParser $infoParser, IAppManager $appManager) {
 		parent::__construct();
 		$this->infoParser = $infoParser;
+		$this->appManager = $appManager;
 	}
 
 	protected function configure() {
@@ -74,7 +78,7 @@ class CheckCode extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appId = $input->getArgument('app-id');
 
 		$checkList = new EmptyCheck();
@@ -106,7 +110,7 @@ class CheckCode extends Command {
 				$output->writeln(" {$count} errors");
 			}
 			\usort($errors, function ($a, $b) {
-				return $a['line'] >$b['line'];
+				return $a['line'] - $b['line'];
 			});
 
 			foreach ($errors as $p) {
@@ -117,7 +121,11 @@ class CheckCode extends Command {
 		$errors = $codeChecker->analyse($appId);
 
 		if (!$input->getOption('skip-validate-info')) {
-			$infoChecker = new InfoChecker($this->infoParser);
+			$infoChecker = new InfoChecker($this->infoParser, $this->appManager);
+
+			$infoChecker->listen('InfoChecker', 'invalidAppInfo', function ($appId) use ($output) {
+				$output->writeln("<error>$appId has invalid XML in appinfo.xml</error>");
+			});
 
 			$infoChecker->listen('InfoChecker', 'mandatoryFieldMissing', function ($key) use ($output) {
 				$output->writeln("<error>Mandatory field missing: $key</error>");
@@ -186,7 +194,7 @@ class CheckCode extends Command {
 	 * @param $output
 	 */
 	private function analyseUpdateFile($appId, OutputInterface $output) {
-		$appPath = \OC_App::getAppPath($appId);
+		$appPath = $this->appManager->getAppPath($appId);
 		if ($appPath === false) {
 			throw new \RuntimeException("No app with given id <$appId> known.");
 		}

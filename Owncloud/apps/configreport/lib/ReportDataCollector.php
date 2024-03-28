@@ -17,6 +17,7 @@
  */
 
 namespace OCA\ConfigReport;
+use OC\Helper\UserTypeHelper;
 use OC\IntegrityCheck\Checker;
 use OC\SystemConfig;
 use OC\User\Manager;
@@ -25,12 +26,13 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use OCP\Files\External\Service\IGlobalStoragesService;
+use OCP\Files\External\IStorageConfig;
 
 /**
  * @package OCA\ConfigReport\Report
  */
 class ReportDataCollector {
-
 	/**
 	 * @var Checker
 	 */
@@ -45,6 +47,11 @@ class ReportDataCollector {
 	 * @var IGroupManager
 	 */
 	private $groupManager;
+
+	/**
+	 * @var UserTypeHelper
+	 */
+	private $userTypeHelper;
 
 	/**
 	 * @var string
@@ -77,7 +84,7 @@ class ReportDataCollector {
 	private $systemConfig;
 
 	/**
-	 * @var array
+	 * @var object
 	 */
 	private $appConfigData;
 
@@ -91,12 +98,25 @@ class ReportDataCollector {
 	 */
 	private $appConfig;
 
-	/** @var IDBConnection */
+	/**
+	 * @var IDBConnection
+	 */
 	private $connection;
+
+	/**
+	 * @var IGlobalStoragesService
+	 */
+	private $globalStoragesService;
+	
+	/**
+	 * @var array
+	 */
+	private $obscuredkeys;
 
 	/**
 	 * @param Checker $integrityChecker
 	 * @param Manager $userManager
+	 * @param UserTypeHelper $userTypeHelper
 	 * @param IGroupManager $groupManager
 	 * @param array $version
 	 * @param string $versionString
@@ -105,10 +125,12 @@ class ReportDataCollector {
 	 * @param SystemConfig $systemConfig
 	 * @param IAppConfig $appConfig
 	 * @param IDBConnection $connection
+	 * @param IGlobalStoragesService $globalStoragesService
 	 */
 	public function __construct(
 		Checker $integrityChecker,
 		Manager $userManager,
+		UserTypeHelper $userTypeHelper,
 		IGroupManager $groupManager,
 		array $version,
 		$versionString,
@@ -116,10 +138,12 @@ class ReportDataCollector {
 		$displayName,
 		SystemConfig $systemConfig,
 		IAppConfig $appConfig,
-		IDBConnection $connection
+		IDBConnection $connection,
+		IGlobalStoragesService $globalStoragesService
 	) {
 		$this->integrityChecker = $integrityChecker;
 		$this->userManager = $userManager;
+		$this->userTypeHelper = $userTypeHelper;
 		$this->groupManager = $groupManager;
 		$this->licenseKey = \OCP\IConfig::SENSITIVE_VALUE;
 
@@ -132,9 +156,14 @@ class ReportDataCollector {
 		$this->apps = \OC_App::listAllApps();
 		$this->appConfig = $appConfig;
 		$this->connection = $connection;
+		$this->globalStoragesService = $globalStoragesService;
 
 		$event = new GenericEvent();
-		$this->appConfigData = \OC::$server->getEventDispatcher()->dispatch('OCA\ConfigReport::loadData', $event);
+		$this->appConfigData = \OC::$server->getEventDispatcher()->dispatch($event, 'OCA\ConfigReport::loadData');
+		$this->obscuredkeys = [
+			'server_user',
+			'wopi.token.key',
+		];
 	}
 
 	/**
@@ -173,6 +202,8 @@ class ReportDataCollector {
 			'integritychecker' => $this->getIntegrityCheckerDetailArray(),
 			'core' => $this->getCoreConfigArray(),
 			'apps' => $this->getAppsDetailArray(),
+			'mounts' => $this->getMountsArray(),
+			'tables' => $this->getOCTablesArray(),
 			'migrations' => $this->getOcMigrationArray(),
 			'phpinfo' => $this->getPhpInfoDetailArray()
 		];
@@ -181,6 +212,65 @@ class ReportDataCollector {
 		$this->addEventListenerReportData($report);
 
 		return $report;
+	}
+
+	/**
+	 * @return array
+	 */
+	private function getMountsArray() {
+		/** @var IStorageConfig[] $mounts */
+		$mounts = $this->globalStoragesService->getStorageForAllUsers();
+
+		$mountsArray = [];
+
+		foreach ($mounts as $mount) {
+			if ($mount->getType() === IStorageConfig::MOUNT_TYPE_PERSONAl) {
+				continue;
+			}
+			$applicableUsers = \implode(', ', $mount->getApplicableUsers());
+			$applicableGroups = \implode(', ', $mount->getApplicableGroups());
+
+			if ($applicableUsers === '' && $applicableGroups === '') {
+				$applicableUsers = 'All';
+			}
+
+			$configuration = $mount->getBackendOptions();
+			$this->hideMountPasswords($mount, $configuration);
+			$mountsArray[] = [
+				'id' => $mount->getId(),
+				'mount_point' => $mount->getMountPoint(),
+				'storage' => $mount->getBackend()->getText(),
+				'authentication_type' => $mount->getAuthMechanism()->getText(),
+				'configuration' => $configuration,
+				'options' => $mount->getMountOptions(),
+				'applicable_users' => $applicableUsers,
+				'applicable_groups' => $applicableGroups,
+				'type' => $mount->getType() === IStorageConfig::MOUNT_TYPE_ADMIN ? 'Admin' : 'Personal'
+			];
+		}
+		return $mountsArray;
+	}
+
+	private function hideMountPasswords(IStorageConfig $mount, array &$configArray) {
+		$backend = $mount->getBackend();
+		$auth = $mount->getAuthMechanism();
+
+		$backendParameters = $backend->getParameters();
+		$authParameters = $auth->getParameters();
+
+		foreach ($configArray as $key => $value) {
+			if (
+				(
+					isset($backendParameters[$key]) &&
+					$backendParameters[$key]->getType() === \OCP\Files\External\DefinitionParameter::VALUE_PASSWORD
+				) || (
+					isset($authParameters[$key]) &&
+					$authParameters[$key]->getType() === \OCP\Files\External\DefinitionParameter::VALUE_PASSWORD
+				)
+			) {
+				$configArray[$key] = \OCP\IConfig::SENSITIVE_VALUE;
+			}
+		}
 	}
 
 	/**
@@ -221,9 +311,14 @@ class ReportDataCollector {
 		$users = [];
 		$this->userManager->callForAllUsers(function (IUser $user) use (&$users) {
 			if (!isset($users[$user->getBackendClassName()])) {
-				$users[$user->getBackendClassName()] = ['count' => 0, 'seen' => 0, 'logged in (30 days)' => 0];
+				$users[$user->getBackendClassName()] = ['total_count' => 0, 'guest_count' => 0, 'seen' => 0, 'logged in (30 days)' => 0];
 			}
-			$users[$user->getBackendClassName()]['count']++;
+			$users[$user->getBackendClassName()]['total_count']++;
+
+			if ($this->userTypeHelper->isGuestUser($user->getUID()) === true) {
+				$users[$user->getBackendClassName()]['guest_count']++;
+			}
+
 			if ($user->getLastLogin() > 0) {
 				$users[$user->getBackendClassName()]['seen']++;
 				if ($user->getLastLogin() > \strtotime('-30 days')) {
@@ -257,7 +352,7 @@ class ReportDataCollector {
 			$result[$key] = $this->systemConfig->getFilteredValue($key);
 		}
 
-		return $result;
+		return $this->sanitizeValues($result);
 	}
 
 	/**
@@ -270,6 +365,9 @@ class ReportDataCollector {
 	private function sanitizeValues($values) {
 		foreach ($values as $key => $value) {
 			if (\stripos($key, 'password') !== false) {
+				$values[$key] = \OCP\IConfig::SENSITIVE_VALUE;
+			}
+			if (\in_array($key, $this->obscuredkeys)) {
 				$values[$key] = \OCP\IConfig::SENSITIVE_VALUE;
 			}
 		}
@@ -306,6 +404,7 @@ class ReportDataCollector {
 	private function getOcMigrationArray() {
 		//Get data from oc_migrations table
 		$queryBuilder = $this->connection->getQueryBuilder();
+		/* @phpstan-ignore-next-line @phan-suppress-next-line PhanDeprecatedFunction */
 		$results = $queryBuilder
 			->select('app', 'version')
 			->from('migrations')
@@ -313,6 +412,51 @@ class ReportDataCollector {
 			->fetchAll();
 
 		return $results;
+	}
+
+	/**
+	 * @return array
+	 */
+	private function getOCTablesArray() {
+		$ocTables = [];
+		//Get tables structure/description/schema from owncloud db
+		/* @phpstan-ignore-next-line @phan-suppress-next-line PhanUndeclaredMethod */
+		$schemaManager = $this->connection->getSchemaManager();
+		$tableNames = $schemaManager->listTableNames();
+		foreach ($tableNames as $tableName) {
+			$ocTables['tableNames'][$tableName] = [];
+			$tableDetail = $schemaManager->listTableDetails($tableName);
+			$columns = $tableDetail->getColumns();
+			foreach ($columns as $column) {
+				$ocTables['tableNames'][$tableName]['fields'][] = [
+					$column->getName() =>
+						[
+							'type' => $column->getType()->getName(),
+							'null' => !$column->getNotnull(),
+							'default' => $column->getDefault(),
+							'autoIncrement' => $column->getAutoincrement(),
+						]
+				];
+			}
+			$indexes = $tableDetail->getIndexes();
+			foreach ($indexes as $index) {
+				$ocTables['tableNames'][$tableName]['index'][] = [
+					'indexName' => $index->getName(),
+					'columns' => $index->getColumns(),
+					'unique' => $index->isUnique()
+				];
+			}
+			if ($tableDetail->hasPrimaryKey()) {
+				$primaryColumns = $tableDetail->getPrimaryKeyColumns();
+			} else {
+				$primaryColumns = [];
+			}
+			$ocTables['tableNames'][$tableName][] = [
+				'primaryColumns' => $primaryColumns
+			];
+		}
+
+		return $ocTables;
 	}
 
 	/**
@@ -328,7 +472,7 @@ class ReportDataCollector {
 
 		// Get the phpinfo, parse it, and record it (parts from http://www.php.net/manual/en/function.phpinfo.php#87463)
 		\ob_start();
-		\phpinfo(-1);
+		\phpinfo(INFO_ALL & ~INFO_ENVIRONMENT);
 
 		$phpinfo = \preg_replace(
 			['#^.*<body>(.*)</body>.*$#ms', '#<h2>PHP License</h2>.*$#ms',
@@ -345,7 +489,8 @@ class ReportDataCollector {
 				'<tr><td>PHP Credits Egg</td><td>$1</td></tr>',
 				'<tr><td>Zend Engine</td><td>$2</td></tr>' . "\n" .
 				'<tr><td>Zend Egg</td><td>$1</td></tr>', ' ', '%S%', '%E%'],
-			\ob_get_clean());
+			\ob_get_clean()
+		);
 
 		$sections = \explode('<h2>', \strip_tags($phpinfo, '<h2><th><td>'));
 		unset($sections[0]);
@@ -359,7 +504,10 @@ class ReportDataCollector {
 			}
 			\preg_match_all(
 				'#%S%(?:<td>(.*?)</td>)?(?:<td>(.*?)</td>)?(?:<td>(.*?)</td>)?%E%#',
-				$section, $matches, PREG_SET_ORDER);
+				$section,
+				$matches,
+				PREG_SET_ORDER
+			);
 			foreach ($matches as $match) {
 				if (isset($sensitiveServerConfigs[$match[1]])) {
 					continue;

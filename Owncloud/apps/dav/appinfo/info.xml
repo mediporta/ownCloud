@@ -4,8 +4,8 @@
 	<name>WebDAV</name>
 	<description>ownCloud WebDAV endpoint</description>
 	<licence>AGPL</licence>
-	<author>owncloud.org</author>
-	<version>0.4.0</version>
+	<author>owncloud.com</author>
+	<version>0.7.0</version>
 	<default_enable/>
 	<use-migrations>true</use-migrations>
 	<types>
@@ -16,10 +16,11 @@
 		<webdav>appinfo/v1/publicwebdav.php</webdav>
 	</public>
 	<dependencies>
-		<owncloud min-version="10.0" max-version="10.0" />
+		<owncloud min-version="10" max-version="10" />
 	</dependencies>
 	<background-jobs>
 		<job>OCA\DAV\CardDAV\SyncJob</job>
+		<job>OCA\DAV\BackgroundJob\CleanProperties</job>
 	</background-jobs>
 	<commands>
 		<command>OCA\DAV\Command\CreateAddressBook</command>

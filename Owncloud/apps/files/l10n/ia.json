@@ -1,7 +1,5 @@
 { "translations": {
     "Unknown error" : "Error Incognite",
-    "Saved" : "Salveguardate",
-    "Home" : "Domo",
     "Close" : "Clauder",
     "Uploading..." : "Incargante...",
     "..." : "...",
@@ -11,6 +9,7 @@
     "Unshare" : "Leva compartir",
     "Files" : "Files",
     "Details" : "Detalios",
+    "group" : "gruppo",
     "Name" : "Nomine",
     "Size" : "Dimension",
     "Modified" : "Modificate",
@@ -18,6 +17,8 @@
     "File name cannot be empty." : "Le nomine de file non pote esser vacue.",
     "Folder" : "Dossier",
     "New folder" : "Nove dossier",
+    "Cancel" : "Cancellar",
+    "Create" : "Crear",
     "Upload" : "Incargar",
     "A new file or folder has been <strong>created</strong>" : "Un nove file o dossier ha essite <strong>create</strong>",
     "A file or folder has been <strong>changed</strong>" : "Un nove file o dossier ha essite <strong>modificate</strong>",
@@ -33,8 +34,6 @@
     "You restored %1$s" : "Tu restabiliva %1$s",
     "%2$s restored %1$s" : "%2$s restabilite %1$s",
     "Upload (max. %s)" : "Incargar (max. %s)",
-    "Maximum upload size" : "Dimension maxime de incargamento",
-    "Save" : "Salveguardar",
     "Settings" : "Configurationes",
     "Upload too large" : "Incargamento troppo longe",
     "Text file" : "File de texto"

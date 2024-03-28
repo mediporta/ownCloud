@@ -54,7 +54,6 @@ namespace OC\User;
 use OC\Cache\CappedMemoryCache;
 use OCP\IUserBackend;
 use OCP\User\IProvidesDisplayNameBackend;
-use OCP\User\IProvidesEMailBackend;
 use OCP\User\IProvidesHomeBackend;
 use OCP\Util;
 
@@ -168,7 +167,11 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 	 */
 	public function getDisplayName($uid) {
 		$this->loadUser($uid);
-		return empty($this->cache[$uid]['displayname']) ? $uid : $this->cache[$uid]['displayname'];
+		if (\strlen($this->cache[$uid]['displayname']) === 0) {
+			return $uid;
+		}
+
+		return $this->cache[$uid]['displayname'];
 	}
 
 	/**
@@ -354,6 +357,11 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 			throw new \Exception('key uid is expected to be set in $param');
 		}
 
+		if (isset($param['hasBeenHandled']) && $param['hasBeenHandled']) {
+			// if the event has been handled already, ignore it
+			return;
+		}
+
 		$backends = \OC::$server->getUserManager()->getBackends();
 		foreach ($backends as $backend) {
 			if ($backend instanceof Database) {
@@ -361,6 +369,7 @@ class Database extends Backend implements IUserBackend, IProvidesHomeBackend, IP
 				$uid = $backend->loginName2UserName($param['uid']);
 				if ($uid !== false) {
 					$param['uid'] = $uid;
+					$param['hasBeenHandled'] = true;  // mark the event as handled
 					return;
 				}
 			}

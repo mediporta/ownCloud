@@ -28,7 +28,6 @@ use OCP\IConfig;
 use OCP\IURLGenerator;
 
 class Certificates implements ISettings {
-
 	/** @var IConfig */
 	protected $config;
 	/** @var ICertificateManager */
@@ -36,9 +35,11 @@ class Certificates implements ISettings {
 	/** @var IURLGenerator */
 	protected $urlGenerator;
 
-	public function __construct(IConfig $config,
-								IURLGenerator $urlGenerator,
-								ICertificateManager $certificateManager) {
+	public function __construct(
+		IConfig $config,
+		IURLGenerator $urlGenerator,
+		ICertificateManager $certificateManager = null
+	) {
 		$this->config = $config;
 		$this->urlGenerator = $urlGenerator;
 		$this->certificateManager = $certificateManager;

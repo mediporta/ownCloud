@@ -21,10 +21,8 @@
 
 namespace OCA\Notifications;
 
-
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\Notification\IAction;
 use OCP\Notification\IManager;
 use OCP\Notification\INotification;
 
@@ -48,7 +46,6 @@ class Handler {
 	 * Add a new notification to the database
 	 *
 	 * @param INotification $notification
-	 * @return int
 	 */
 	public function add(INotification $notification) {
 		$sql = $this->connection->getQueryBuilder();
@@ -71,7 +68,9 @@ class Handler {
 		$this->sqlWhere($sql, $notification);
 
 		$statement = $sql->execute();
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		$count = (int) $statement->fetchColumn();
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		$statement->closeCursor();
 
 		return $count;
@@ -81,7 +80,6 @@ class Handler {
 	 * Delete the notifications matching the given Notification
 	 *
 	 * @param INotification $notification
-	 * @return null
 	 */
 	public function delete(INotification $notification) {
 		$sql = $this->connection->getQueryBuilder();
@@ -108,7 +106,6 @@ class Handler {
 	 *
 	 * @param int $id
 	 * @param string $user
-	 * @return null
 	 */
 	public function deleteById($id, $user) {
 		$sql = $this->connection->getQueryBuilder();
@@ -138,9 +135,11 @@ class Handler {
 		$statement = $sql->execute();
 
 		$notification = null;
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		if ($row = $statement->fetch()) {
 			$notification = $this->notificationFromRow($row);
 		}
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		$statement->closeCursor();
 
 		return $notification;
@@ -164,9 +163,11 @@ class Handler {
 		$statement = $sql->execute();
 
 		$notifications = [];
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		while ($row = $statement->fetch()) {
 			$notifications[(int) $row['notification_id']] = $this->notificationFromRow($row);
 		}
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
 		$statement->closeCursor();
 
 		return $notifications;
@@ -246,24 +247,24 @@ class Handler {
 			->setParameter('subject', $notification->getSubject());
 
 		$sql->setValue('subject_parameters', $sql->createParameter('subject_parameters'))
-			->setParameter('subject_parameters', json_encode($notification->getSubjectParameters()));
+			->setParameter('subject_parameters', \json_encode($notification->getSubjectParameters()));
 
 		$sql->setValue('message', $sql->createParameter('message'))
 			->setParameter('message', $notification->getMessage());
 
 		$sql->setValue('message_parameters', $sql->createParameter('message_parameters'))
-			->setParameter('message_parameters', json_encode($notification->getMessageParameters()));
+			->setParameter('message_parameters', \json_encode($notification->getMessageParameters()));
 
 		$sql->setValue('link', $sql->createParameter('link'))
 			->setParameter('link', $notification->getLink());
 
-		if (method_exists($notification, 'getIcon')) {
+		if (\method_exists($notification, 'getIcon')) {
 			$sql->setValue('icon', $sql->createNamedParameter($notification->getIcon()));
 		}
 
 		$actions = [];
 		foreach ($notification->getActions() as $action) {
-			/** @var IAction $action */
+			/** @var \OCP\Notification\IAction $action */
 			$actions[] = [
 				'label' => $action->getLabel(),
 				'link' => $action->getLink(),
@@ -272,7 +273,7 @@ class Handler {
 			];
 		}
 		$sql->setValue('actions', $sql->createParameter('actions'))
-			->setParameter('actions', json_encode($actions));
+			->setParameter('actions', \json_encode($actions));
 	}
 
 	/**
@@ -290,19 +291,19 @@ class Handler {
 			->setUser($row['user'])
 			->setDateTime($dateTime)
 			->setObject($row['object_type'], $row['object_id'])
-			->setSubject($row['subject'], (array) json_decode($row['subject_parameters'], true));
+			->setSubject($row['subject'], (array) \json_decode($row['subject_parameters'], true));
 
 		if ($row['message'] !== '' && $row['message'] !== null) {
-			$notification->setMessage($row['message'], (array) json_decode($row['message_parameters'], true));
+			$notification->setMessage($row['message'], (array) \json_decode($row['message_parameters'], true));
 		}
 		if ($row['link'] !== '' && $row['link'] !== null) {
 			$notification->setLink($row['link']);
 		}
-		if (method_exists($notification, 'setIcon') && $row['icon'] !== '' && $row['icon'] !== null) {
+		if (\method_exists($notification, 'setIcon') && isset($row['icon']) && $row['icon'] !== '' && $row['icon'] !== null) {
 			$notification->setIcon($row['icon']);
 		}
 
-		$actions = (array) json_decode($row['actions'], true);
+		$actions = (array) \json_decode($row['actions'], true);
 		foreach ($actions as $actionData) {
 			$action = $notification->createAction();
 			$action->setLabel($actionData['label'])
@@ -314,5 +315,56 @@ class Handler {
 		}
 
 		return $notification;
+	}
+
+	/**
+	 * Remove the base url from absolute links in the database.
+	 * This affects the columns 'link' and 'action'.
+	 * e.g: http://owncloud.com/test -> /test
+	 *
+	 * @return int number of updated notifications
+	 */
+	public function removeBaseUrlFromAbsoluteLinks() {
+		$sql = $this->connection->getQueryBuilder();
+		$sql->select(['notification_id', 'link', 'actions'])
+			->from('notifications')
+			->where($sql->expr()->like('link', $sql->createPositionalParameter('http%')))
+			->orWhere($sql->expr()->like('actions', $sql->createPositionalParameter('%"link":"http%')));
+
+		$statement = $sql->execute();
+		$counter = 0;
+
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
+		while ($row = $statement->fetch()) {
+			$sql = $this->connection->getQueryBuilder();
+			$sql->update('notifications')
+				->where($sql->expr()->eq('notification_id', $sql->createNamedParameter($row['notification_id'])));
+
+			$linkUrlComponents = \parse_url($row['link']);
+			if (isset($linkUrlComponents['scheme'], $linkUrlComponents['path'])) {
+				$sql->set('link', $sql->createNamedParameter($linkUrlComponents['path']));
+			}
+
+			if (\strpos($row['actions'], 'http') !== false) {
+				$actions = \json_decode($row['actions'], true);
+
+				foreach ($actions as $index => $action) {
+					$actionUrlComponents = \parse_url($action['link']);
+					if (isset($actionUrlComponents['scheme'], $actionUrlComponents['path'])) {
+						$actions[$index]['link'] = $actionUrlComponents['path'];
+					}
+				}
+
+				$sql->set('actions', $sql->createNamedParameter(\json_encode($actions)));
+			}
+
+			$counter++;
+			$sql->execute();
+		}
+
+		/* @phan-suppress-next-line PhanDeprecatedFunction */
+		$statement->closeCursor();
+
+		return $counter;
 	}
 }

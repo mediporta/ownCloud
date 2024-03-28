@@ -36,6 +36,7 @@ use OC\Files\Mount\MoveableMount;
 use OCA\DAV\Connector\Sabre\Exception\FileLocked;
 use OCA\DAV\Connector\Sabre\Exception\Forbidden;
 use OCA\DAV\Connector\Sabre\Exception\InvalidPath;
+use OCA\DAV\TrashBin\ITrashBinNode;
 use OCA\DAV\Upload\FutureFile;
 use OCP\Files\FileContentNotAllowedException;
 use OCP\Files\ForbiddenException;
@@ -48,15 +49,14 @@ use Sabre\DAV\Exception\Forbidden as SabreForbidden;
 use Sabre\DAV\Exception\Locked as SabreLocked;
 use Sabre\DAV\Exception\NotFound as SabreNotFound;
 use Sabre\DAV\Exception\ServiceUnavailable as SabreServiceUnavailable;
+use Sabre\DAV\Exception\InsufficientStorage as SabreInsufficientStorage;
 use Sabre\DAV\ICollection;
 use Sabre\DAV\IFile;
 use Sabre\DAV\IMoveTarget;
 use Sabre\DAV\INode;
 use Sabre\DAV\IQuota;
-use Sabre\HTTP\URLUtil;
 
 class Directory extends Node implements ICollection, IQuota, IMoveTarget {
-
 	/**
 	 * Cached directory content
 	 *
@@ -122,7 +122,6 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 	 * @throws ServiceUnavailable
 	 */
 	public function createFile($name, $data = null) {
-
 		# the check here is necessary, because createFile uses put covered in sabre/file.php
 		# and not touch covered in files/view.php
 		if (Filesystem::isForbiddenFileOrDir($name)) {
@@ -151,16 +150,16 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 			} elseif (FutureFile::isFutureFile()) {
 				// Future file (chunked upload) requires fileinfo
 				$info = $this->fileView->getFileInfo($this->path . '/' . $name);
-			} else {
-				// For non-chunked upload it is enough to check if we can create a new file
-				if (!$this->fileView->isCreatable($this->path)) {
-					throw new SabreForbidden();
-				}
+			}
+
+			if (!$this->fileView->isCreatable($this->path)) {
+				throw new SabreForbidden();
 			}
 
 			$this->fileView->verifyPath($this->path, $name);
 
 			$path = $this->fileView->getAbsolutePath($this->path) . '/' . $name;
+			$path = Filesystem::normalizePath($path);
 
 			if (!$info) {
 				// use a dummy FileInfo which is acceptable here since it will be refreshed after the put is complete
@@ -169,7 +168,12 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 
 			$node = new File($this->fileView, $info);
 			$node->acquireLock(ILockingProvider::LOCK_SHARED);
-			return $node->put($data);
+			try {
+				$result = $node->put($data);
+			} finally {
+				$node->releaseLock(ILockingProvider::LOCK_SHARED);
+			}
+			return $result;
 		} catch (StorageNotAvailableException $e) {
 			throw new SabreServiceUnavailable($e->getMessage());
 		} catch (InvalidPathException $ex) {
@@ -195,7 +199,6 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 	 * @throws SabreServiceUnavailable
 	 */
 	public function createDirectory($name) {
-
 		# the check here is necessary, because createDirectory does not use the methods in files/view.php
 		if (Filesystem::isForbiddenFileOrDir($name)) {
 			throw new SabreForbidden();
@@ -209,6 +212,17 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 
 			if (!$this->info->isCreatable()) {
 				throw new SabreForbidden();
+			}
+
+			$absolutePath = Filesystem::normalizePath($this->fileView->getAbsolutePath($name));
+			list($targetStorage, $targetInternalPath) = Filesystem::resolvePath($absolutePath);
+
+			// We are using == instead of === as the computerFileSize method which is
+			// used to get the quota may return a float type. Note that the same
+			// has been observed for the disk_free_space function in local storage
+			list($used, $free) = $this->getQuotaInfo();
+			if ($free == 0 && ($targetStorage->instanceOfStorage('\OCP\Files\IHomeStorage') === true)) {
+				throw new SabreInsufficientStorage('Creation of empty directories is forbidden in case of no available quota');
 			}
 
 			$this->fileView->verifyPath($this->path, $name);
@@ -319,7 +333,12 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 		//
 		// TODO: resolve chunk file name here and implement "updateFile"
 		$path = $this->path . '/' . $name;
-		return $this->fileView->file_exists($path);
+		$path = FileSystem::normalizePath($path);
+		try {
+			return $this->fileView->file_exists($path);
+		} catch (StorageNotAvailableException $e) {
+			throw new SabreServiceUnavailable($e->getMessage());
+		}
 	}
 
 	/**
@@ -343,6 +362,8 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 			throw new Forbidden($ex->getMessage(), $ex->getRetry());
 		} catch (LockedException $e) {
 			throw new FileLocked($e->getMessage(), $e->getCode(), $e);
+		} catch (StorageNotAvailableException $e) {
+			throw new SabreServiceUnavailable($e->getMessage());
 		}
 	}
 
@@ -400,6 +421,13 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 	 */
 	public function moveInto($targetName, $fullSourcePath, INode $sourceNode) {
 		if (!$sourceNode instanceof Node) {
+			if ($sourceNode instanceof ITrashBinNode) {
+				if (!$this->fileView->isCreatable($this->getPath())) {
+					throw new SabreForbidden('Destination directory is not writable');
+				}
+
+				return $sourceNode->restore($this->path . '/' . $targetName);
+			}
 			// it's a file of another kind, like FutureFile
 			if ($sourceNode instanceof IFile) {
 				// fallback to default copy+delete handling
@@ -416,7 +444,7 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 
 		# check the destination path, for source see below
 		if (Filesystem::isForbiddenFileOrDir($destinationPath)) {
-			throw new SabreForbidden();
+			throw new SabreForbidden('Destination path contains a blacklisted or excluded name');
 		}
 
 		$targetNodeExists = $this->childExists($targetName);
@@ -427,7 +455,7 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 			throw new SabreForbidden('Could not copy directory ' . $sourceNode->getName() . ', target exists');
 		}
 
-		list($sourceDir, ) = URLUtil::splitPath($sourceNode->getPath());
+		list($sourceDir, ) = \Sabre\Uri\split($sourceNode->getPath());
 		$destinationDir = $this->getPath();
 
 		$sourcePath = $sourceNode->getPath();
@@ -445,11 +473,11 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 			if ($targetNodeExists || $sameFolder) {
 				// note that renaming a share mount point is always allowed
 				if (!$this->fileView->isUpdatable($destinationDir) && !$isMovableMount) {
-					throw new SabreForbidden();
+					throw new SabreForbidden('Mount is not movable');
 				}
 			} else {
 				if (!$this->fileView->isCreatable($destinationDir)) {
-					throw new SabreForbidden();
+					throw new SabreForbidden('Destination directory is not writable');
 				}
 			}
 
@@ -457,7 +485,7 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 				// moving to a different folder, source will be gone, like a deletion
 				// note that moving a share mount point is always allowed
 				if (!$this->fileView->isDeletable($sourcePath) && !$isMovableMount) {
-					throw new SabreForbidden();
+					throw new SabreForbidden('Source file or directory cannot be deleted');
 				}
 			}
 
@@ -469,8 +497,14 @@ class Directory extends Node implements ICollection, IQuota, IMoveTarget {
 			}
 
 			$renameOkay = $this->fileView->rename($sourcePath, $destinationPath);
+
 			if (!$renameOkay) {
-				throw new SabreForbidden('');
+				list($targetStorage, $targetInternalPath) = \OC\Files\Filesystem::resolvePath($destinationPath);
+				if ($isMovableMount === true && $targetStorage->instanceOfStorage('\OCP\Files\IHomeStorage') !== true) {
+					throw new SabreForbidden('It is not allowed to move one mount point into another one');
+				}
+
+				throw new SabreForbidden('There was an error while renaming the file or directory');
 			}
 		} catch (StorageNotAvailableException $e) {
 			throw new SabreServiceUnavailable($e->getMessage());

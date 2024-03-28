@@ -24,9 +24,9 @@
 namespace OC\Encryption;
 
 use OC\Cache\CappedMemoryCache;
+use OC_Util;
 
 class File implements \OCP\Encryption\IFile {
-
 	/** @var Util */
 	protected $util;
 
@@ -49,7 +49,6 @@ class File implements \OCP\Encryption\IFile {
 	 * @return array  ['users' => $uniqueUserIds, 'public' => $public]
 	 */
 	public function getAccessList($path) {
-
 		// Make sure that a share key is generated for the owner too
 		list($owner, $ownerPath) = $this->util->getUidAndFilename($path);
 
@@ -61,7 +60,7 @@ class File implements \OCP\Encryption\IFile {
 		}
 
 		$ownerPath = \substr($ownerPath, \strlen('/files'));
-		$ownerPath = $this->util->stripPartialFileExtension($ownerPath);
+		$ownerPath = OC_Util::stripPartialFileExtension($ownerPath);
 
 		// first get the shares for the parent and cache the result so that we don't
 		// need to check all parents for every file

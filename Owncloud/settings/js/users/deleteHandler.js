@@ -16,8 +16,9 @@
  * marking the object for deletion.
  * @param {removeCallback} removeCallback the function to be called after
  * successful delete.
+ * @param {undoCallback} undoCallback called after "undo" was clicked
  */
-function DeleteHandler(endpoint, paramID, markCallback, removeCallback) {
+function DeleteHandler(endpoint, paramID, markCallback, removeCallback, undoCallback) {
 	this.oidToDelete = false;
 	this.canceled = false;
 
@@ -26,100 +27,8 @@ function DeleteHandler(endpoint, paramID, markCallback, removeCallback) {
 
 	this.markCallback = markCallback;
 	this.removeCallback = removeCallback;
-	this.undoCallback = false;
-
-	this.notifier = false;
-	this.notificationDataID = false;
-	this.notificationMessage = false;
-	this.notificationPlaceholder = '%oid';
-}
-
-/**
- * Number of milliseconds after which the operation is performed.
- */
-DeleteHandler.TIMEOUT_MS = 7000;
-
-/**
- * Timer after which the action will be performed anyway.
- */
-DeleteHandler.prototype._timeout = null;
-
-/**
- * The function to be called after successfully marking the object for deletion
- * @callback markCallback
- * @param {string} oid the ID of the specific user or group
- */
-
-/**
- * The function to be called after successful delete. The id of the object will
- * be passed as argument. Unsuccessful operations will display an error using
- * OC.dialogs, no callback is fired.
- * @callback removeCallback
- * @param {string} oid the ID of the specific user or group
- */
-
-/**
- * This callback is fired after "undo" was clicked so the consumer can update
- * the web interface
- * @callback undoCallback
- * @param {string} oid the ID of the specific user or group
- */
-
-/**
- * enabled the notification system. Required for undo UI.
- *
- * @param {object} notifier Usually OC.Notification
- * @param {string} dataID an identifier for the notifier, e.g. 'deleteuser'
- * @param {string} message the message that should be shown upon delete. %oid
- * will be replaced with the affected id of the item to be deleted
- * @param {undoCallback} undoCallback called after "undo" was clicked
- */
-DeleteHandler.prototype.setNotification = function(notifier, dataID, message, undoCallback) {
-	this.notifier = notifier;
-	this.notificationDataID = dataID;
-	this.notificationMessage = message;
 	this.undoCallback = undoCallback;
-
-	var dh = this;
-
-	$('#notification')
-		.off('click.deleteHandler_' + dataID)
-		.on('click.deleteHandler_' + dataID, '.undo', function () {
-		if ($('#notification').data(dh.notificationDataID)) {
-			var oid = dh.oidToDelete;
-			dh.cancel();
-			if(typeof dh.undoCallback !== 'undefined') {
-				dh.undoCallback(oid);
-			}
-		}
-		dh.notifier.hide();
-	});
-};
-
-/**
- * shows the Undo Notification (if configured)
- */
-DeleteHandler.prototype.showNotification = function() {
-	if(this.notifier !== false) {
-		if(!this.notifier.isHidden()) {
-			this.hideNotification();
-		}
-		$('#notification').data(this.notificationDataID, true);
-		var msg = this.notificationMessage.replace(
-			this.notificationPlaceholder, escapeHTML(decodeURIComponent(this.oidToDelete)));
-		this.notifier.showHtml(msg);
-	}
-};
-
-/**
- * hides the Undo Notification
- */
-DeleteHandler.prototype.hideNotification = function() {
-	if(this.notifier !== false) {
-		$('#notification').removeData(this.notificationDataID);
-		this.notifier.hide();
-	}
-};
+}
 
 /**
  * initializes the delete operation for a given object id
@@ -127,39 +36,8 @@ DeleteHandler.prototype.hideNotification = function() {
  * @param {string} oid the object id
  */
 DeleteHandler.prototype.mark = function(oid) {
-	if(this.oidToDelete !== false) {
-		// passing true to avoid hiding the notification
-		// twice and causing the second notification
-		// to disappear immediately
-		this.deleteEntry(true);
-	}
 	this.oidToDelete = oid;
-	this.canceled = false;
-	this.markCallback(oid);
-	this.showNotification();
-	if (this._timeout) {
-		clearTimeout(this._timeout);
-		this._timeout = null;
-	}
-	if (DeleteHandler.TIMEOUT_MS > 0) {
-		this._timeout = window.setTimeout(
-				_.bind(this.deleteEntry, this),
-			   	DeleteHandler.TIMEOUT_MS
-		);
-	}
-};
-
-/**
- * cancels a delete operation
- */
-DeleteHandler.prototype.cancel = function() {
-	if (this._timeout) {
-		clearTimeout(this._timeout);
-		this._timeout = null;
-	}
-
-	this.canceled = true;
-	this.oidToDelete = false;
+	this.markCallback(decodeURIComponent(oid));
 };
 
 /**
@@ -167,25 +45,14 @@ DeleteHandler.prototype.cancel = function() {
  * initialized by mark(). On error, it will show a message via
  * OC.dialogs.alert. On success, a callback is fired so that the client can
  * update the web interface accordingly.
- *
- * @param {boolean} [keepNotification] true to keep the notification, false to hide
- * it, defaults to false
  */
-DeleteHandler.prototype.deleteEntry = function(keepNotification) {
+DeleteHandler.prototype.deleteEntry = function() {
 	var deferred = $.Deferred();
-	if(this.canceled || this.oidToDelete === false) {
+	if(this.oidToDelete === false) {
 		return deferred.resolve().promise();
 	}
 
 	var dh = this;
-	if(!keepNotification && $('#notification').data(this.notificationDataID) === true) {
-		dh.hideNotification();
-	}
-
-	if (this._timeout) {
-		clearTimeout(this._timeout);
-		this._timeout = null;
-	}
 
 	var payload = {};
 	payload[dh.ajaxParamID] = dh.oidToDelete;
@@ -199,12 +66,14 @@ DeleteHandler.prototype.deleteEntry = function(keepNotification) {
 
 			//TODO: following line
 			dh.removeCallback(dh.oidToDelete);
-			dh.canceled = true;
 		},
 		error: function (jqXHR) {
-			OC.dialogs.alert(jqXHR.responseJSON.data.message, t('settings', 'Unable to delete {objName}', {objName: dh.oidToDelete}));
+			var msg = 'Unknown error';
+			if (jqXHR.responseJSON && jqXHR.responseJSON.data && jqXHR.responseJSON.data.message) {
+				msg = jqXHR.responseJSON.data.message;
+			}
+			OC.dialogs.alert(msg, t('settings', 'Unable to delete {objName}', {objName: decodeURIComponent(dh.oidToDelete)}));
 			dh.undoCallback(dh.oidToDelete);
-
 		}
 	});
 };

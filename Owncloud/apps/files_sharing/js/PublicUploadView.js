@@ -26,7 +26,7 @@
 		'        <input type="button" class="stop icon-close" style="display:none" value="" />' +
 		'    </div>' +
 		'    <label>' +
-		'        <input type="file" class="uploader hiddenuploadfield" name="files[]" />' +
+		'        <input type="file" id="file_upload_start" class="uploader hiddenuploadfield" name="files[]" />' +
 		'        <div class="public-upload-view--dropzone">' +
 		'            <span class="icon icon-upload"></span><span>{{uploadButtonLabel}}</span>' +
 		'        </div>' +
@@ -66,11 +66,33 @@
 				this,
 				'_onUploadBeforeAdd',
 				'_onUploadDone',
+				'_onUploadStop',
+				'onUploadCancel',
 				'_getUploadUrl'
 			);
 		},
 
 		_onUploadBeforeAdd: function(upload) {
+                       var file = upload.getFile();
+                        if (file.isDirectory) {
+                               // We don't create folders in PublicUploadView.
+                                // One case has been observed, where we enter here:
+                                // An empty folder is dropped into the input field.
+                                // We can skip this "file" by setting a target folder outside the share.
+                                // This triggers a sanity check in the uploader and no MKCOL occurs.
+                                upload.setTargetFolder("..");
+                        }
+
+			// Flatten out any subdirectories.
+			// When the user wants to upload folder via drag and drop, the foldername
+			// (and possible further subdirectores) are in relativePath.
+			// This will cause uploader.ensureFolderExists() to fail, as it picks up the
+			// extra path components via getFullPath().
+			// Subdirectories are not needed here. We want all files in the upload folder, flat.
+			// To allow folder upload via drag and drop, we only need to clear out relativePath.
+			// This works nicely together with the autorename feature.
+			upload.getFile().relativePath = '';
+
 			// add autorename header to deduplicate names on the server in case of conflict
 			upload.setConflictMode(OC.FileUpload.CONFLICT_MODE_AUTORENAME_SERVER);
 		},
@@ -81,6 +103,14 @@
 			this.$('.public-upload-view--completed ul').append(this.itemTemplate({
 				fileName: fileName
 			}));
+		},
+
+		_onUploadStop: function (e, data) {
+			this.$('#uploadprogresswrapper .stop, #uploadprogressbar .label').hide();
+		},
+
+		onUploadCancel: function () {
+			this._uploader.cancelUploads();
 		},
 
 		_getUploadUrl: function(fileName) {
@@ -127,6 +157,7 @@
 			});
 			this._uploader.on('beforeadd', this._onUploadBeforeAdd);
 			this._uploader.on('done', this._onUploadDone);
+			this._uploader.on('stop', this._onUploadStop);
 
 			return this;
 		},
@@ -141,9 +172,13 @@
 		var view = new OCA.Sharing.PublicUploadView({
 			shareToken: $('#sharingToken').val()
 		});
+		$('#preview .uploadForm').append(view.$el);
+
 		view.render();
 
-		$('#preview .uploadForm').append(view.$el);
+		$('#uploadprogresswrapper .stop').on('click', function () {
+			view.onUploadCancel();
+		});
 	});
 
 })(OC,OCA);

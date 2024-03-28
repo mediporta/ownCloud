@@ -34,7 +34,6 @@ namespace OCP\AppFramework\Http;
  * @since 6.0.0
  */
 class TemplateResponse extends Response {
-
 	/**
 	 * name of the template
 	 * @var string
@@ -68,8 +67,12 @@ class TemplateResponse extends Response {
 	 * @param string $renderAs how the page should be rendered, defaults to user
 	 * @since 6.0.0 - parameters $params and $renderAs were added in 7.0.0
 	 */
-	public function __construct($appName, $templateName, array $params= [],
-								$renderAs='user') {
+	public function __construct(
+		$appName,
+		$templateName,
+		array $params= [],
+		$renderAs='user'
+	) {
 		$this->templateName = $templateName;
 		$this->appName = $appName;
 		$this->params = $params;

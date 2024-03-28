@@ -54,12 +54,14 @@ class GroupsController extends Controller {
 	 * @param bool $isAdmin
 	 * @param IL10N $l10n
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IGroupManager $groupManager,
-								IUserSession $userSession,
-								$isAdmin,
-								IL10N $l10n) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IGroupManager $groupManager,
+		IUserSession $userSession,
+		$isAdmin,
+		IL10N $l10n
+	) {
 		parent::__construct($appName, $request);
 		$this->groupManager = $groupManager;
 		$this->userSession = $userSession;
@@ -102,15 +104,17 @@ class GroupsController extends Controller {
 		if ($this->groupManager->groupExists($id)) {
 			return new DataResponse(
 				[
+					'status' => 'error',
 					'message' => (string)$this->l10n->t('Group already exists.')
 				],
 				Http::STATUS_CONFLICT
 			);
 		}
-		if ($this->groupManager->createGroup($id)) {
+		if ($groupObj = $this->groupManager->createGroup($id)) {
 			return new DataResponse(
 				[
-					'groupname' => $id
+					'gid' => $groupObj->getGID(),
+					'name' => $groupObj->getDisplayName(),
 				],
 				Http::STATUS_CREATED
 			);
@@ -119,9 +123,7 @@ class GroupsController extends Controller {
 		return new DataResponse(
 			[
 				'status' => 'error',
-				'data' => [
-					'message' => (string)$this->l10n->t('Unable to add group.')
-				]
+				'message' => (string)$this->l10n->t('Unable to add group.')
 			],
 			Http::STATUS_FORBIDDEN
 		);
@@ -154,6 +156,74 @@ class GroupsController extends Controller {
 				],
 			],
 			Http::STATUS_FORBIDDEN
+		);
+	}
+
+	/**
+	 * Get available groups for assigning and removing via WebUI.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @return DataResponse
+	 */
+	public function getAssignableAndRemovableGroups() {
+		$assignableGroups = [];
+		$removableGroups = [];
+
+		$currentUser = $this->userSession->getUser();
+		/* @phan-suppress-next-line PhanUndeclaredMethod */
+		$subAdmin = $this->groupManager->getSubAdmin();
+
+		if ($this->groupManager->isAdmin($currentUser->getUID())) {
+			foreach ($this->groupManager->getBackends() as $backend) {
+				if (!$backend->implementsActions($backend::ADD_TO_GROUP) && !$backend->implementsActions($backend::REMOVE_FROM_GROUP)) {
+					continue;
+				}
+
+				$groups = $backend->getGroups();
+				foreach ($groups as $group) {
+					$groupObject = $this->groupManager->get($group);
+					if ($backend->implementsActions($backend::ADD_TO_GROUP)) {
+						$assignableGroups[$groupObject->getGID()] = [
+							'gid' => $groupObject->getGID(),
+							'name' => $groupObject->getDisplayName(),
+						];
+					}
+					if ($backend->implementsActions($backend::REMOVE_FROM_GROUP)) {
+						$removableGroups[$groupObject->getGID()] = [
+							'gid' => $groupObject->getGID(),
+							'name' => $groupObject->getDisplayName(),
+						];
+					}
+				}
+			}
+		} elseif ($subAdmin->isSubAdmin($currentUser)) {
+			$subAdminGroups = $subAdmin->getSubAdminsGroups($currentUser);
+			foreach ($subAdminGroups as $subAdminGroup) {
+				$backend = $subAdminGroup->getBackend();
+				if ($backend->implementsActions($backend::ADD_TO_GROUP)) {
+					$assignableGroups[$subAdminGroup->getGID()] = [
+						'gid' => $subAdminGroup->getGID(),
+						'name' => $subAdminGroup->getDisplayName(),
+					];
+				}
+				if ($backend->implementsActions($backend::REMOVE_FROM_GROUP)) {
+					$removableGroups[$subAdminGroup->getGID()] = [
+						'gid' => $subAdminGroup->getGID(),
+						'name' => $subAdminGroup->getDisplayName()
+					];
+				}
+			}
+		}
+
+		return new DataResponse(
+			[
+				'data' => [
+					'assignableGroups' => $assignableGroups,
+					'removableGroups' => $removableGroups,
+				],
+				Http::STATUS_OK
+			]
 		);
 	}
 }

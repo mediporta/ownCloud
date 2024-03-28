@@ -21,6 +21,7 @@
 namespace OC\Files\Storage\Wrapper;
 
 use Icewind\Streams\CallbackWrapper;
+use Doctrine\DBAL\Exception\DriverException;
 use OC\Files\Stream\Checksum as ChecksumStream;
 use OCP\Files\IHomeStorage;
 
@@ -36,15 +37,14 @@ use OCP\Files\IHomeStorage;
  * @package OC\Files\Storage\Wrapper
  */
 class Checksum extends Wrapper {
-
 	/** Format of checksum field in filecache */
-	const CHECKSUMS_DB_FORMAT = 'SHA1:%s MD5:%s ADLER32:%s';
+	public const CHECKSUMS_DB_FORMAT = 'SHA1:%s MD5:%s ADLER32:%s';
 
-	const NOT_REQUIRED = 0;
+	public const NOT_REQUIRED = 0;
 	/** Calculate checksum on write (to be stored in oc_filecache) */
-	const PATH_NEW_OR_UPDATED = 1;
+	public const PATH_NEW_OR_UPDATED = 1;
 	/** File needs to be checksummed on first read because it is already in cache but has no checksum */
-	const PATH_IN_CACHE_WITHOUT_CHECKSUM = 2;
+	public const PATH_IN_CACHE_WITHOUT_CHECKSUM = 2;
 
 	/** @var array */
 	private $pathsInCacheWithoutChecksum = [];
@@ -64,7 +64,7 @@ class Checksum extends Wrapper {
 		$requirement = $this->getChecksumRequirement($path, $mode);
 
 		if ($requirement === self::PATH_NEW_OR_UPDATED) {
-			return \OC\Files\Stream\Checksum::wrap($stream, $path);
+			return \OC\Files\Stream\Checksum::wrap($stream, $path, $mode);
 		}
 
 		// If file is without checksum we save the path and create
@@ -73,7 +73,7 @@ class Checksum extends Wrapper {
 		// the checksum is then saved to oc_filecache for subsequent
 		// retrieval (see onClose())
 		if ($requirement == self::PATH_IN_CACHE_WITHOUT_CHECKSUM) {
-			$checksumStream = \OC\Files\Stream\Checksum::wrap($stream, $path);
+			$checksumStream = \OC\Files\Stream\Checksum::wrap($stream, $path, $mode);
 			return CallbackWrapper::wrap(
 				$checksumStream,
 				null,
@@ -131,14 +131,18 @@ class Checksum extends Wrapper {
 	 */
 	public function onClose() {
 		$cache = $this->getCache();
-		foreach ($this->pathsInCacheWithoutChecksum as $cacheId => $path) {
-			$cache->update(
-				$cacheId,
-				['checksum' => self::getChecksumsInDbFormat($path)]
-			);
-		}
+		try {
+			foreach ($this->pathsInCacheWithoutChecksum as $cacheId => $path) {
+				$cache->update(
+					$cacheId,
+					['checksum' => self::getChecksumsInDbFormat($path)]
+				);
+			}
 
-		$this->pathsInCacheWithoutChecksum = [];
+			$this->pathsInCacheWithoutChecksum = [];
+		} catch (DriverException $ex) {
+			\OC::$server->getLogger()->error($ex->getMessage(), ['app' => 'checksum']);
+		}
 	}
 
 	/**
@@ -163,7 +167,7 @@ class Checksum extends Wrapper {
 	/**
 	 * check if the file metadata should not be fetched
 	 * NOTE: files with a '.part' extension are ignored as well!
-	 *       prevents unfinished put requests to fetch metadata which does not exists
+	 *       prevents unfinished put requests to fetch metadata which does not exist
 	 *
 	 * @param string $file
 	 * @return boolean
@@ -183,7 +187,7 @@ class Checksum extends Wrapper {
 	 */
 	public function file_put_contents($path, $data) {
 		$memoryStream = \fopen('php://memory', 'r+');
-		$checksumStream = \OC\Files\Stream\Checksum::wrap($memoryStream, $path);
+		$checksumStream = \OC\Files\Stream\Checksum::wrap($memoryStream, $path, "wb");
 
 		\fwrite($checksumStream, $data);
 		\fclose($checksumStream);

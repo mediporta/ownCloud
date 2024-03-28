@@ -50,6 +50,9 @@ class Manager implements IManager {
 	/** @var string */
 	protected $currentUserId;
 
+	/** @var string[] */
+	protected $agentStack = [];
+
 	/**
 	 * constructor of the controller
 	 *
@@ -57,9 +60,11 @@ class Manager implements IManager {
 	 * @param IUserSession $session
 	 * @param IConfig $config
 	 */
-	public function __construct(IRequest $request,
-								IUserSession $session = null,
-								IConfig $config) {
+	public function __construct(
+		IRequest $request,
+		IUserSession $session = null,
+		IConfig $config
+	) {
 		$this->request = $request;
 		$this->session = $session;
 		$this->config = $config;
@@ -158,7 +163,7 @@ class Manager implements IManager {
 	 *  - setSubject()
 	 *
 	 * @param IEvent $event
-	 * @return null
+	 * @return void
 	 * @throws \BadMethodCallException if required values have not been set
 	 */
 	public function publish(IEvent $event) {
@@ -201,7 +206,7 @@ class Manager implements IManager {
 	 * @param string $affectedUser  Recipient of the activity
 	 * @param string $type          Type of the notification
 	 * @param int    $priority      Priority of the notification
-	 * @return null
+	 * @return void
 	 */
 	public function publishActivity($app, $subject, $subjectParams, $message, $messageParams, $file, $link, $affectedUser, $type, $priority) {
 		$event = $this->generateEvent();
@@ -528,5 +533,26 @@ class Manager implements IManager {
 
 		// Token found login as that user
 		return \array_shift($users);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function getAgentAuthor() {
+		return $this->agentStack[\count($this->agentStack) - 1] ?? null;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function setAgentAuthor($agentAuthor) {
+		$this->agentStack[] = $agentAuthor;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	public function restoreAgentAuthor() {
+		return \array_pop($this->agentStack);
 	}
 }

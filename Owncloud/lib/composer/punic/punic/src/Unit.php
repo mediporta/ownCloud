@@ -51,10 +51,35 @@ class Unit
      */
     public static function getName($unit, $width = 'short', $locale = '')
     {
-        $data = static::getDataForWidth($width, $locale);
-        $unitData = static::getDataForUnit($data, $unit);
+        $data = self::getDataForWidth($width, $locale);
+        $unitData = self::getDataForUnit($data, $unit);
 
         return $unitData['_name'];
+    }
+
+    /**
+     * Get the "per" localized format string of a unit.
+     *
+     * @param string $unit The unit identifier (eg 'duration/minute' or 'minute')
+     * @param string $width The format name; it can be 'long' ('%1$s per minute'), 'short' (eg '%1$s/min') or 'narrow' (eg '%1$s/min')
+     * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
+     *
+     * @throws Exception\ValueNotInList
+     *
+     * @return string
+     */
+    public static function getPerFormat($unit, $width = 'short', $locale = '')
+    {
+        $data = self::getDataForWidth($width, $locale);
+        $unitData = self::getDataForUnit($data, $unit);
+
+        if (isset($unitData['_per'])) {
+            return $unitData['_per'];
+        }
+        $pluralRule = Plural::getRuleOfType(1, Plural::RULETYPE_CARDINAL, $locale);
+        $name = trim(sprintf($unitData[$pluralRule], ''));
+
+        return sprintf($data['_compoundPattern'], '%1$s', $name);
     }
 
     /**
@@ -72,6 +97,7 @@ class Unit
     public static function format($number, $unit, $width = 'short', $locale = '')
     {
         $precision = null;
+        $m = null;
         if (is_int($width)) {
             $precision = $width;
             $width = 'short';
@@ -82,9 +108,9 @@ class Unit
                 $width = 'short';
             }
         }
-        $data = static::getDataForWidth($width, $locale);
-        $rules = static::getDataForUnit($data, $unit);
-        $pluralRule = Plural::getRule($number, $locale);
+        $data = self::getDataForWidth($width, $locale);
+        $rules = self::getDataForUnit($data, $unit);
+        $pluralRule = Plural::getRuleOfType($number, Plural::RULETYPE_CARDINAL, $locale);
         //@codeCoverageIgnoreStart
         // These checks aren't necessary since $pluralRule should always be in $rules, but they don't hurt ;)
         if (!isset($rules[$pluralRule])) {
@@ -316,7 +342,7 @@ class Unit
                 if (strpos($c, '_') === false) {
                     foreach (array_keys($us) as $u) {
                         if (strpos($c, '_') === false) {
-                            $units[] = "$c/$u";
+                            $units[] = "{$c}/{$u}";
                         }
                     }
                 }

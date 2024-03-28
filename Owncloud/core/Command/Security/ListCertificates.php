@@ -30,7 +30,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ListCertificates extends Base {
-
 	/** @var ICertificateManager */
 	protected $certificateManager;
 	/** @var IL10N */
@@ -49,7 +48,7 @@ class ListCertificates extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$outputType = $input->getOption('output');
 		if ($outputType === self::OUTPUT_FORMAT_JSON || $outputType === self::OUTPUT_FORMAT_JSON_PRETTY) {
 			$certificates = \array_map(function (ICertificate $certificate) {
@@ -90,5 +89,6 @@ class ListCertificates extends Base {
 			$table->setRows($rows);
 			$table->render();
 		}
+		return 0;
 	}
 }

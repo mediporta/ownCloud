@@ -15,7 +15,7 @@
 		'<input class="systemTagsInputField" type="hidden" name="tags" value=""/>';
 
 	var RESULT_TEMPLATE =
-		'<span class="systemtags-item{{#if isNew}} new-item{{/if}}" data-id="{{id}}">' +
+		'<div class="systemtags-item{{#if isNew}} new-item{{/if}}" data-id="{{id}}" data-name="{{name}}">' +
 		'    <span class="checkmark icon icon-checkmark"></span>' +
 		'{{#if isAdmin}}' +
 		'    <span class="label">{{{tagMarkup}}}</span>' +
@@ -23,11 +23,12 @@
 		'    <span class="label">{{name}}</span>' +
 		'{{/if}}' +
 		'{{#allowActions}}' +
-		'    <span class="systemtags-actions">' +
+		'    <div class="systemtags-actions">' +
 		'        <a href="#" class="rename icon icon-rename" title="{{renameTooltip}}"></a>' +
-		'    </span>' +
+		'        <a href="#" class="delete icon icon-delete" title="{{deleteTooltip}}"></a>' +
+		'    </div>' +
 		'{{/allowActions}}' +
-		'</span>';
+		'</div>';
 
 	var SELECTION_TEMPLATE =
 		'{{#if isAdmin}}' +
@@ -40,7 +41,6 @@
 		'<form class="systemtags-rename-form">' +
 		'    <label class="hidden-visually" for="{{cid}}-rename-input">{{renameLabel}}</label>' +
 		'    <input id="{{cid}}-rename-input" type="text" value="{{name}}">' +
-		'    <a href="#" class="delete icon icon-delete" title="{{deleteTooltip}}"></a>' +
 		'</form>';
 
 	/**
@@ -132,11 +132,10 @@
 			var $renameForm = $(this._renameFormTemplate({
 				cid: this.cid,
 				name: oldName,
-				deleteTooltip: t('core', 'Delete'),
 				renameLabel: t('core', 'Rename')
 			}));
 			$item.find('.label').after($renameForm);
-			$item.find('.label, .systemtags-actions').addClass('hidden');
+			$item.find('.label, .systemtags-actions').css('display','none');
 			$item.closest('.select2-result').addClass('has-form');
 
 			$renameForm.find('[title]').tooltip({
@@ -144,13 +143,14 @@
 				container: 'body'
 			});
 			$renameForm.find('input').focus().selectRange(0, oldName.length);
+
 			return false;
 		},
 
 		/**
 		 * Event handler whenever the rename form has been submitted after
 		 * the user entered a new tag name.
-		 * This will submit the change to the server. 
+		 * This will submit the change to the server.
 		 *
 		 * @param {Object} ev event
 		 */
@@ -166,7 +166,7 @@
 				// TODO: spinner, and only change text after finished saving
 				$item.find('.label').text(newName);
 			}
-			$item.find('.label, .systemtags-actions').removeClass('hidden');
+			$item.find('.label, .systemtags-actions').css('display','flex');
 			$form.remove();
 			$item.closest('.select2-result').removeClass('has-form');
 		},
@@ -176,13 +176,34 @@
 		 *
 		 * @param {Object} ev event
 		 */
-		_onClickDeleteTag: function(ev) {
+		_onClickDeleteTag: function (ev) {
+			var self = this;
 			var $item = $(ev.target).closest('.systemtags-item');
 			var tagId = $item.attr('data-id');
-			this.collection.get(tagId).destroy();
-			$item.closest('.select2-result').remove();
-			// TODO: spinner
-			return false;
+			var tagName = $item.attr('data-name');
+
+			ev.stopPropagation();
+			OC.dialogs.confirm(
+				t(
+					'core',
+					'Do you really want to remove the tag "{tagName}" and unassign it from all files and folders ?',
+					{tagName: tagName}
+				),
+				t('core', 'Remove tag'),
+				function (result) {
+					if (result === true) {
+						self.collection.get(tagId).destroy();
+						$item.closest('.select2-result').remove();
+					}
+
+					self.$tagsField.select2('open');
+				},
+				true
+			).then(function () {
+				// We need to do close the dropdown temporary otherwise select2 will overlay the dialog
+				self.$tagsField.select2('close');
+
+			});
 		},
 
 		_addToSelect2Selection: function(selection) {
@@ -207,6 +228,7 @@
 					name: e.object.name.trim(),
 					userVisible: true,
 					userAssignable: true,
+					userEditable: true,
 					canAssign: true
 				}, {
 					success: function(model) {
@@ -279,6 +301,16 @@
 		},
 
 		/**
+		 * Returns true if tag is static tag else false
+		 *
+		 * @param data
+		 * @returns {boolean}
+		 */
+		_isStaticTag: function(data) {
+			return data.userEditable === false && data.userAssignable === true;
+		},
+
+		/**
 		 * Formats a single dropdown result
 		 *
 		 * @param {Object} data data to format
@@ -288,8 +320,28 @@
 			if (!this._resultTemplate) {
 				this._resultTemplate = Handlebars.compile(RESULT_TEMPLATE);
 			}
+
+			/**
+			 * Static tags are shown if the user belongs to group which is
+			 * whitelisted in the tag. Else the tag is not seen. If the tag
+			 * is visible, then no edit options are available to users. Admin user
+			 * is the only exception here. Admin user can edit, delete, assign or
+			 * unassign the tag.
+			 *
+			 */
+			this._allowActions = true;
+			if (data.editableInGroup === false && this._isStaticTag(data)) {
+				//No need to show the static tag as it is not viewable for the user
+				return;
+			}
+			if (this._isStaticTag(data)) {
+				//Show the name of the static tag, rename and delete actions are forbidden for the user
+				this._allowActions = false;
+			}
+
 			return this._resultTemplate(_.extend({
 				renameTooltip: t('core', 'Rename'),
+				deleteTooltip: t('core', 'Delete'),
 				allowActions: this._allowActions,
 				tagMarkup: this._isAdmin ? OC.SystemTags.getDescriptiveTag(data)[0].innerHTML : null,
 				isAdmin: this._isAdmin
@@ -378,11 +430,11 @@
 
 			this.$el.find('[title]').tooltip({placement: 'bottom'});
 			this.$tagsField = this.$el.find('[name=tags]');
-			this.$tagsField.select2({
+			var select = this.$tagsField.select2({
 				placeholder: t('core', 'Collaborative tags'),
 				containerCssClass: 'systemtags-select2-container',
 				dropdownCssClass: 'systemtags-select2-dropdown',
-				closeOnSelect: false,
+				closeOnSelect: true,
 				allowClear: false,
 				multiple: this._multiple,
 				toggleSelect: this._multiple,
@@ -411,7 +463,13 @@
 				}
 			})
 				.on('select2-selecting', this._onSelectTag)
-				.on('select2-removing', this._onDeselectTag);
+				.on('select2-removing', this._onDeselectTag)
+				// this is basically a "hack" to enable option select via arrow keys.
+				// it seems to be a known problem in Select2 < v4 when closeOnSelect is false
+				.on("change", function(){
+					select.select2('close');
+					select.select2('open');
+				});
 
 			var $dropDown = this.$tagsField.select2('dropdown');
 			// register events for inside the dropdown
@@ -439,11 +497,10 @@
 
 		setData: function(data) {
 			this.$tagsField.select2('data', data);
-		}
+		},
 	});
 
 	OC.SystemTags = OC.SystemTags || {};
 	OC.SystemTags.SystemTagsInputField = SystemTagsInputField;
 
 })(OC);
-

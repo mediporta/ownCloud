@@ -2,10 +2,14 @@
 
 namespace Punic;
 
+use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
+
 /*
  * Comments marked as @TZWS have been added because it seems than PHP does
  * not support timezones with seconds.
- * Furthermore: the Unicode specs (http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table) says the following:
+ * Furthermore: the Unicode specs (https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table) says the following:
  * "The ISO8601 basic format with hours, minutes and optional seconds fields. Note: The seconds field is not supported by the
  * ISO8601 specification."
  */
@@ -97,9 +101,9 @@ class Calendar
     private static $tokenizerCache = array();
 
     /**
-     * Convert a date/time representation to a {@link http://php.net/manual/class.datetime.php \DateTime} instance.
+     * Convert a date/time representation to a {@link https://www.php.net/manual/class.datetime.php \DateTime} instance.
      *
-     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string|\DateTimeZone $toTimezone the timezone to set; leave empty to use the value of $fromTimezone (if it's empty we'll use the default timezone or the timezone associated to $value if it's already a `\DateTimeInterface`)
      * @param string|\DateTimeZone $fromTimezone the original timezone of $value; leave empty to use the default timezone (or the timezone associated to $value if it's already a `\DateTimeInterface`)
      *
@@ -135,45 +139,37 @@ class Calendar
             if (!empty($fromTimezone)) {
                 if (is_string($fromTimezone)) {
                     try {
-                        $tzFrom = new \DateTimeZone($fromTimezone);
+                        $tzFrom = new DateTimeZone($fromTimezone);
                     } catch (\Exception $x) {
                         throw new Exception\BadArgumentType($fromTimezone, '\\DateTimeZone', $x);
                     }
-                } elseif ($fromTimezone instanceof \DateTimeZone) {
+                } elseif ($fromTimezone instanceof DateTimeZone) {
                     $tzFrom = $fromTimezone;
                 } else {
                     throw new Exception\BadArgumentType($fromTimezone, '\\DateTimeZone');
                 }
             }
-            if (is_int($value) || is_float($value)) {
-                $result = new \DateTime();
+            if (is_numeric($value)) {
+                $result = new DateTime();
                 $result->setTimestamp($value);
                 if ($tzFrom !== null) {
                     $result->setTimezone($tzFrom);
                 }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
-                $result = new \DateTime(null, $value->getTimezone());
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
+                $result = new DateTime('now', $value->getTimezone());
                 $result->setTimestamp($value->getTimestamp());
                 if ($tzFrom !== null) {
                     $result->setTimezone($tzFrom);
                 }
             } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $result = new \DateTime();
-                    $result->setTimestamp($value);
-                    if ($tzFrom !== null) {
-                        $result->setTimezone($tzFrom);
+                try {
+                    if ($tzFrom === null) {
+                        $result = new DateTime($value);
+                    } else {
+                        $result = new DateTime($value, $tzFrom);
                     }
-                } else {
-                    try {
-                        if ($tzFrom === null) {
-                            $result = new \DateTime($value);
-                        } else {
-                            $result = new \DateTime($value, $tzFrom);
-                        }
-                    } catch (\Exception $x) {
-                        throw new Exception\BadArgumentType($value, '\\DateTime', $x);
-                    }
+                } catch (\Exception $x) {
+                    throw new Exception\BadArgumentType($value, '\\DateTime', $x);
                 }
             } else {
                 throw new Exception\BadArgumentType($value, '\\DateTime');
@@ -182,11 +178,11 @@ class Calendar
                 if (!empty($toTimezone)) {
                     if (is_string($toTimezone)) {
                         try {
-                            $result->setTimezone(new \DateTimeZone($toTimezone));
+                            $result->setTimezone(new DateTimeZone($toTimezone));
                         } catch (\Exception $x) {
                             throw new Exception\BadArgumentType($toTimezone, '\\DateTimeZone', $x);
                         }
-                    } elseif ($toTimezone instanceof \DateTimeZone) {
+                    } elseif ($toTimezone instanceof DateTimeZone) {
                         $result->setTimezone($toTimezone);
                     } else {
                         throw new Exception\BadArgumentType($toTimezone, '\\DateTimeZone');
@@ -199,7 +195,7 @@ class Calendar
     }
 
     /**
-     * Converts a format string from {@link http://php.net/manual/en/function.date.php#refsect1-function.date-parameters PHP's date format} to {@link http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table ISO format}.
+     * Converts a format string from {@link https://www.php.net/manual/function.date.php#refsect1-function.date-parameters PHP's date format} to {@link https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table ISO format}.
      * The following extra format chunks are introduced:
      * - 'P': ISO-8601 numeric representation of the day of the week (same as 'e' but not locale dependent)
      * - 'PP': Numeric representation of the day of the week, from 0 (for Sunday) to 6 (for Saturday)
@@ -302,14 +298,14 @@ class Calendar
                     }
                 }
             }
-            $cache[$format] = implode($converted);
+            $cache[$format] = implode('', $converted);
         }
 
         return $cache[$format];
     }
 
     /**
-     * Try to convert a date, time or date/time {@link http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table ISO format string} to a {@link http://php.net/manual/en/function.date.php#refsect1-function.date-parameters PHP date/time format}.
+     * Try to convert a date, time or date/time {@link https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table ISO format string} to a {@link https://www.php.net/manual/function.date.php#refsect1-function.date-parameters PHP date/time format}.
      *
      * @param string $isoDateTimeFormat The PHP date/time format
      *
@@ -601,15 +597,9 @@ class Calendar
         $result = '';
         if ((!empty($value)) || ($value === 0) || ($value === '0')) {
             $year = null;
-            if (is_int($value)) {
-                $year = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $year = (int) $value;
-            } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $year = (int) $value;
-                }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $year = (int) $value->format('Y');
             }
             if ($year === null) {
@@ -645,15 +635,9 @@ class Calendar
         $result = '';
         if ((!empty($value)) || ($value === 0) || ($value === '0')) {
             $month = null;
-            if (is_int($value)) {
-                $month = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $month = (int) $value;
-            } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $month = (int) $value;
-                }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $month = (int) $value->format('n');
             }
             if (($month === null) || (($month < 1) || ($month > 12))) {
@@ -673,7 +657,7 @@ class Calendar
     /**
      * Get the name of a week day.
      *
-     * @param number|\DateTime|\DateTimeInterface $value a week day number (from 0-Sunday to 6-Saturnday) or a \DateTimeInterface instance for which you want the name of the day of the week
+     * @param number|\DateTime|\DateTimeInterface $value a week day number (from 0-Sunday to 6-Saturday) or a \DateTimeInterface instance for which you want the name of the day of the week
      * @param string $width the format name; it can be 'wide' (eg 'Sunday'), 'abbreviated' (eg 'Sun'), 'short' (eg 'Su') or 'narrow' (eg 'S')
      * @param string $locale The locale to use. If empty we'll use the default locale set with {@link \Punic\Data::setDefaultLocale()}.
      * @param bool $standAlone set to true to return the form used independently (such as in calendar header), set to false if the week day name will be part of a date
@@ -689,15 +673,9 @@ class Calendar
         $result = '';
         if ((!empty($value)) || ($value === 0) || ($value === '0')) {
             $weekday = null;
-            if (is_int($value)) {
-                $weekday = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $weekday = (int) $value;
-            } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $weekday = (int) $value;
-                }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $weekday = (int) $value->format('w');
             }
             if (($weekday === null) || (($weekday < 0) || ($weekday > 6))) {
@@ -734,15 +712,9 @@ class Calendar
         $result = '';
         if ((!empty($value)) || ($value === 0) || ($value === '0')) {
             $quarter = null;
-            if (is_int($value)) {
-                $quarter = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $quarter = (int) $value;
-            } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $quarter = (int) $value;
-                }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $quarter = 1 + (int) floor(((int) $value->format('n') - 1) / 3);
             }
             if (($quarter === null) || (($quarter < 1) || ($quarter > 4))) {
@@ -780,20 +752,14 @@ class Calendar
         if ((!empty($value)) || ($value === 0) || ($value === '0')) {
             $dayperiod = null;
             $hours = null;
-            if (is_int($value)) {
-                $hours = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $hours = (int) $value;
             } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $hours = (int) $value;
-                } else {
-                    $s = strtolower($value);
-                    if (in_array($s, $dictionary, true)) {
-                        $dayperiod = $s;
-                    }
+                $s = strtolower($value);
+                if (in_array($s, $dictionary, true)) {
+                    $dayperiod = $s;
                 }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $dayperiod = $value->format('a');
             }
             if (($hours !== null) && ($hours >= 0) && ($hours <= 23)) {
@@ -829,7 +795,7 @@ class Calendar
      *
      * @return string returns an empty string if $value is empty, the name of the day period name otherwise
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Variable_periods
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Variable_periods
      */
     public static function getVariableDayperiodName($value, $width = 'wide', $locale = '', $standAlone = false)
     {
@@ -844,15 +810,9 @@ class Calendar
 
             $hours = null;
             $dayperiod = null;
-            if (is_int($value)) {
-                $hours = $value;
-            } elseif (is_float($value)) {
+            if (is_numeric($value)) {
                 $hours = (int) $value;
-            } elseif (is_string($value)) {
-                if (is_numeric($value)) {
-                    $hours = (int) $value;
-                }
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $hours = (int) $value->format('G');
             }
 
@@ -897,10 +857,10 @@ class Calendar
         $result = '';
         if (!empty($value)) {
             $receivedPhpName = '';
-            $date = '';
+            $date = '9999-12-31';
             if (is_string($value)) {
                 $receivedPhpName = $value;
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $receivedPhpName = static::getTimezoneNameFromDatetime($value);
                 $date = $value->format('Y-m-d H:i');
                 if (empty($kind)) {
@@ -910,81 +870,62 @@ class Calendar
                         $kind = 'standard';
                     }
                 }
-            } elseif ($value instanceof \DateTimeZone) {
+            } elseif ($value instanceof DateTimeZone) {
                 $receivedPhpName = static::getTimezoneNameFromTimezone($value);
             }
             if ($receivedPhpName !== '') {
-                $metazoneCode = '';
-                $data = Data::getGeneric('metaZones');
-                $phpNames = static::getTimezonesAliases($receivedPhpName);
-                if ($metazoneCode === '') {
-                    foreach ($phpNames as $phpName) {
-                        $path = array_merge(array('metazoneInfo'), explode('/', $phpName));
-                        $tzInfo = $data;
-                        foreach ($path as $chunk) {
-                            if (isset($tzInfo[$chunk])) {
-                                $tzInfo = $tzInfo[$chunk];
-                            } else {
-                                $tzInfo = null;
+                $timezoneID = static::getTimezoneCanonicalID($receivedPhpName);
+                $timeZoneNames = Data::get('timeZoneNames', $locale);
+                $path = array_merge(array('zone'), explode('/', $timezoneID), array($width, array($kind, 'generic', 'standard')));
+                $name = Data::getArrayValue($timeZoneNames, $path);
+                if ($name !== null) {
+                    $result = $name;
+                } else {
+                    $metaZones = Data::getGeneric('metaZones');
+                    $metazoneCode = '';
+                    $path = array_merge(array('metazoneInfo'), explode('/', $timezoneID));
+                    $tzInfo = Data::getArrayValue($metaZones, $path);
+                    if (is_array($tzInfo)) {
+                        foreach ($tzInfo as $tz) {
+                            if (is_array($tz) && isset($tz['mzone'])) {
+                                if (isset($tz['from']) && (strcmp($date, $tz['from']) < 0)) {
+                                    continue;
+                                }
+                                if (isset($tz['to']) && (strcmp($date, $tz['to']) >= 0)) {
+                                    continue;
+                                }
+                                $metazoneCode = $tz['mzone'];
                                 break;
                             }
                         }
-                        if (is_array($tzInfo)) {
-                            foreach ($tzInfo as $tz) {
-                                if (is_array($tz) && isset($tz['mzone'])) {
-                                    if ($date !== '') {
-                                        if (isset($tz['from']) && (strcmp($date, $tz['from']) < 0)) {
-                                            continue;
-                                        }
-                                        if (isset($tz['to']) && (strcmp($date, $tz['to']) >= 0)) {
-                                            continue;
-                                        }
-                                    }
-                                    $metazoneCode = $tz['mzone'];
-                                    break;
-                                }
-                            }
-                        }
-                        if ($metazoneCode !== '') {
-                            break;
-                        }
                     }
-                }
-                if ($metazoneCode === '') {
-                    foreach ($phpNames as $phpName) {
-                        foreach ($data['metazones'] as $metazone) {
-                            if (strcasecmp($phpName, $metazone['type']) === 0) {
+                    if ($metazoneCode === '') {
+                        foreach ($metaZones['metazones'] as $metazone) {
+                            if (strcasecmp($timezoneID, $metazone['type']) === 0) {
                                 $metazoneCode = $metazone['other'];
-                                break;
                             }
                         }
-                        if ($metazoneCode !== '') {
-                            break;
-                        }
                     }
-                }
-                if ($metazoneCode === '') {
-                    $metazoneCode = $receivedPhpName;
-                }
-                if ($metazoneCode !== '') {
-                    $data = Data::get('timeZoneNames', $locale);
-                    if (isset($data['metazone'])) {
-                        $data = $data['metazone'];
-                        if (isset($data[$metazoneCode])) {
-                            $data = $data[$metazoneCode];
-                            if (isset($data[$width])) {
-                                $data = $data[$width];
-                                $lookFor = array();
-                                if (!empty($kind)) {
-                                    $lookFor[] = $kind;
-                                }
-                                $lookFor[] = 'generic';
-                                $lookFor[] = 'standard';
-                                $lookFor[] = 'daylight';
-                                foreach ($lookFor as $lf) {
-                                    if (isset($data[$lf])) {
-                                        $result = $data[$lf];
-                                        break;
+                    if ($metazoneCode !== '') {
+                        $data = Data::get('timeZoneNames', $locale);
+                        if (isset($data['metazone'])) {
+                            $data = $data['metazone'];
+                            if (isset($data[$metazoneCode])) {
+                                $data = $data[$metazoneCode];
+                                if (isset($data[$width])) {
+                                    $data = $data[$width];
+                                    $lookFor = array();
+                                    if (!empty($kind)) {
+                                        $lookFor[] = $kind;
+                                    }
+                                    $lookFor[] = 'generic';
+                                    $lookFor[] = 'standard';
+                                    $lookFor[] = 'daylight';
+                                    foreach ($lookFor as $lf) {
+                                        if (isset($data[$lf])) {
+                                            $result = $data[$lf];
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -1007,37 +948,25 @@ class Calendar
      *
      * @return string returns an empty string if the timezone has not been found, the timezone name otherwise
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Time_Zone_Goals
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Time_Zone_Goals
      */
     public static function getTimezoneNameLocationSpecific($value, $locale = '')
     {
         $result = '';
         if (!empty($value)) {
             if (is_string($value)) {
-                $phpNames = static::getTimezonesAliases($value);
+                $timezoneID = static::getTimezoneCanonicalID($value);
                 $timezone = null;
-                foreach ($phpNames as $phpName) {
-                    try {
-                        $timezone = new \DateTimeZone($phpName);
-                        break;
-                    } catch (\Exception $x) {
-                    }
-                }
-                if (!$timezone) {
+                try {
+                    $timezone = new DateTimeZone($timezoneID);
+                } catch (\Exception $x) {
                     return '';
                 }
                 $location = $timezone->getLocation();
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $timezone = $value->getTimezone();
                 $location = self::getTimezoneLocationFromDatetime($value);
-                if (empty($kind)) {
-                    if ((int) $value->format('I') === 1) {
-                        $kind = 'daylight';
-                    } else {
-                        $kind = 'standard';
-                    }
-                }
-            } elseif ($value instanceof \DateTimeZone) {
+            } elseif ($value instanceof DateTimeZone) {
                 $timezone = $value;
                 $location = $timezone->getLocation();
             } else {
@@ -1047,8 +976,8 @@ class Calendar
             $name = '';
             if (isset($location['country_code']) && $location['country_code'] !== '??') {
                 $data = Data::getGeneric('primaryZones');
-                if (isset($data[$location['country_code']]) ||
-                    count(\DateTimeZone::listIdentifiers(\DateTimeZone::PER_COUNTRY, $location['country_code'])) === 1) {
+                if (isset($data[$location['country_code']])
+                    || count(DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, $location['country_code'])) === 1) {
                     $name = Territory::getName($location['country_code'], $locale);
                 }
             }
@@ -1082,33 +1011,20 @@ class Calendar
         if (!empty($value)) {
             if (is_string($value)) {
                 $receivedPhpName = $value;
-            } elseif ($value instanceof \DateTimeInterface || $value instanceof \DateTime) {
+            } elseif ($value instanceof DateTimeInterface || $value instanceof DateTime) {
                 $receivedPhpName = static::getTimezoneNameFromDatetime($value);
-            } elseif ($value instanceof \DateTimeZone) {
+            } elseif ($value instanceof DateTimeZone) {
                 $receivedPhpName = static::getTimezoneNameFromTimezone($value);
             } else {
                 $receivedPhpName = '';
             }
             if ($receivedPhpName !== '') {
-                $phpNames = static::getTimezonesAliases($receivedPhpName);
+                $timezoneID = static::getTimezoneCanonicalID($receivedPhpName);
                 $timeZoneNames = Data::get('timeZoneNames', $locale);
-                foreach ($phpNames as $phpName) {
-                    $chunks = array_merge(array('zone'), explode('/', $phpName));
-                    $data = $timeZoneNames;
-                    foreach ($chunks as $chunk) {
-                        if (isset($data[$chunk])) {
-                            $data = $data[$chunk];
-                        } else {
-                            $data = null;
-                        }
-                        if (!is_array($data)) {
-                            break;
-                        }
-                    }
-                    if (is_array($data) && isset($data['exemplarCity'])) {
-                        $result = $data['exemplarCity'];
-                        break;
-                    }
+                $path = array_merge(array('zone'), explode('/', $timezoneID), array('exemplarCity'));
+                $exemplarCity = Data::getArrayValue($timeZoneNames, $path);
+                if ($exemplarCity !== null) {
+                    $result = $exemplarCity;
                 }
             }
         }
@@ -1146,11 +1062,11 @@ class Calendar
     }
 
     /**
-     * Retrieve the first weekday for a specific locale (from 0-Sunday to 6-Saturnday).
+     * Retrieve the first weekday for a specific locale (from 0-Sunday to 6-Saturday).
      *
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
-     * @return int Returns a number from 0 (Sunday) to 7 (Saturnday)
+     * @return int Returns a number from 0 (Sunday) to 7 (Saturday)
      */
     public static function getFirstWeekday($locale = '')
     {
@@ -1173,7 +1089,7 @@ class Calendar
      * Returns the sorted list of weekdays, starting from {@link getFirstWeekday}.
      *
      * @param string|false $namesWidth If false you'll get only the list of weekday identifiers (for instance: [0, 1, 2, 3, 4, 5, 6]),
-     * If it's a string it must be one accepted by {@link getWeekdayName}, and you'll get an array like this: [{id: 0, name: 'Monday', ..., {id: 6, name: 'Sunday'}]
+     *                                 If it's a string it must be one accepted by {@link getWeekdayName}, and you'll get an array like this: [{id: 0, name: 'Monday', ..., {id: 6, name: 'Sunday'}]
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
      * @return array
@@ -1182,9 +1098,9 @@ class Calendar
     {
         $codes = array();
         $code = static::getFirstWeekday($locale);
-        for ($count = 0; $count < 7; ++$count) {
+        for ($count = 0; $count < 7; $count++) {
             $codes[] = $code;
-            $code += 1;
+            $code++;
             if ($code === 7) {
                 $code = 0;
             }
@@ -1212,9 +1128,9 @@ class Calendar
      *
      * @return string Returns the requested ISO format
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function getDateFormat($width, $locale = '')
     {
@@ -1242,9 +1158,9 @@ class Calendar
      *
      * @return string Returns the requested ISO format
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function getTimeFormat($width, $locale = '')
     {
@@ -1272,9 +1188,9 @@ class Calendar
      *
      * @return string Returns the requested ISO format
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function getDatetimeFormat($width, $locale = '')
     {
@@ -1291,8 +1207,8 @@ class Calendar
      *
      * @return string Returns the requested ISO format
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns#TOC-Additional-Date-Time-Formats
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#availableFormats_appendItems
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns#h.j31ghafvbgku
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#availableFormats_appendItems
      */
     public static function getSkeletonFormat($skeleton, $locale = '')
     {
@@ -1319,10 +1235,10 @@ class Calendar
                     $dateSkeleton = substr($preprocessedSkeleton, 0, $dateLength);
                     $timeSkeleton = substr($preprocessedSkeleton, $dateLength);
 
-                    return self::getDatetimeFormat('~'.$dateSkeleton.'|~'.$timeSkeleton, $locale);
+                    return self::getDatetimeFormat('~' . $dateSkeleton . '|~' . $timeSkeleton, $locale);
                 }
 
-                throw new Exception('Matching skeleton not found: '.$skeleton);
+                throw new Exception('Matching skeleton not found: ' . $skeleton);
             }
 
             list($matchSkeleton, $countAdjustments) = $match;
@@ -1347,9 +1263,9 @@ class Calendar
      * @return array an array with two entries:
      *               - string: The ISO interval format
      *               - bool|null: Whether the earliest date is the first of the two dates in the pattern,
-     *                 or null if the dates are identical within the granularity specified by the skeleton
+     *               or null if the dates are identical within the granularity specified by the skeleton
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
      */
     public static function getIntervalFormat($skeleton, $greatestDifference, $locale = '')
     {
@@ -1440,26 +1356,26 @@ class Calendar
      *
      * @throws Exception\BadArgumentType
      *
-     * @return int Returns the diffence $dateEnd - $dateStart in days
+     * @return int Returns the difference $dateEnd - $dateStart in days
      */
     public static function getDeltaDays($dateEnd, $dateStart = null)
     {
-        if (!($dateEnd instanceof \DateTimeInterface || $dateEnd instanceof \DateTime)) {
+        if (!($dateEnd instanceof DateTimeInterface || $dateEnd instanceof DateTime)) {
             throw new Exception\BadArgumentType($dateEnd, '\\DateTime');
         }
         if (empty($dateStart) && ($dateStart !== 0) && ($dateStart !== '0')) {
-            $dateStart = new \DateTime('now', $dateEnd->getTimezone());
+            $dateStart = new DateTime('now', $dateEnd->getTimezone());
         }
-        if (!($dateStart instanceof \DateTimeInterface || $dateStart instanceof \DateTime)) {
+        if (!($dateStart instanceof DateTimeInterface || $dateStart instanceof DateTime)) {
             throw new Exception\BadArgumentType($dateStart, '\\DateTime');
         }
         if ($dateStart->getOffset() !== $dateEnd->getOffset()) {
-            $dateStart = new \DateTime('@'.$dateStart->getTimestamp());
+            $dateStart = new DateTime('@' . $dateStart->getTimestamp());
             $dateStart->setTimezone($dateEnd->getTimezone());
         }
-        $utc = new \DateTimeZone('UTC');
-        $dateEndUTC = new \DateTime($dateEnd->format('Y-m-d'), $utc);
-        $dateStartUTC = new \DateTime($dateStart->format('Y-m-d'), $utc);
+        $utc = new DateTimeZone('UTC');
+        $dateEndUTC = new DateTime($dateEnd->format('Y-m-d'), $utc);
+        $dateStartUTC = new DateTime($dateStart->format('Y-m-d'), $utc);
         $seconds = $dateEndUTC->getTimestamp() - $dateStartUTC->getTimestamp();
 
         return (int) (round($seconds / 86400));
@@ -1470,7 +1386,7 @@ class Calendar
      *
      * @param \DateTime|\DateTimeInterface $dateEnd The first date
      * @param \DateTime|\DateTimeInterface|null $dateStart The final date (if it has a timezone different than $dateEnd, we'll use the one of $dateEnd)
-     * @param int $maxParts The maximim parts (eg with 2 you may have '2 days and 4 hours', with 3 '2 days, 4 hours and 24 minutes')
+     * @param int $maxParts The maximum parts (eg with 2 you may have '2 days and 4 hours', with 3 '2 days, 4 hours and 24 minutes')
      * @param string $width The format name; it can be 'long' (eg '3 seconds'), 'short' (eg '3 s') or 'narrow' (eg '3s')
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
@@ -1480,22 +1396,22 @@ class Calendar
      */
     public static function describeInterval($dateEnd, $dateStart = null, $maxParts = 2, $width = 'short', $locale = '')
     {
-        if (!($dateEnd instanceof \DateTimeInterface || $dateEnd instanceof \DateTime)) {
+        if (!($dateEnd instanceof DateTimeInterface || $dateEnd instanceof DateTime)) {
             throw new Exception\BadArgumentType($dateEnd, '\\DateTime');
         }
         if (empty($dateStart) && ($dateStart !== 0) && ($dateStart !== '0')) {
-            $dateStart = new \DateTime('now', $dateEnd->getTimezone());
+            $dateStart = new DateTime('now', $dateEnd->getTimezone());
         }
-        if (!($dateStart instanceof \DateTimeInterface || $dateStart instanceof \DateTime)) {
+        if (!($dateStart instanceof DateTimeInterface || $dateStart instanceof DateTime)) {
             throw new Exception\BadArgumentType($dateStart, '\\DateTime');
         }
         if ($dateStart->getOffset() !== $dateEnd->getOffset()) {
-            $dateStart = new \DateTime('@'.$dateStart->getTimestamp());
+            $dateStart = new DateTime('@' . $dateStart->getTimestamp());
             $dateStart->setTimezone($dateEnd->getTimezone());
         }
-        $utc = new \DateTimeZone('UTC');
-        $dateEndUTC = new \DateTime($dateEnd->format('Y-m-d H:i:s'), $utc);
-        $dateStartUTC = new \DateTime($dateStart->format('Y-m-d H:i:s'), $utc);
+        $utc = new DateTimeZone('UTC');
+        $dateEndUTC = new DateTime($dateEnd->format('Y-m-d H:i:s'), $utc);
+        $dateStartUTC = new DateTime($dateStart->format('Y-m-d H:i:s'), $utc);
 
         $parts = array();
         $data = Data::get('dateFields', $locale);
@@ -1509,36 +1425,36 @@ class Calendar
                 $parts[] = Unit::format($diff->y, 'duration/year', $width, $locale);
                 $mostFar = 0;
             } elseif (!empty($parts)) {
-                ++$mostFar;
+                $mostFar++;
             }
             if (($mostFar < $maxDistance) && ($diff->m > 0)) {
                 $parts[] = Unit::format($diff->m, 'duration/month', $width, $locale);
                 $mostFar = 0;
             } elseif (!empty($parts)) {
-                ++$mostFar;
+                $mostFar++;
             }
             if (($mostFar < $maxDistance) && ($diff->d > 0)) {
                 $parts[] = Unit::format($diff->d, 'duration/day', $width, $locale);
                 $mostFar = 0;
             } elseif (!empty($parts)) {
-                ++$mostFar;
+                $mostFar++;
             }
             if (($mostFar < $maxDistance) && ($diff->h > 0)) {
                 $parts[] = Unit::format($diff->h, 'duration/hour', $width, $locale);
                 $mostFar = 0;
             } elseif (!empty($parts)) {
-                ++$mostFar;
+                $mostFar++;
             }
             if (($mostFar < $maxDistance) && ($diff->i > 0)) {
                 $parts[] = Unit::format($diff->i, 'duration/minute', $width, $locale);
                 $mostFar = 0;
             } elseif (!empty($parts)) {
-                ++$mostFar;
+                $mostFar++;
             }
             if (empty($parts) || ($diff->s > 0)) {
                 $parts[] = Unit::format($diff->s, 'duration/second', $width, $locale);
             }
-            if (count($parts) > $maxParts) {
+            if ($maxParts < count($parts)) {
                 $parts = array_slice($parts, 0, $maxParts);
             }
         }
@@ -1568,9 +1484,9 @@ class Calendar
      *
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatDate($value, $width, $locale = '')
     {
@@ -1593,7 +1509,7 @@ class Calendar
     /**
      * Format a date (extended version: various date/time representations - see toDateTime()).
      *
-     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string $width The format name; it can be 'full' (eg 'EEEE, MMMM d, y' - 'Wednesday, August 20, 2014'), 'long' (eg 'MMMM d, y' - 'August 20, 2014'), 'medium' (eg 'MMM d, y' - 'August 20, 2014') or 'short' (eg 'M/d/yy' - '8/20/14'),
      *                      or a skeleton pattern prefixed by '~', e.g. '~yMd'.
      *                      You can also append a caret ('^') or an asterisk ('*') to $width. If so, special day names may be used (like 'Today', 'Yesterday', 'Tomorrow' with '^' and 'today', 'yesterday', 'tomorrow' width '*') instead of the date.
@@ -1605,9 +1521,9 @@ class Calendar
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
      * @see toDateTime()
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatDateEx($value, $width, $toTimezone = '', $locale = '')
     {
@@ -1630,9 +1546,9 @@ class Calendar
      *
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatTime($value, $width, $locale = '')
     {
@@ -1646,7 +1562,7 @@ class Calendar
     /**
      * Format a time (extended version: various date/time representations - see toDateTime()).
      *
-     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string $width The format name; it can be 'full' (eg 'h:mm:ss a zzzz' - '11:42:13 AM GMT+2:00'), 'long' (eg 'h:mm:ss a z' - '11:42:13 AM GMT+2:00'), 'medium' (eg 'h:mm:ss a' - '11:42:13 AM') or 'short' (eg 'h:mm a' - '11:42 AM'),
      *                      or a skeleton pattern prefixed by '~', e.g. '~Hm'.
      * @param string|\DateTimeZone $toTimezone The timezone to set; leave empty to use the default timezone (or the timezone associated to $value if it's already a \DateTime)
@@ -1657,9 +1573,9 @@ class Calendar
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
      * @see toDateTime()
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatTimeEx($value, $width, $toTimezone = '', $locale = '')
     {
@@ -1676,16 +1592,16 @@ class Calendar
      * @param \DateTime|\DateTimeInterface $value The \DateTimeInterface instance for which you want the localized textual representation
      * @param string $width The format name; it can be 'full', 'long', 'medium', 'short' or a skeleton pattern prefixed by '~',
      *                      or a combination for date+time like 'full|short' or a combination for format+date+time like 'full|full|short'
-     *                      You can also append an asterisk ('*') to the date parh of $width. If so, special day names may be used (like 'Today', 'Yesterday', 'Tomorrow') instead of the date part.
+     *                      You can also append an asterisk ('*') to the date part of $width. If so, special day names may be used (like 'Today', 'Yesterday', 'Tomorrow') instead of the date part.
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
      * @throws \Punic\Exception Throws an exception in case of problems
      *
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatDatetime($value, $width, $locale = '')
     {
@@ -1708,7 +1624,7 @@ class Calendar
             if (($c === '^') || ($c === '*')) {
                 $dayName = static::getDateRelativeName($value, ($c === '^') ? true : false, $locale);
                 if ($dayName !== '') {
-                    $overrideDateFormat = "'$dayName'";
+                    $overrideDateFormat = "'{$dayName}'";
                 }
             }
         }
@@ -1723,9 +1639,9 @@ class Calendar
     /**
      * Format a date/time (extended version: various date/time representations - see toDateTime()).
      *
-     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string $width The format name; it can be 'full', 'long', 'medium', 'short' or a combination for date+time like 'full|short' or a combination for format+date+time like 'full|full|short'
-     *                      You can also append an asterisk ('*') to the date parh of $width. If so, special day names may be used (like 'Today', 'Yesterday', 'Tomorrow') instead of the date part.
+     *                      You can also append an asterisk ('*') to the date part of $width. If so, special day names may be used (like 'Today', 'Yesterday', 'Tomorrow') instead of the date part.
      * @param string|\DateTimeZone $toTimezone The timezone to set; leave empty to use the default timezone (or the timezone associated to $value if it's already a \DateTime)
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
@@ -1734,9 +1650,9 @@ class Calendar
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
      * @see toDateTime()
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatDatetimeEx($value, $width, $toTimezone = '', $locale = '')
     {
@@ -1757,7 +1673,7 @@ class Calendar
      *
      * @return string Returns the localized textual representation of the interval
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
      */
     public static function formatInterval($earliest, $latest, $skeleton, $locale = '')
     {
@@ -1771,21 +1687,21 @@ class Calendar
         list($format1, $format2) = static::splitIntervalFormat($format);
 
         return static::format(
-                $earliestFirst ? $earliest : $latest,
-                $format1,
-                $locale
-            ).static::format(
-                $earliestFirst ? $latest : $earliest,
-                $format2,
-                $locale
-            );
+            $earliestFirst ? $earliest : $latest,
+            $format1,
+            $locale
+        ) . static::format(
+            $earliestFirst ? $latest : $earliest,
+            $format2,
+            $locale
+        );
     }
 
     /**
      * Format a date/time interval (extended version: various date/time representations - see toDateTime()).
      *
-     * @param number|\DateTime|\DateTimeInterface|string $earliest An Unix timestamp, a `\DateTime` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
-     * @param number|\DateTime|\DateTimeInterface|string $latest An Unix timestamp, a `\DateTime` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $earliest An Unix timestamp, a `\DateTime` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $latest An Unix timestamp, a `\DateTime` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string $skeleton The locale-independent skeleton, e.g. "yMMMd" or "Hm".
      * @param string|\DateTimeZone $toTimezone The timezone to set; leave empty to use the default timezone (or the timezone associated to $value if it's already a \DateTime)
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data.
@@ -1807,34 +1723,34 @@ class Calendar
      *
      * @param \DateTime|\DateTimeInterface $value The \DateTimeInterface instance for which you want the localized textual representation
      * @param string $format The ISO format that specify how to render the date/time. The following extra format chunks are available:
-     * - 'P': ISO-8601 numeric representation of the day of the week (same as 'e' but not locale dependent)
-     * - 'PP': Numeric representation of the day of the week, from 0 (for Sunday) to 6 (for Saturday)
-     * - 'PPP': English ordinal suffix for the day of the month
-     * - 'PPPP': The day of the year (starting from 0)
-     * - 'PPPPP': Number of days in the given month
-     * - 'PPPPPP': Whether it's a leap year: 1 if it is a leap year, 0 otherwise.
-     * - 'PPPPPPP': Lowercase Ante meridiem and Post meridiem (English only, for other locales it's the same as 'a')
-     * - 'PPPPPPPP': Swatch Internet time
-     * - 'PPPPPPPPP': Microseconds
-     * - 'PPPPPPPPPP': Whether or not the date is in daylight saving time	1 if Daylight Saving Time, 0 otherwise.
-     * - 'PPPPPPPPPPP': Timezone offset in seconds
-     * - 'PPPPPPPPPPPP': RFC 2822 formatted date (Example: 'Thu, 21 Dec 2000 16:01:07 +0200')
-     * - 'PPPPPPPPPPPPP': Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
+     *                       - 'P': ISO-8601 numeric representation of the day of the week (same as 'e' but not locale dependent)
+     *                       - 'PP': Numeric representation of the day of the week, from 0 (for Sunday) to 6 (for Saturday)
+     *                       - 'PPP': English ordinal suffix for the day of the month
+     *                       - 'PPPP': The day of the year (starting from 0)
+     *                       - 'PPPPP': Number of days in the given month
+     *                       - 'PPPPPP': Whether it's a leap year: 1 if it is a leap year, 0 otherwise.
+     *                       - 'PPPPPPP': Lowercase Ante meridiem and Post meridiem (English only, for other locales it's the same as 'a')
+     *                       - 'PPPPPPPP': Swatch Internet time
+     *                       - 'PPPPPPPPP': Microseconds
+     *                       - 'PPPPPPPPPP': Whether or not the date is in daylight saving time	1 if Daylight Saving Time, 0 otherwise.
+     *                       - 'PPPPPPPPPPP': Timezone offset in seconds
+     *                       - 'PPPPPPPPPPPP': RFC 2822 formatted date (Example: 'Thu, 21 Dec 2000 16:01:07 +0200')
+     *                       - 'PPPPPPPPPPPPP': Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
      * @throws \Punic\Exception Throws an exception in case of problems
      *
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function format($value, $format, $locale = '')
     {
         $result = '';
         if (!empty($value)) {
-            if (!($value instanceof \DateTimeInterface || $value instanceof \DateTime)) {
+            if (!($value instanceof DateTimeInterface || $value instanceof DateTime)) {
                 throw new Exception\BadArgumentType($value, '\\DateTime');
             }
             if (!is_string($format) || $format === '') {
@@ -1861,21 +1777,21 @@ class Calendar
     /**
      * Format a date and/or time (extended version: various date/time representations - see toDateTime()).
      *
-     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link http://php.net/manual/function.strtotime.php strtotime}.
+     * @param number|\DateTime|\DateTimeInterface|string $value A Unix timestamp, a `\DateTimeInterface` instance or a string accepted by {@link https://www.php.net/manual/function.strtotime.php strtotime}.
      * @param string $format The ISO format that specify how to render the date/time. The following extra format chunks are valid:
-     * - 'P': ISO-8601 numeric representation of the day of the week (same as 'e' but not locale dependent)
-     * - 'PP': Numeric representation of the day of the week, from 0 (for Sunday) to 6 (for Saturday)
-     * - 'PPP': English ordinal suffix for the day of the month
-     * - 'PPPP': The day of the year (starting from 0)
-     * - 'PPPPP': Number of days in the given month
-     * - 'PPPPPP': Whether it's a leap year: 1 if it is a leap year, 0 otherwise.
-     * - 'PPPPPPP': Lowercase Ante meridiem and Post meridiem (English only, for other locales it's the same as 'a')
-     * - 'PPPPPPPP': Swatch Internet time
-     * - 'PPPPPPPPP': Microseconds
-     * - 'PPPPPPPPPP': Whether or not the date is in daylight saving time	1 if Daylight Saving Time, 0 otherwise.
-     * - 'PPPPPPPPPPP': Timezone offset in seconds
-     * - 'PPPPPPPPPPPP': RFC 2822 formatted date (Example: 'Thu, 21 Dec 2000 16:01:07 +0200')
-     * - 'PPPPPPPPPPPPP': Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
+     *                       - 'P': ISO-8601 numeric representation of the day of the week (same as 'e' but not locale dependent)
+     *                       - 'PP': Numeric representation of the day of the week, from 0 (for Sunday) to 6 (for Saturday)
+     *                       - 'PPP': English ordinal suffix for the day of the month
+     *                       - 'PPPP': The day of the year (starting from 0)
+     *                       - 'PPPPP': Number of days in the given month
+     *                       - 'PPPPPP': Whether it's a leap year: 1 if it is a leap year, 0 otherwise.
+     *                       - 'PPPPPPP': Lowercase Ante meridiem and Post meridiem (English only, for other locales it's the same as 'a')
+     *                       - 'PPPPPPPP': Swatch Internet time
+     *                       - 'PPPPPPPPP': Microseconds
+     *                       - 'PPPPPPPPPP': Whether or not the date is in daylight saving time	1 if Daylight Saving Time, 0 otherwise.
+     *                       - 'PPPPPPPPPPP': Timezone offset in seconds
+     *                       - 'PPPPPPPPPPPP': RFC 2822 formatted date (Example: 'Thu, 21 Dec 2000 16:01:07 +0200')
+     *                       - 'PPPPPPPPPPPPP': Seconds since the Unix Epoch (January 1 1970 00:00:00 GMT)
      * @param string|\DateTimeZone $toTimezone The timezone to set; leave empty to use the default timezone (or the timezone associated to $value if it's already a \DateTime)
      * @param string $locale The locale to use. If empty we'll use the default locale set in \Punic\Data
      *
@@ -1883,9 +1799,9 @@ class Calendar
      *
      * @return string Returns an empty string if $value is empty, the localized textual representation otherwise
      *
-     * @see http://cldr.unicode.org/translation/date-time-patterns
-     * @see http://cldr.unicode.org/translation/date-time
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
+     * @see https://cldr.unicode.org/translation/date-time/datetime-patterns
+     * @see https://cldr.unicode.org/translation/date-time
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns
      */
     public static function formatEx($value, $format, $toTimezone = '', $locale = '')
     {
@@ -1912,7 +1828,7 @@ class Calendar
         $data = Data::get('dateFields', $locale);
         if (isset($data['day'])) {
             $data = $data['day'];
-            $key = "relative-type-$deltaDays";
+            $key = "relative-type-{$deltaDays}";
             if (isset($data[$key])) {
                 $result = $data[$key];
                 if ($ucFirst) {
@@ -1985,11 +1901,11 @@ class Calendar
         // Select fullWidth according to UTS #35, part 4, section 2.6.2.2.
         // Strip string literal text.
         $dateWidth = preg_replace("@'.*?'@", '', $dateWidth);
-        if (strpos($dateWidth, 'MMMM') !== false && strpos($dateWidth, 'MMMMM') == false ||
-            strpos($dateWidth, 'LLLL') !== false && strpos($dateWidth, 'LLLLL') == false) {
-            if (strpos($dateWidth, 'E') !== false ||
-                strpos($dateWidth, 'e') !== false ||
-                strpos($dateWidth, 'c') !== false) {
+        if (strpos($dateWidth, 'MMMM') !== false && strpos($dateWidth, 'MMMMM') == false
+            || strpos($dateWidth, 'LLLL') !== false && strpos($dateWidth, 'LLLLL') == false) {
+            if (strpos($dateWidth, 'E') !== false
+                || strpos($dateWidth, 'e') !== false
+                || strpos($dateWidth, 'c') !== false) {
                 $wholeWidth = 'full';
             } else {
                 $wholeWidth = 'long';
@@ -2008,10 +1924,10 @@ class Calendar
      *
      * Limitations:
      * - No matching of different but equivalent fields (e.g. H, k, h, K).
-     * - Distance calculation ignores difference betweeen numeric and text fields.
+     * - Distance calculation ignores difference between numeric and text fields.
      * - No support for appendItems.
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Matching_Skeletons
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Matching_Skeletons
      *
      * @param string $requestedSkeleton
      * @param string[] $availableSkeletons
@@ -2070,7 +1986,7 @@ class Calendar
     /**
      * Replace special input skeleton fields (j, J, C) with locale-specific substitutions.
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
      *
      * @param string $skeleton
      * @param string $locale
@@ -2105,7 +2021,7 @@ class Calendar
                 // 'j' maps to 'h a', 'jj' to 'hh a', 'jjj' to 'h aaaa', 'jjjj' to 'h aaaa', etc.
                 $countH = 2 - $count % 2;
                 $countA = ($count <= 2 ? 1 : ($count <= 4 ? 4 : 5));
-                $skeleton = substr($skeleton, 0, $index).str_repeat($fieldH, $countH).substr($skeleton, $index + $count);
+                $skeleton = substr($skeleton, 0, $index) . str_repeat($fieldH, $countH) . substr($skeleton, $index + $count);
                 $replacements['a'] = str_repeat($fieldA, $countA);
             }
         }
@@ -2116,8 +2032,8 @@ class Calendar
     /**
      * Replace special input skeleton fields, adjust field widths, and add second fraction to format pattern.
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#Matching_Skeletons
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#Matching_Skeletons
      *
      * @param string $format
      * @param array $countAdjustments
@@ -2142,17 +2058,16 @@ class Calendar
         $postprocessedFormat = '';
         $quoted = false;
         $length = strlen($format);
-        $lengthM1 = strlen($format) - 1;
-        for ($index = 0; $index < $length; ++$index) {
+        for ($index = 0; $index < $length; $index++) {
             $char = $format[$index];
             if ($char === "'") {
                 $quoted = !$quoted;
                 $postprocessedFormat .= $char;
             } elseif (!$quoted) {
                 $count = 1;
-                for ($j = $index + 1; ($j < $length) && ($format[$j] === $char); ++$j) {
-                    ++$count;
-                    ++$index;
+                for ($j = $index + 1; ($j < $length) && ($format[$j] === $char); $j++) {
+                    $count++;
+                    $index++;
                 }
 
                 $countField = isset($countFields[$char]) ? $countFields[$char] : $char;
@@ -2168,7 +2083,7 @@ class Calendar
                 if ($char === 's' && isset($countAdjustments['S']) && strpos($format, 'S') === false) {
                     $data = Data::get('numbers', $locale);
                     $decimal = $data['symbols']['decimal'];
-                    $postprocessedFormat .= $decimal.str_repeat('S', $countAdjustments['S']);
+                    $postprocessedFormat .= $decimal . str_repeat('S', $countAdjustments['S']);
                 }
             } else {
                 $postprocessedFormat .= $char;
@@ -2182,7 +2097,6 @@ class Calendar
      * Return the most significant field where the two dates differ. For fractional seconds,
      * 'S' is returned if the differ on the first decimal, 'SS' for the second decimal etc.
      * If the dates are identical, the empty string is returned.
-
      *
      * @param \DateTime|\DateTimeInterface $value1
      * @param \DateTime|\DateTimeInterface $value2
@@ -2191,15 +2105,15 @@ class Calendar
      */
     protected static function getGreatestDifference($value1, $value2)
     {
-        if (!($value1 instanceof \DateTimeInterface || $value1 instanceof \DateTime)) {
+        if (!($value1 instanceof DateTimeInterface || $value1 instanceof DateTime)) {
             throw new Exception\BadArgumentType($value1, '\\DateTime');
         }
-        if (!($value2 instanceof \DateTimeInterface || $value2 instanceof \DateTime)) {
+        if (!($value2 instanceof DateTimeInterface || $value2 instanceof DateTime)) {
             throw new Exception\BadArgumentType($value2, '\\DateTime');
         }
 
         $length = strlen(self::$differenceFields);
-        for ($index = 0; $index < $length; ++$index) {
+        for ($index = 0; $index < $length; $index++) {
             $field = self::$differenceFields[$index];
             // We just need to check if this field is the same for the two dates,
             // so any width and locale will do.
@@ -2210,7 +2124,7 @@ class Calendar
         }
 
         // Find the decimal where fractional seconds differ.
-        for ($count = 2; $count < 6; ++$count) {
+        for ($count = 2; $count < 6; $count++) {
             if (static::$function($value1, $count, 'en') !== static::$function($value2, $count, 'en')) {
                 return str_repeat('S', $count);
             }
@@ -2264,7 +2178,7 @@ class Calendar
             $adjustedGreatestDifference = 'h';
         } elseif ($adjustedGreatestDifference === 'Q' && strpos($skeleton, 'Q') === false) {
             // Ignore quarter, if it is not part of the skeleton.
-            $adjustedGreatestDifference = 'm';
+            $adjustedGreatestDifference = 'M';
         } elseif ($adjustedGreatestDifference[0] === 'S') {
             $skeletonGranularityIndex += substr_count($skeleton, 'S') - 1;
         }
@@ -2283,13 +2197,13 @@ class Calendar
      *
      * @param string $format
      *
-     * @return array An array containing two entries, each representing a datetime format
+     * @return string[] An array containing two entries, each representing a datetime format
      *
-     * @see http://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
+     * @see https://www.unicode.org/reports/tr35/tr35-dates.html#intervalFormats
      */
     protected static function splitIntervalFormat($format)
     {
-        $functionNames[] = array();
+        $functionNames = array(array());
         $index = 0;
 
         // Split on the first recurring field.
@@ -2308,7 +2222,7 @@ class Calendar
             }
         }
 
-        throw new \Punic\Exception('No recurring field found in format: '.$format);
+        throw new \Punic\Exception('No recurring field found in format: ' . $format);
     }
 
     /**
@@ -2661,9 +2575,9 @@ class Calendar
         $format = isset($data['gmtFormat']) ? $data['gmtFormat'] : 'GMT%1$s';
         switch ($count) {
             case 1:
-                return sprintf($format, $sign.$hours.(($minutes === 0) ? '' : (':'.substr('0'.$minutes, -2))));
+                return sprintf($format, $sign . $hours . (($minutes === 0) ? '' : (':' . substr('0' . $minutes, -2))));
             case 4:
-                return sprintf($format, $sign.substr('0'.$hours, -2).':'.substr('0'.$minutes, -2));
+                return sprintf($format, $sign . substr('0' . $hours, -2) . ':' . substr('0' . $minutes, -2));
             default:
                 throw new Exception\ValueNotInList($count, array(1, 4));
         }
@@ -2703,7 +2617,7 @@ class Calendar
     {
         $y = $value->format('o');
         if ($count === 2) {
-            $y = substr('0'.$y, -2);
+            $y = substr('0' . $y, -2);
         } else {
             if (!isset($y[$count])) {
                 $y = str_pad($y, $count, '0', STR_PAD_LEFT);
@@ -2742,7 +2656,7 @@ class Calendar
     }
 
     /**
-     * @param \DateTime|\DateTimeInterface $value
+     * @param DateTime|DateTimeInterface $value
      * @param int $count
      * @param string $locale
      * @param bool $standAlone
@@ -2756,7 +2670,7 @@ class Calendar
             case 1:
                 return (string) $quarter;
             case 2:
-                return '0'.(string) $quarter;
+                return '0' . (string) $quarter;
             case 3:
                 return static::getQuarterName($quarter, 'abbreviated', $locale, $standAlone);
             case 4:
@@ -2886,8 +2800,8 @@ class Calendar
         $minutes = (int) (floor($seconds / 60));
         $seconds -= $minutes * 60;
         $partsWithoutSeconds = array();
-        $partsWithoutSeconds[] = $sign.substr('0'.(string) $hours, -2);
-        $partsWithoutSeconds[] = substr('0'.(string) $minutes, -2);
+        $partsWithoutSeconds[] = $sign . substr('0' . (string) $hours, -2);
+        $partsWithoutSeconds[] = substr('0' . (string) $minutes, -2);
         $partsMaybeWithSeconds = $partsWithoutSeconds;
         /* @TZWS
         if ($seconds > 0) {
@@ -2976,7 +2890,7 @@ class Calendar
      * @param \DateTime|\DateTimeInterface $value
      * @param int $count
      * @param string $locale
-     * @param mixed $zForZero
+     * @param bool $zForZero
      *
      * @return string
      */
@@ -2990,11 +2904,12 @@ class Calendar
         $seconds -= $hours * 3600;
         $minutes = (int) (floor($seconds / 60));
         $seconds -= $minutes * 60;
-        $hours2 = $sign.substr('0'.(string) $hours, -2);
-        $minutes2 = substr('0'.(string) $minutes, -2);
-        /* @TZWS
-        $seconds2 = substr('0' . strval($seconds), -2);
-        */
+        $hours2 = $sign . substr('0' . (string) $hours, -2);
+        $minutes2 = substr('0' . (string) $minutes, -2);
+        /*
+         * TZWS
+         * $seconds2 = substr('0' . strval($seconds), -2);
+         */
         $hmMaybe = array($hours2);
         if ($minutes > 0) {
             $hmMaybe[] = $minutes2;
@@ -3010,10 +2925,10 @@ class Calendar
                 $result = $useZ ? 'Z' : implode('', $hmMaybe);
                 break;
             case 2:
-                $result = $useZ ? 'Z' : "$hours2$minutes2";
+                $result = $useZ ? 'Z' : "{$hours2}{$minutes2}";
                 break;
             case 3:
-                $result = $useZ ? 'Z' : "$hours2:$minutes2";
+                $result = $useZ ? 'Z' : "{$hours2}:{$minutes2}";
                 break;
             case 4:
                 $result = $useZ ? 'Z' : implode('', $hmsMaybe);
@@ -3071,62 +2986,18 @@ class Calendar
     }
 
     /**
-     * @param string $phpTimezoneName
+     * @param string $timezoneID
      *
-     * @return string[]
+     * @return string
      */
-    protected static function getTimezonesAliases($phpTimezoneName)
+    protected static function getTimezoneCanonicalID($timezoneID)
     {
-        $result = array($phpTimezoneName);
-        switch ($phpTimezoneName) {
-            case 'Africa/Asmara':
-                $result[] = 'Africa/Asmera';
-                break;
-            case 'America/Atikokan':
-                $result[] = 'America/Coral_Harbour';
-                break;
-            case 'Asia/Ho_Chi_Minh':
-                $result[] = 'Asia/Saigon';
-                break;
-            case 'Asia/Kathmandu':
-                $result[] = 'Asia/Katmandu';
-                break;
-            case 'Asia/Kolkata':
-                $result[] = 'Asia/Calcutta';
-                break;
-            case 'Atlantic/Faroe':
-                $result[] = 'Atlantic/Faeroe';
-                break;
-            case 'Pacific/Chuuk':
-                $result[] = 'Pacific/Truk';
-                break;
-            case 'Pacific/Pohnpei':
-                $result[] = 'Pacific/Ponape';
-                break;
-            case 'America/Argentina/Buenos_Aires':
-                $result[] = 'America/Buenos_Aires';
-                break;
-            case 'America/Argentina/Catamarca':
-                $result[] = 'America/Catamarca';
-                break;
-            case 'America/Argentina/Cordoba':
-                $result[] = 'America/Cordoba';
-                break;
-            case 'America/Argentina/Jujuy':
-                $result[] = 'America/Jujuy';
-                break;
-            case 'America/Argentina/Mendoza':
-                $result[] = 'America/Mendoza';
-                break;
-            case 'America/Indiana/Indianapolis':
-                $result[] = 'America/Indianapolis';
-                break;
-            case 'America/Kentucky/Louisville':
-                $result[] = 'America/Louisville';
-                break;
+        $timeZones = Data::getGeneric('timeZones');
+        if (isset($timeZones['aliases'][$timezoneID])) {
+            $timezoneID = $timeZones['aliases'][$timezoneID];
         }
 
-        return $result;
+        return $timezoneID;
     }
 
     /**
@@ -3195,14 +3066,12 @@ class Calendar
     }
 
     /**
-     * @param \DateTimeZone $tz
-     *
      * @return string
      */
-    protected static function getTimezoneNameFromTimezone(\DateTimeZone $tz)
+    protected static function getTimezoneNameFromTimezone(DateTimeZone $tz)
     {
         if (defined('\HHVM_VERSION')) {
-            $testDT = new \DateTime('now', $tz);
+            $testDT = new DateTime('now', $tz);
             $result = $testDT->format('e');
             if (!preg_match('/[0-9][0-9]/', $result)) {
                 $result = $tz->getName();
@@ -3250,12 +3119,12 @@ class Calendar
             $length = strlen($format);
             $lengthM1 = $length - 1;
             $quoted = false;
-            for ($index = 0; $index < $length; ++$index) {
+            for ($index = 0; $index < $length; $index++) {
                 $char = $format[$index];
                 if ($char === "'") {
                     if (($index < $lengthM1) && ($format[$index + 1] === "'")) {
                         $result[] = "'";
-                        ++$index;
+                        $index++;
                     } else {
                         $quoted = !$quoted;
                     }
@@ -3263,8 +3132,8 @@ class Calendar
                     $result[] = $char;
                 } else {
                     $count = 1;
-                    for ($j = $index + 1; ($j < $length) && ($format[$j] === $char); ++$j) {
-                        ++$count;
+                    for ($j = $index + 1; ($j < $length) && ($format[$j] === $char); $j++) {
+                        $count++;
                     }
                     if (isset(self::$decoderFunctions[$char])) {
                         $result[] = array(self::$decoderFunctions[$char], $count, $index);

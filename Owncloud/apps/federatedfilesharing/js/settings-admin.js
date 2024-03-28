@@ -5,8 +5,7 @@ $(document).ready(function() {
 		if (this.checked) {
 			value = 'yes';
 		}
-		OC.AppConfig.setValue('files_sharing', $(this).attr('name'), value);
+		var app = (this.id !== 'autoAcceptTrusted') ? 'files_sharing' : 'federatedfilesharing';
+		OC.AppConfig.setValue(app, $(this).attr('name'), value);
 	});
-
-	$('.section .icon-info').tipsy({gravity: 'w'});
 });

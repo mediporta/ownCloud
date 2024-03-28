@@ -50,14 +50,15 @@ class Disable extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $this->userManager->get($input->getArgument('uid'));
 		if ($user === null) {
 			$output->writeln('<error>User does not exist</error>');
-			return;
+			return 1;
 		}
 
 		$user->setEnabled(false);
 		$output->writeln('<info>The specified user is disabled</info>');
+		return 0;
 	}
 }

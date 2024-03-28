@@ -44,7 +44,7 @@ namespace OCP;
  * about the currently logged in user and the permissions for example
  * @since 5.0.0
  */
-class User {
+class User extends \OCP\User\Constants {
 	/**
 	 * Get the user id of the user currently logged in.
 	 * @return string uid or false
@@ -85,7 +85,7 @@ class User {
 	 * @param string $search search pattern
 	 * @param int|null $limit
 	 * @param int|null $offset
-	 * @return array an array of all display names (value) and the correspondig uids (key)
+	 * @return array an array of all display names (value) and the corresponding uids (key)
 	 * @deprecated 8.1.0 use method searchDisplayName() of \OCP\IUserManager - \OC::$server->getUserManager()
 	 * @since 5.0.0
 	 */
@@ -150,7 +150,7 @@ class User {
 	 * redirect URL parameter to the request URI.
 	 * @since 5.0.0
 	 */
-	public static function checkLoggedIn() {
-		\OC_Util::checkLoggedIn();
+	public static function checkLoggedIn($allowPreSigned = false) {
+		\OC_Util::checkLoggedIn($allowPreSigned);
 	}
 }

@@ -19,11 +19,6 @@ table.multiselect thead {
 	padding-left: 0;
 }
 
-/* restrict length of displayed filename to prevent overflow */
-table td.filename .nametext {
-	width: 100%;
-}
-
 #fileList a.action.action-menu img {
 	padding-left: 0;
 }
@@ -44,10 +39,15 @@ table td.filename .nametext {
 	opacity: .3 !important;
 }
 
+table td.filename .nametext {
+		max-width: 180px;
+}
+
 /* ellipsis on file names */
 table td.filename .nametext .innernametext {
-	max-width: 50%;
+	max-width: 100px;
 }
+
 
 /* proper notification area for multi line messages */
 #notification-container {
@@ -70,4 +70,50 @@ table td.filename .nametext .innernametext {
 	display: block !important;
 }
 
+/* hide mobile table content*/
+table #headerSize, #headerDate, #headerExpiration, .filesize, .modified, .date {
+	display: none;
 }
+
+#fileList a.action.action-menu.permanent {
+	padding-right: 14px;
+}
+
+/* hide text of the share accept action mobile */
+#fileList .action-accept span:last-child {
+	display: none !important;
+}
+
+/* hide text of the share reject action mobile */
+#fileList .action-reject span:last-child {
+	display: none !important;
+}
+
+/* hide common selected file actions mobile */
+.selectedActions a.download,
+.selectedActions a.delete-selected,
+.selectedActions a.undelete {
+	display: none;
+}
+
+/* show mobile selected file actions mobile */
+.selectedActions a.delete-selected.mobile.button,
+.selectedActions a.undelete.mobile.button,
+.selectedActions a.download.mobile.button {
+	display: inline;
+	padding: 5px;
+	font-size: 13px;
+	margin-left: 5px;
+}
+
+.selectedActions a:last-child {
+	margin-right: 5px;
+}
+
+/* hide restore text in deleted files list mobile */
+#fileList a.action.action-restore.permanent span:nth-child(2){
+	display: none !important;
+}
+
+}
+

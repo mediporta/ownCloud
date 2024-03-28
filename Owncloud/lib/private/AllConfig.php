@@ -39,15 +39,15 @@ use Symfony\Component\EventDispatcher\GenericEvent;
  * Class to combine all the configuration options ownCloud offers
  */
 class AllConfig implements IConfig {
-
 	/** @var SystemConfig */
 	private $systemConfig;
 
 	/** @var IDBConnection */
 	private $connection;
 
-	/** @var EventDispatcher  */
+	/** @var EventDispatcher */
 	private $eventDispatcher;
+
 	/**
 	 * 3 dimensional array with the following structure:
 	 * [ $userId =>
@@ -235,8 +235,10 @@ class AllConfig implements IConfig {
 			'uid' => $userId, 'key' => $key, 'value' => $value,
 			'app' => $appName, 'precondition' => $preCondition
 		];
-		$this->eventDispatcher->dispatch('userpreferences.beforeSetValue',
-			new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.beforeSetValue'
+		);
 		$this->connection->setValues('preferences', [
 			'userid' => $userId,
 			'appid' => $appName,
@@ -253,7 +255,10 @@ class AllConfig implements IConfig {
 			$this->userCache[$userId][$appName][$key] = $value;
 		}
 
-		$this->eventDispatcher->dispatch('userpreferences.afterSetValue', new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.afterSetValue'
+		);
 
 		return true;
 	}
@@ -303,10 +308,12 @@ class AllConfig implements IConfig {
 		$this->fixDIInit();
 
 		$arguments = ['uid' => $userId, 'key' => $key, 'app' => $appName];
-		$this->eventDispatcher->dispatch('userpreferences.beforeDeleteValue',
-			new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.beforeDeleteValue'
+		);
 
-		$sql  = 'DELETE FROM `*PREFIX*preferences` '.
+		$sql = 'DELETE FROM `*PREFIX*preferences` '.
 			'WHERE `userid` = ? AND `appid` = ? AND `configkey` = ?';
 		$this->connection->executeUpdate($sql, [$userId, $appName, $key]);
 
@@ -314,8 +321,10 @@ class AllConfig implements IConfig {
 			unset($this->userCache[$userId][$appName][$key]);
 		}
 
-		$this->eventDispatcher->dispatch('userpreferences.afterDeleteValue',
-			new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.afterDeleteValue'
+		);
 		return true;
 	}
 
@@ -330,15 +339,21 @@ class AllConfig implements IConfig {
 		$this->fixDIInit();
 
 		$arguments = ['uid' => $userId];
-		$this->eventDispatcher->dispatch('userpreferences.beforeDeleteUser', new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.beforeDeleteUser'
+		);
 
-		$sql  = 'DELETE FROM `*PREFIX*preferences` '.
+		$sql = 'DELETE FROM `*PREFIX*preferences` '.
 			'WHERE `userid` = ?';
 		$this->connection->executeUpdate($sql, [$userId]);
 
 		unset($this->userCache[$userId]);
 
-		$this->eventDispatcher->dispatch('userpreferences.afterDeleteUser', new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.afterDeleteUser'
+		);
 
 		return true;
 	}
@@ -354,9 +369,12 @@ class AllConfig implements IConfig {
 		$this->fixDIInit();
 
 		$arguments = ['app' => $appName];
-		$this->eventDispatcher->dispatch('userpreferences.beforeDeleteApp', new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.beforeDeleteApp'
+		);
 
-		$sql  = 'DELETE FROM `*PREFIX*preferences` '.
+		$sql = 'DELETE FROM `*PREFIX*preferences` '.
 			'WHERE `appid` = ?';
 		$this->connection->executeUpdate($sql, [$appName]);
 
@@ -364,7 +382,10 @@ class AllConfig implements IConfig {
 			unset($userCache[$appName]);
 		}
 
-		$this->eventDispatcher->dispatch('userpreferences.afterDeleteApp', new GenericEvent(null, $arguments));
+		$this->eventDispatcher->dispatch(
+			new GenericEvent(null, $arguments),
+			'userpreferences.afterDeleteApp'
+		);
 		return true;
 	}
 
@@ -426,10 +447,10 @@ class AllConfig implements IConfig {
 
 			$placeholders = (\sizeof($chunk) === 50) ? $placeholders50 :  \implode(',', \array_fill(0, \sizeof($chunk), '?'));
 
-			$query    = 'SELECT `userid`, `configvalue` ' .
-						'FROM `*PREFIX*preferences` ' .
-						'WHERE `appid` = ? AND `configkey` = ? ' .
-						'AND `userid` IN (' . $placeholders . ')';
+			$query = 'SELECT `userid`, `configvalue` ' .
+				'FROM `*PREFIX*preferences` ' .
+				'WHERE `appid` = ? AND `configkey` = ? ' .
+				'AND `userid` IN (' . $placeholders . ')';
 			$result = $this->connection->executeQuery($query, $queryParams);
 
 			while ($row = $result->fetch()) {
@@ -455,23 +476,34 @@ class AllConfig implements IConfig {
 		$queryBuilder = $this->connection->getQueryBuilder();
 		$queryBuilder->select('userid')
 			->from('preferences')
-			->where($queryBuilder->expr()->eq(
-				'appid', $queryBuilder->createNamedParameter($appName))
+			->where(
+				$queryBuilder->expr()->eq(
+					'appid',
+					$queryBuilder->createNamedParameter($appName)
+				)
 			)
-			->andWhere($queryBuilder->expr()->eq(
-				'configkey', $queryBuilder->createNamedParameter($key))
+			->andWhere(
+				$queryBuilder->expr()->eq(
+					'configkey',
+					$queryBuilder->createNamedParameter($key)
+				)
 			)
 			->andWhere($queryBuilder->expr()->isNotNull('configvalue'));
 
 		if ($this->connection->getDatabasePlatform() instanceof OraclePlatform) {
 			//oracle can only compare the first 4000 bytes of a CLOB column
-			$queryBuilder->andWhere($queryBuilder->expr()->eq(
-				$queryBuilder->createFunction('dbms_lob.substr(`configvalue`, 4000, 1)'),
-				$queryBuilder->createNamedParameter($value))
+			$queryBuilder->andWhere(
+				$queryBuilder->expr()->eq(
+					$queryBuilder->createFunction('dbms_lob.substr(`configvalue`, 4000, 1)'),
+					$queryBuilder->createNamedParameter($value)
+				)
 			);
 		} else {
-			$queryBuilder->andWhere($queryBuilder->expr()->eq(
-				'configvalue', $queryBuilder->createNamedParameter($value))
+			$queryBuilder->andWhere(
+				$queryBuilder->expr()->eq(
+					'configvalue',
+					$queryBuilder->createNamedParameter($value)
+				)
 			);
 		}
 		$query = $queryBuilder->execute();

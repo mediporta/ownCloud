@@ -74,10 +74,12 @@ interface IUserManager {
 	 * get a user by user id
 	 *
 	 * @param string $uid
+	 * @param bool $evenMissing get an IUser instance even if the user doesn't exist
+	 * The instance will contain basic information, and most operations won't be implemented
 	 * @return \OCP\IUser|null Either the user or null if the specified user does not exist
 	 * @since 8.0.0
 	 */
-	public function get($uid);
+	public function get($uid, $evenMissing = false);
 
 	/**
 	 * check if a user exists
@@ -154,6 +156,16 @@ interface IUserManager {
 	 * @since 9.0.0
 	 */
 	public function callForAllUsers(\Closure $callback, $search = '');
+
+	/**
+	 * @param \Closure $callback
+	 * @param string $search
+	 * @param boolean $onlySeen
+	 * @param int $limit
+	 * @param int $offset
+	 * @since 10.4.0
+	 */
+	public function callForUsers(\Closure $callback, $search = '', $onlySeen = false, $limit = null, $offset = null);
 
 	/**
 	 * returns how many users have logged in once

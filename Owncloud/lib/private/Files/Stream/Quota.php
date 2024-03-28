@@ -98,7 +98,7 @@ class Quota {
 			$this->limit -= $offset;
 		}
 		// this wrapper needs to return "true" for success.
-		// the fseek call itself returns 0 on succeess
+		// the fseek call itself returns 0 on success
 		return \fseek($this->source, $offset, $whence) === 0;
 	}
 
@@ -130,7 +130,7 @@ class Quota {
 				\stream_set_timeout($this->source, $arg1, $arg2);
 				break;
 			case STREAM_OPTION_WRITE_BUFFER:
-				\stream_set_write_buffer($this->source, $arg1, $arg2);
+				\stream_set_write_buffer($this->source, $arg1);
 		}
 	}
 

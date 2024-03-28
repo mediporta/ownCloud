@@ -1,12 +1,14 @@
 OC.L10N.register(
     "files_versions",
     {
-    "Could not revert: %s" : "Could not revert: %s",
     "Versions" : "Versions",
+    "File {file} has been reverted and marked as new current version" : "File {file} has been reverted and marked as new current version",
     "Failed to revert {file} to revision {timestamp}." : "Failed to revert {file} to revision {timestamp}.",
+    "Failed to publish version" : "Failed to publish version",
     "_%n byte_::_%n bytes_" : ["%n byte","%n bytes"],
     "Restore" : "Restore",
-    "No other versions available" : "No other versions available",
-    "More versions..." : "More versions..."
+    "persistent" : "persistent",
+    "Publish version" : "Publish version",
+    "current" : "current"
 },
 "nplurals=2; plural=(n != 1);");

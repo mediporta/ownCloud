@@ -13,14 +13,14 @@ $template = $_['template'];
 
 <fieldset class="warning">
 		<legend><strong><?php p($provider->getDisplayName()); ?></strong></legend>
-		<p><?php p($l->t('Please authenticate using the selected factor.')) ?></p>
+		<p id="twoFactorAuthMessage"><?php p($l->t('Please authenticate using the selected factor.')) ?></p>
 </fieldset>
 <?php if ($error): ?>
 	<?php if ($error_message) {
-	?>
+		?>
 		<span class="warning"><?php p($l->t($error_message)); ?></span>
 	<?php
-} else {
+	} else {
 		?>
 		<span class="warning"><?php p($l->t('An error occurred while verifying the token')); ?></span>
 	<?php

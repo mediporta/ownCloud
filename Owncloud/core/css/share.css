@@ -22,7 +22,6 @@
 		left: 20px;
 	}
 }
-
 .shareTabView .unshare.icon-loading-small {
 	margin-top: 1px;
 }
@@ -54,7 +53,14 @@
 
 .share-autocomplete-item {
 	display: flex;
+	align-items: center;
 	max-width: 220px;
+}
+
+.share-autocomplete-item .icon {
+	margin-left: auto;
+	margin-right: 5px;
+	background-size: 24px 24px;
 }
 
 @media (min-width: 1152px) {
@@ -69,12 +75,16 @@
 	white-space: nowrap;
 	text-overflow: ellipsis;
 	overflow: hidden;
-	line-height: 32px;
 	vertical-align: middle;
 }
 
 .share-autocomplete-item .autocomplete-item-displayname {
 	margin-right: 5px;
+}
+
+.share-autocomplete-item .autocomplete-item-typeInfo {
+	font-size: smaller;
+	font-style: italic;
 }
 
 .share-autocomplete-item .avatardiv {
@@ -98,10 +108,9 @@
 	line-height: 21px;
 	white-space: normal;
 }
-
 #shareWithList .shareOption {
-	white-space: nowrap;
-	display: inline-block;
+	white-space: inherit;
+	display: none;
 }
 
 #shareWithList .showCruds img,
@@ -138,7 +147,6 @@
 	margin: 0 3px 0 8px;
 	vertical-align: middle;
 }
-
 a.showCruds {
 	display: inline;
 	opacity: 0.5;
@@ -149,8 +157,26 @@ a.unshare {
 	float: right;
 	opacity: 0.5;
 	padding: 10px;
-	margin-top: -5px;
+	margin-top: -1px;
 	margin-right: -10px;
+}
+
+a.time {
+	display: inline;
+	float: right;
+	opacity: 0.5;
+	padding: 10px;
+	margin-top: 0px;
+	margin-right: -5px;
+}
+
+a.toggleShareDetails {
+	display: inline;
+	float: right;
+	opacity: 0.5;
+	padding: 10px;
+	margin-top: 0px;
+	margin-right: -5px;
 }
 
 #link {
@@ -196,6 +222,9 @@ a.showCruds:hover,
 a.unshare:hover {
 	opacity: 1;
 }
+a.toggleShareDetails:hover {
+	opacity: 1;
+}
 #defaultExpireMessage,
 /* fix expire message going out of box */
 .reshare {
@@ -212,10 +241,13 @@ a.unshare:hover {
 }
 
 .ui-autocomplete {
-	/* limit dropdown height to 4 1/2 entries */
-	max-height: 103px;
+	/* No limit for dropdown selection, 15px margin at the bottom because the left side already has 15px margin */
+	max-height: -moz-available; 
+	max-height: -webkit-fill-available; 
+	max-height: fill-available;
 	overflow-y: auto;
 	overflow-x: hidden;
+	margin-bottom: 15px;
 }
 
 .notCreatable {
@@ -282,4 +314,8 @@ a.unshare:hover {
 
 .select2-container-multi .select2-choices .select2-search-choice {
 	padding: 3px 18px 3px 5px;
+}
+
+.systemTagsInputFieldContainer .select2-container-multi .select2-choices .select2-search-choice {
+	padding: .2em 0.6em;
 }

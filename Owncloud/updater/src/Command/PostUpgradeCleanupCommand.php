@@ -30,8 +30,7 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @package Owncloud\Updater\Command
  */
 class PostUpgradeCleanupCommand extends Command {
-
-	protected function configure(){
+	protected function configure() {
 		$this
 				->setName('upgrade:postUpgradeCleanup')
 				->setDescription('repair and cleanup step 2 (online) [danger, might take long]')
@@ -41,8 +40,9 @@ class PostUpgradeCleanupCommand extends Command {
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
+	 * @return int
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output){
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$registry = $this->container['utils.registry'];
 		$fsHelper = $this->container['utils.filesystemhelper'];
 		$locator = $this->container['utils.locator'];
@@ -58,26 +58,29 @@ class PostUpgradeCleanupCommand extends Command {
 		$tmpUpdaterDir = $tmpDir . '/updater';
 		$fsHelper->mkdir($tmpUpdaterDir);
 
-		foreach ($locator->getUpdaterContent() as $dir){
+		foreach ($locator->getUpdaterContent() as $dir) {
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$this->getApplication()->getLogger()->debug('Moving updater/' . $dir);
 			$fsHelper->tripleMove($oldUpdaterDir, $newUpdaterDir, $tmpUpdaterDir, $dir);
 		}
-		
+
 		//Cleanup Filesystem
 		$fsHelper->removeIfExists($locator->getExtractionBaseDir());
 
 		//Retrigger integrity check
 		try {
 			$this->container['utils.occrunner']->run('integrity:check-core');
-		} catch (\Exception $e){
+		} catch (\Exception $e) {
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$this->getApplication()->getLogger()->error('Integrity check failed');
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$this->getApplication()->logException($e);
 		}
 
 		//Cleanup updater cache
 		$registry->clearAll();
-		
-		$output->writeln('Done');
-	}
 
+		$output->writeln('Done');
+		return 0;
+	}
 }

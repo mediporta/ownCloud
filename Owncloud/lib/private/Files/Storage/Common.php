@@ -44,6 +44,8 @@ use OC\Files\Cache\Scanner;
 use OC\Files\Cache\Updater;
 use OC\Files\Filesystem;
 use OC\Files\Cache\Watcher;
+use OC\Lock\Persistent\Lock;
+use OC\Lock\Persistent\LockManager;
 use OCP\Constants;
 use OCP\Files\FileInfo;
 use OCP\Files\FileNameTooLongException;
@@ -51,6 +53,7 @@ use OCP\Files\InvalidCharacterInPathException;
 use OCP\Files\InvalidPathException;
 use OCP\Files\ReservedWordException;
 use OCP\Files\Storage\ILockingStorage;
+use OCP\Files\Storage\IPersistentLockingStorage;
 use OCP\Files\Storage\IVersionedStorage;
 use OCP\Lock\ILockingProvider;
 
@@ -65,7 +68,7 @@ use OCP\Lock\ILockingProvider;
  * Some \OC\Files\Storage\Common methods call functions which are first defined
  * in classes which extend it, e.g. $this->stat() .
  */
-abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
+abstract class Common implements Storage, ILockingStorage, IVersionedStorage, IPersistentLockingStorage {
 	use LocalTempFileTrait;
 
 	protected $cache;
@@ -127,7 +130,7 @@ abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
 	public function isUpdatable($path) {
 		// at least check whether it exists
 		// subclasses might want to implement this more thoroughly
-		// a non-existing file/folder isn't updatable
+		// a nonexistent file/folder isn't updatable
 		return $this->file_exists($path);
 	}
 
@@ -148,6 +151,14 @@ abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
 
 	public function isSharable($path) {
 		return $this->isReadable($path);
+	}
+
+	/**
+	 * needsPartFile - allows a storage to opt-out of .part upload and rename
+	 * @return boolean
+	 */
+	public function usePartFile() {
+		return true;
 	}
 
 	public function getPermissions($path) {
@@ -689,6 +700,7 @@ abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
 	public function setAvailability($isAvailable) {
 		$this->getStorageCache()->setAvailability($isAvailable);
 	}
+
 	public function getVersions($internalPath) {
 		// KISS implementation
 		if (!\OC_App::isEnabled('files_versions')) {
@@ -700,22 +712,42 @@ abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
 			$version['mimetype'] = $this->getMimeType($internalPath);
 			return $version;
 		}, \array_values(
-			\OCA\Files_Versions\Storage::getVersions($uid, $filename)));
+			\OCA\Files_Versions\Storage::getVersions($uid, $filename)
+		));
+	}
+
+	public function getCurrentVersion($internalPath) {
+		// KISS implementation
+		if (!\OC_App::isEnabled('files_versions')) {
+			return [];
+		}
+		list($uid, $filename) =  $this->convertInternalPathToGlobalPath($internalPath);
+
+		return \OCA\Files_Versions\Storage::getCurrentVersion($uid, $filename);
 	}
 
 	/**
 	 * @param $internalPath
 	 * @return array
 	 */
-	protected function convertInternalPathToGlobalPath($internalPath) {
+	public function convertInternalPathToGlobalPath($internalPath) {
 		$mounts = \OC::$server->getMountManager()->findByStorageId($this->getId());
-		$mount = \end($mounts);
-		$p = $mount->getMountPoint() . $internalPath;
+
+		$selectedMount = \end($mounts);
+		foreach ($mounts as $mount) {
+			$o = \explode('/', $mount->getMountPoint());
+			if ($o[1] === $this->owner) {
+				$selectedMount = $mount;
+				break;
+			}
+		}
+
+		$o = \explode('/', $mount->getMountPoint());
+		$p = $selectedMount->getMountPoint() . $internalPath;
 		$p = \explode('/', \ltrim($p, '/'));
 		\array_shift($p);
 		\array_shift($p);
 		$p = \implode('/', $p);
-		$o = \explode('/', $mount->getMountPoint());
 		return [$o[1], $p];
 	}
 
@@ -744,5 +776,34 @@ abstract class Common implements Storage, ILockingStorage, IVersionedStorage {
 	public function saveVersion($internalPath) {
 		// returning false here will trigger the fallback implementation
 		return false;
+	}
+
+	public function lockNodePersistent($internalPath, array $lockInfo) {
+		/** @var LockManager $locksManager */
+		$locksManager = \OC::$server->query(LockManager::class);
+		$storageId = $this->getCache()->getNumericStorageId();
+		$fileId = $this->getCache()->getId($internalPath);
+		return $locksManager->lock($storageId, $internalPath, $fileId, $lockInfo);
+	}
+
+	public function unlockNodePersistent($internalPath, array $lockInfo) {
+		/** @var LockManager $locksManager */
+		$locksManager = \OC::$server->query(LockManager::class);
+		$fileId = $this->getCache()->getId($internalPath);
+		return $locksManager->unlock($fileId, $lockInfo['token']);
+	}
+
+	public function getLocks($internalPath, $returnChildLocks = false) {
+		/** @var LockManager $locksManager */
+		$locksManager = \OC::$server->query(LockManager::class);
+		$storageId = $this->getCache()->getNumericStorageId();
+		$locks = $locksManager->getLocks($storageId, $internalPath, $returnChildLocks);
+
+		return \array_map(function (Lock $lock) {
+			list($uid, $fileName) = $this->convertInternalPathToGlobalPath($lock->getPath());
+			$lock->setDavUserId($uid);
+			$lock->setAbsoluteDavPath($fileName);
+			return $lock;
+		}, $locks);
 	}
 }

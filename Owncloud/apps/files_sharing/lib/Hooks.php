@@ -26,14 +26,14 @@
 namespace OCA\Files_Sharing;
 
 use OC\Files\Filesystem;
-use OCA\FederatedFileSharing\DiscoveryManager;
 use OCP\IURLGenerator;
 use OCP\Files\IRootFolder;
+use OCP\IUserSession;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use OCP\Share\IShare;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use OCA\Files_Sharing\Service\NotificationPublisher;
-use OCP\Share\Exceptions\ShareNotFound;
+use OCP\Activity\IManager as ActivityManager;
 
 class Hooks {
 	/**
@@ -45,6 +45,11 @@ class Hooks {
 	 * @var IRootFolder
 	 */
 	private $rootFolder;
+
+	/**
+	 * @var IUserSession|null
+	 */
+	private $userSession;
 
 	/**
 	 * @var EventDispatcher
@@ -61,32 +66,57 @@ class Hooks {
 	 */
 	private $notificationPublisher;
 
+	/**
+	 * @var SharingAllowlist
+	 */
+	private $sharingAllowlist;
+
+	/**
+	 * @var ActivityManager
+	 */
+	private $activityManager;
+
+	/**
+	 * Hooks constructor.
+	 *
+	 * @param IRootFolder $rootFolder
+	 * @param IURLGenerator $urlGenerator
+	 * @param EventDispatcher $eventDispatcher
+	 * @param \OCP\Share\IManager $shareManager
+	 * @param NotificationPublisher $notificationPublisher
+	 * @param ActivityManager $activityManager
+	 * @param SharingAllowlist $sharingAllowlist
+	 * @param IUserSession|null $userSession
+	 */
 	public function __construct(
 		IRootFolder $rootFolder,
 		IUrlGenerator $urlGenerator,
 		EventDispatcher $eventDispatcher,
 		\OCP\Share\IManager $shareManager,
-		NotificationPublisher $notificationPublisher
+		NotificationPublisher $notificationPublisher,
+		ActivityManager $activityManager,
+		SharingAllowlist $sharingAllowlist,
+		$userSession
 	) {
+		$this->userSession = $userSession;
 		$this->rootFolder = $rootFolder;
 		$this->urlGenerator = $urlGenerator;
 		$this->eventDispatcher = $eventDispatcher;
 		$this->shareManager = $shareManager;
 		$this->notificationPublisher = $notificationPublisher;
+		$this->activityManager = $activityManager;
+		$this->sharingAllowlist= $sharingAllowlist;
 	}
 
 	public static function deleteUser($params) {
-		$discoveryManager = new DiscoveryManager(
-			\OC::$server->getMemCacheFactory(),
-			\OC::$server->getHTTPClientService()
-		);
 		$manager = new External\Manager(
 			\OC::$server->getDatabaseConnection(),
 			\OC\Files\Filesystem::getMountManager(),
 			\OC\Files\Filesystem::getLoader(),
 			\OC::$server->getNotificationManager(),
 			\OC::$server->getEventDispatcher(),
-			$params['uid']);
+			$params['uid']
+		);
 
 		$manager->removeUserShares($params['uid']);
 	}
@@ -136,6 +166,89 @@ class Hooks {
 				$this->notificationPublisher->discardNotification($shareObject);
 			}
 		);
+
+		$this->eventDispatcher->addListener(
+			'file.beforeGetDirect',
+			function (GenericEvent $event) {
+				$pathsToCheck[] = $event->getArgument('path');
+
+				// Check only for user/group shares. Don't restrict e.g. share links
+				if ($uid = $this->getCurrentUserUid()) {
+					$viewOnlyHandler = new ViewOnly(
+						$this->rootFolder->getUserFolder($uid)
+					);
+					if (!$viewOnlyHandler->check($pathsToCheck)) {
+						$event->setArgument('errorMessage', 'Access to this resource or one of its sub-items has been denied.');
+					}
+				}
+			}
+		);
+
+		$this->eventDispatcher->addListener(
+			'file.beforeCreateZip',
+			function (GenericEvent $event) {
+				$dir = $event->getArgument('dir');
+				$files = $event->getArgument('files');
+
+				$pathsToCheck = [];
+				if (\is_array($files)) {
+					foreach ($files as $file) {
+						$pathsToCheck[] = $dir . '/' . $file;
+					}
+				} elseif (\is_string($files)) {
+					$pathsToCheck[] = $dir . '/' . $files;
+				}
+
+				// Check only for user/group shares. Don't restrict e.g. share links
+				$uid = $this->getCurrentUserUid();
+				if ($uid !== null) {
+					$viewOnlyHandler = new ViewOnly(
+						$this->rootFolder->getUserFolder($uid)
+					);
+					if (!$viewOnlyHandler->check($pathsToCheck)) {
+						$event->setArgument('errorMessage', 'Access to this resource or one of its sub-items has been denied.');
+						$event->setArgument('run', false);
+					} else {
+						$event->setArgument('run', true);
+					}
+				} else {
+					$event->setArgument('run', true);
+				}
+			}
+		);
+
+		$this->eventDispatcher->addListener(
+			'fromself.unshare',
+			function (GenericEvent $event) {
+				$activityEvent = $this->activityManager->generateEvent();
+				$activityEvent->setApp(Activity::FILES_SHARING_APP)
+					->setType(Activity::TYPE_SHARED)
+					->setAffectedUser($event->getArgument('shareRecipient'))
+					->setSubject(
+						Activity::SUBJECT_UNSHARED_FROM_SELF,
+						[$event->getArgument('recipientPath'), $event->getArgument('shareOwner')]
+					);
+				$this->activityManager->publish($activityEvent);
+			}
+		);
+
+		$this->eventDispatcher->addListener('group.postDelete', function ($event) {
+			$groupId = $event->getSubject()->getGID();
+			$groupsAllowlist =  $this->sharingAllowlist->getPublicShareSharersGroupsAllowlist();
+
+			if (\in_array($groupId, $groupsAllowlist)) {
+				$this->sharingAllowlist->setPublicShareSharersGroupsAllowlist(array_diff($groupsAllowlist, [$groupId]));
+			}
+		});
+	}
+
+	private function getCurrentUserUid() {
+		// User session can be null when installing oc and Hook is triggered, or
+		// user is not logged in
+		if ($this->userSession && $this->userSession->isLoggedIn()) {
+			return $this->userSession->getUser()->getUID();
+		}
+		return null;
 	}
 
 	private function filterSharesByFileId($shares, $fileId) {
@@ -167,5 +280,20 @@ class Hooks {
 		}
 
 		return null;
+	}
+
+	public static function extendJsConfig($array) {
+		$sharingAllowlist = new SharingAllowlist(
+			\OC::$server->getConfig(),
+			\OC::$server->getGroupManager()
+		);
+
+		$array['array']['oc_appconfig']['files_sharing'] = [
+			'publicShareSharersGroupsAllowlist' => $sharingAllowlist->getPublicShareSharersGroupsAllowlist(),
+			'publicShareSharersGroupsAllowlistEnabled' => $sharingAllowlist->isPublicShareSharersGroupsAllowlistEnabled(),
+			'showPublicLinkQuickAction' => \OC::$server->getConfig()->getSystemValue('sharing.showPublicLinkQuickAction', false),
+		];
+
+		return $array;
 	}
 }

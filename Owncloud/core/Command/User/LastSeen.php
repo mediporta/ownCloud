@@ -53,22 +53,23 @@ class LastSeen extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $this->userManager->get($input->getArgument('uid'));
 		if ($user === null) {
 			$output->writeln('<error>User does not exist</error>');
-			return;
+			return 1;
 		}
 
 		$lastLogin = $user->getLastLogin();
 		if ($lastLogin === 0) {
 			$output->writeln('User ' . $user->getUID() .
-				' has never logged in, yet.');
+				' has never logged in.');
 		} else {
 			$date = new \DateTime();
 			$date->setTimestamp($lastLogin);
 			$output->writeln($user->getUID() .
 				'`s last login: ' . $date->format('d.m.Y H:i'));
 		}
+		return 0;
 	}
 }

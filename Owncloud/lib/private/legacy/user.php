@@ -56,7 +56,6 @@
  *   logout()
  */
 class OC_User {
-
 	/**
 	 * @return \OC\User\Session
 	 */
@@ -66,7 +65,7 @@ class OC_User {
 
 	private static $_usedBackends = [];
 
-	private static $_setupedBackends = [];
+	private static $_configuredBackends = [];
 
 	// bool, stores if a user want to access a resource anonymously, e.g if they open a public link
 	private static $incognitoMode = false;
@@ -139,14 +138,14 @@ class OC_User {
 			$class = $config['class'];
 			$arguments = $config['arguments'];
 			if (\class_exists($class)) {
-				if (\array_search($i, self::$_setupedBackends) === false) {
+				if (\array_search($i, self::$_configuredBackends) === false) {
 					// make a reflection object
 					$reflectionObj = new ReflectionClass($class);
 
 					// use Reflection to create a new instance, using the $args
 					$backend = $reflectionObj->newInstanceArgs($arguments);
 					self::useBackend($backend);
-					self::$_setupedBackends[] = $i;
+					self::$_configuredBackends[] = $i;
 				} else {
 					\OCP\Util::writeLog('core', 'User backend ' . $class . ' already initialized.', \OCP\Util::DEBUG);
 				}

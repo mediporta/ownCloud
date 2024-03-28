@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2022, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -25,6 +25,8 @@ use OC\Files\Meta\MetaFileVersionNode;
 use OCA\DAV\Files\ICopySource;
 use OCA\DAV\Files\IProvidesAdditionalHeaders;
 use OCA\DAV\Files\IFileNode;
+use OCP\Files\IProvidesVersionAuthor;
+use OCP\Files\IProvidesVersionTag;
 use OCP\Files\Node;
 use Sabre\DAV\File;
 
@@ -35,7 +37,6 @@ use Sabre\DAV\File;
  * @package OCA\DAV\Meta
  */
 class MetaFile extends File implements ICopySource, IFileNode, IProvidesAdditionalHeaders {
-
 	/** @var \OCP\Files\File */
 	private $file;
 
@@ -87,7 +88,7 @@ class MetaFile extends File implements ICopySource, IFileNode, IProvidesAddition
 	 * @inheritdoc
 	 */
 	public function getETag() {
-		return $this->file->getEtag();
+		return '"' . $this->file->getEtag() . '"';
 	}
 
 	/**
@@ -125,5 +126,25 @@ class MetaFile extends File implements ICopySource, IFileNode, IProvidesAddition
 	 */
 	public function getNode() {
 		return $this->file;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getVersionEditedBy() : string {
+		if ($this->file instanceof IProvidesVersionAuthor) {
+			return $this->file->getEditedBy();
+		}
+		return '';
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getVersionTag() : string {
+		if ($this->file instanceof IProvidesVersionTag) {
+			return $this->file->getVersionTag();
+		}
+		return '';
 	}
 }

@@ -4,7 +4,7 @@
  * @author Clark Tomlinson <fallen013@gmail.com>
  * @author Phil Davis <phil.davis@inf.org>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -21,9 +21,7 @@
  *
  */
 
-
 namespace OCA\Encryption;
-
 
 use OC\Files\View;
 use OCA\Encryption\Crypto\Crypt;
@@ -70,17 +68,18 @@ class Util {
 	 * @param IConfig $config
 	 * @param IUserManager $userManager
 	 */
-	public function __construct(View $files,
-								Crypt $crypt,
-								ILogger $logger,
-								IUserSession $userSession,
-								IConfig $config,
-								IUserManager $userManager
+	public function __construct(
+		View $files,
+		Crypt $crypt,
+		ILogger $logger,
+		IUserSession $userSession,
+		IConfig $config,
+		IUserManager $userManager
 	) {
 		$this->files = $files;
 		$this->crypt = $crypt;
 		$this->logger = $logger;
-		$this->user = $userSession && $userSession->isLoggedIn() ? $userSession->getUser() : false;
+		$this->user = $userSession !== null && $userSession->isLoggedIn() ? $userSession->getUser() : false;
 		$this->config = $config;
 		$this->userManager = $userManager;
 	}
@@ -92,10 +91,12 @@ class Util {
 	 * @return bool
 	 */
 	public function isRecoveryEnabledForUser($uid) {
-		$recoveryMode = $this->config->getUserValue($uid,
+		$recoveryMode = $this->config->getUserValue(
+			$uid,
 			'encryption',
 			'recoveryEnabled',
-			'0');
+			'0'
+		);
 
 		return ($recoveryMode === '1');
 	}
@@ -140,17 +141,19 @@ class Util {
 	}
 
 	/**
-	 * @param $enabled
+	 * @param boolean $enabled
 	 * @return bool
 	 */
 	public function setRecoveryForUser($enabled) {
 		$value = $enabled ? '1' : '0';
 
 		try {
-			$this->config->setUserValue($this->user->getUID(),
+			$this->config->setUserValue(
+				$this->user->getUID(),
 				'encryption',
 				'recoveryEnabled',
-				$value);
+				$value
+			);
 			return true;
 		} catch (PreConditionNotMetException $e) {
 			return false;
@@ -174,14 +177,13 @@ class Util {
 	 */
 	public function getOwner($path) {
 		$owner = '';
-		$parts = explode('/', $path, 3);
-		if (count($parts) > 1) {
+		$parts = \explode('/', $path, 3);
+		if (\count($parts) > 1) {
 			$owner = $parts[1];
 			if ($this->userManager->userExists($owner) === false) {
 				throw new \BadMethodCallException('Unknown user: ' .
 				'method expects path to a user folder relative to the data folder');
 			}
-
 		}
 
 		return $owner;
@@ -198,4 +200,15 @@ class Util {
 		return $storage;
 	}
 
+	/**
+	 * Deletes the encryption settings for the masterkey
+	 */
+	public function removeEncryptionAppSettings() {
+		$this->config->setAppValue('core', 'encryption_enabled', 'no');
+		$this->config->deleteAppValue('encryption', 'useMasterKey');
+		$this->config->deleteAppValue('encryption', 'masterKeyId');
+		$this->config->deleteAppValue('encryption', 'recoveryKeyId');
+		$this->config->deleteAppValue('encryption', 'publicShareKeyId');
+		$this->config->deleteAppValue('files_encryption', 'installed_version');
+	}
 }

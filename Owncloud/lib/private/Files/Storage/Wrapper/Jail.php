@@ -32,7 +32,7 @@ use OCP\Lock\ILockingProvider;
  *
  * This restricts access to a subfolder of the wrapped storage with the subfolder becoming the root folder new storage
  */
-class Jail extends Wrapper {
+class Jail extends Wrapper { /* implements IVersionedStorage */
 	/**
 	 * @var string
 	 */
@@ -333,7 +333,9 @@ class Jail extends Wrapper {
 	 * @return array
 	 */
 	public function search($query) {
-		return $this->getWrapperStorage()->search($query);
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->search($query);
 	}
 
 	/**
@@ -495,5 +497,86 @@ class Jail extends Wrapper {
 			return $this->rename($sourceInternalPath, $targetInternalPath);
 		}
 		return $this->getWrapperStorage()->moveFromStorage($sourceStorage, $sourceInternalPath, $this->getSourcePath($targetInternalPath));
+	}
+
+	/**
+	 * Get the content of a given version of a given file as stream resource
+	 *
+	 * @param string $internalPath
+	 * @param string $versionId
+	 * @return resource
+	 * @since 10.0.9
+	 */
+	public function getContentOfVersion($internalPath, $versionId) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->getContentOfVersion($this->getSourcePath($internalPath), $versionId);
+	}
+
+	/**
+	 * Restore the given version of a given file
+	 *
+	 * @param string $internalPath
+	 * @param string $versionId
+	 * @return boolean
+	 * @since 10.0.9
+	 */
+	public function restoreVersion($internalPath, $versionId) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->restoreVersion($this->getSourcePath($internalPath), $versionId);
+	}
+
+	/**
+	 * Tells the storage to explicitly create a version of a given file
+	 *
+	 * @param string $internalPath
+	 * @return bool
+	 * @since 10.0.9
+	 */
+	public function saveVersion($internalPath) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->saveVersion($this->getSourcePath($internalPath));
+	}
+
+	/**
+	 * List versioning metadata of all noncurrent versions for the given file
+	 *
+	 * @param string $internalPath
+	 * @return array
+	 * @since 10.0.9
+	 */
+	public function getVersions($internalPath) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->getVersions($this->getSourcePath($internalPath));
+	}
+
+	/**
+	 * Get versioning metadata for current version of the file (versions root)
+	 *
+	 * @param string $internalPath
+	 * @return array
+	 * @since 10.0.9
+	 */
+	public function getCurrentVersion($internalPath) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->getCurrentVersion($this->getSourcePath($internalPath));
+	}
+
+	/**
+	 * Get versioning metadata for one explicit noncurrent version of the given file
+	 *
+	 * @param string $internalPath
+	 * @param string $versionId
+	 * @return array
+	 * @since 10.0.9
+	 */
+	public function getVersion($internalPath, $versionId) {
+		$wrapperStorage = $this->getWrapperStorage();
+		'@phan-var \OC\Files\Storage\Common $wrapperStorage';
+		return $wrapperStorage->getVersion($this->getSourcePath($internalPath), $versionId);
 	}
 }

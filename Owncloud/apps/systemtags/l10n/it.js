@@ -23,10 +23,11 @@ OC.L10N.register(
     "%1$s unassigned system tag %3$s from %2$s" : "%1$s ha rimosso il tag di sistema %3$s da %2$s",
     "%s (restricted)" : "%s (limitato)",
     "%s (invisible)" : "%s (invisibile)",
+    "%s (static)" : "%s (statico)",
     "No files in here" : "Qui non c'è alcun file",
     "No entries found in this folder" : "Nessuna voce trovata in questa cartella",
     "Name" : "Nome",
     "Size" : "Dimensione",
     "Modified" : "Modificato"
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

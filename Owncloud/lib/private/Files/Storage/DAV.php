@@ -34,7 +34,7 @@ namespace OC\Files\Storage;
 
 use Exception;
 use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface;
 use OC\Files\Filesystem;
 use OC\Files\Stream\Close;
 use Icewind\Streams\IteratorDirectory;
@@ -45,6 +45,7 @@ use OCP\Files\FileInfo;
 use OCP\Files\StorageInvalidException;
 use OCP\Files\StorageNotAvailableException;
 use OCP\Util;
+use Sabre\DAV\Exception as SabreException;
 use Sabre\DAV\Xml\Property\ResourceType;
 use Sabre\HTTP\Client;
 use Sabre\HTTP\ClientHttpException;
@@ -69,8 +70,6 @@ class DAV extends Common {
 	protected $secure;
 	/** @var string */
 	protected $root;
-	/** @var string */
-	protected $certPath;
 	/** @var bool */
 	protected $ready;
 	/** @var Client */
@@ -158,7 +157,6 @@ class DAV extends Common {
 		return 'webdav::' . $this->user . '@' . $this->host . '/' . $this->root;
 	}
 
-	/** {@inheritdoc} */
 	public function createBaseUri() {
 		$baseUri = 'http';
 		if ($this->secure) {
@@ -196,6 +194,8 @@ class DAV extends Common {
 		$this->init();
 		$path = $this->cleanPath($path);
 		try {
+			// client propfind is in \OC\HTTP\Client
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$response = $this->client->propfind(
 				$this->encodePath($path),
 				[],
@@ -241,18 +241,23 @@ class DAV extends Common {
 	 * If not, request it from the server then store to cache.
 	 *
 	 * @param string $path path to propfind
-	 *
+	 * @param bool $strictNotFoundCheck
 	 * @return array|boolean propfind response or false if the entry was not found
 	 *
-	 * @throws ClientHttpException
+	 * @throws StorageInvalidException
+	 * @throws StorageNotAvailableException
+	 * @throws SabreException
 	 */
-	protected function propfind($path) {
+	protected function propfind($path, $strictNotFoundCheck=false) {
 		$path = $this->cleanPath($path);
 		$cachedResponse = $this->statCache->get($path);
 		// we either don't know it, or we know it exists but need more details
 		if ($cachedResponse === null || $cachedResponse === true) {
 			$this->init();
+			$response = false;
 			try {
+				// client propfind is in \OC\HTTP\Client
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$response = $this->client->propfind(
 					$this->encodePath($path),
 					[
@@ -270,16 +275,26 @@ class DAV extends Common {
 				if ($e->getHttpStatus() === Http::STATUS_NOT_FOUND) {
 					$this->statCache->clear($path . '/');
 					$this->statCache->set($path, false);
-					return false;
+				} else {
+					$this->convertException($e, $path);
 				}
-				$this->convertException($e, $path);
 			} catch (\Exception $e) {
-				$this->convertException($e, $path);
+				if ($e->getCode() === \CURLE_COULDNT_CONNECT || $e->getCode() === \CURLE_OPERATION_TIMEDOUT) {
+					\OC::$server->getLogger()->warning(
+						'Storage is not available due to the connection timeout to {hostName}',
+						['hostName' => $this->host]
+					);
+					if ($strictNotFoundCheck) {
+						throw new StorageNotAvailableException('Storage is not available due to the connection timeout');
+					}
+				} else {
+					$this->convertException($e, $path);
+				}
 			}
-		} else {
-			$response = $cachedResponse;
+			return $response;
 		}
-		return $response;
+
+		return $cachedResponse;
 	}
 
 	/** {@inheritdoc} */
@@ -401,10 +416,14 @@ class DAV extends Common {
 				self::$tempFiles[$tmpFile] = $path;
 				return \fopen('close://' . $tmpFile, $mode);
 		}
+		return false;
 	}
 
 	/**
 	 * @param string $tmpFile
+	 * @throws StorageInvalidException
+	 * @throws StorageNotAvailableException
+	 * @throws SabreException
 	 */
 	public function writeBack($tmpFile) {
 		if (isset(self::$tempFiles[$tmpFile])) {
@@ -419,6 +438,8 @@ class DAV extends Common {
 		$path = $this->cleanPath($path);
 		try {
 			// TODO: cacheable ?
+			// client propfind is in \OC\HTTP\Client
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$response = $this->client->propfind($this->encodePath($path), ['{DAV:}quota-available-bytes']);
 			if ($response === false) {
 				return FileInfo::SPACE_UNKNOWN;
@@ -445,8 +466,12 @@ class DAV extends Common {
 		if ($this->file_exists($path)) {
 			try {
 				$this->statCache->remove($path);
+				// client proppatch is in \OC\HTTP\Client
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$this->client->proppatch($this->encodePath($path), ['{DAV:}lastmodified' => $mtime]);
 				// non-owncloud clients might not have accepted the property, need to recheck it
+				// client propfind is in \OC\HTTP\Client
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$response = $this->client->propfind($this->encodePath($path), ['{DAV:}getlastmodified'], 0);
 				if ($response === false) {
 					// file disappeared since ?
@@ -490,6 +515,9 @@ class DAV extends Common {
 	/**
 	 * @param string $path
 	 * @param string $target
+	 * @throws StorageInvalidException
+	 * @throws StorageNotAvailableException
+	 * @throws SabreException
 	 */
 	protected function uploadFile($path, $target) {
 		$this->init();
@@ -497,7 +525,7 @@ class DAV extends Common {
 		// invalidate
 		$target = $this->cleanPath($target);
 		$this->statCache->remove($target);
-		$source = \fopen($path, 'r');
+		$source = \fopen($path, 'rb');
 
 		$this->removeCachedFile($target);
 		try {
@@ -523,6 +551,8 @@ class DAV extends Common {
 				// needs trailing slash in destination
 				$path2 = \rtrim($path2, '/') . '/';
 			}
+			// client request is in \OC\HTTP\Client
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$this->client->request(
 				'MOVE',
 				$this->encodePath($path1),
@@ -555,6 +585,8 @@ class DAV extends Common {
 				// needs trailing slash in destination
 				$path2 = \rtrim($path2, '/') . '/';
 			}
+			// client request is in \OC\HTTP\Client
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$this->client->request(
 				'COPY',
 				$this->encodePath($path1),
@@ -573,12 +605,16 @@ class DAV extends Common {
 		return false;
 	}
 
-	/** {@inheritdoc} */
+	/**
+	 * @throws StorageInvalidException
+	 * @throws StorageNotAvailableException
+	 * @throws SabreException
+	 */
 	public function stat($path) {
 		try {
 			$response = $this->propfind($path);
 			if ($response === false) {
-				return [];
+				return false;
 			}
 			return [
 				'mtime' => \strtotime($response['{DAV:}getlastmodified']),
@@ -586,8 +622,8 @@ class DAV extends Common {
 			];
 		} catch (\Exception $e) {
 			$this->convertException($e, $path);
+			return false;
 		}
-		return [];
 	}
 
 	/** {@inheritdoc} */
@@ -648,12 +684,15 @@ class DAV extends Common {
 	 * @return bool
 	 * @throws StorageInvalidException
 	 * @throws StorageNotAvailableException
+	 * @throws SabreException
 	 */
 	private function simpleResponse($method, $path, $body, $expected) {
 		$path = $this->cleanPath($path);
 		try {
+			// client request is in \OC\HTTP\Client
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			$response = $this->client->request($method, $this->encodePath($path), $body);
-			return $response['statusCode'] == $expected;
+			return isset($response['statusCode']) && $response['statusCode'] == $expected;
 		} catch (ClientHttpException $e) {
 			if ($e->getHttpStatus() === Http::STATUS_NOT_FOUND && $method === 'DELETE') {
 				$this->statCache->clear($path . '/');
@@ -728,7 +767,7 @@ class DAV extends Common {
 		if (isset($response['{DAV:}getetag'])) {
 			return \trim($response['{DAV:}getetag'], '"');
 		}
-		return parent::getEtag($path);
+		return parent::getETag($path);
 	}
 
 	/**
@@ -758,8 +797,10 @@ class DAV extends Common {
 	 *
 	 * @param string $path
 	 * @param int $time
-	 * @throws \OCP\Files\StorageNotAvailableException
 	 * @return bool
+	 * @throws StorageInvalidException
+	 * @throws \OCP\Files\StorageNotAvailableException
+	 * @throws SabreException
 	 */
 	public function hasUpdated($path, $time) {
 		$this->init();
@@ -776,16 +817,18 @@ class DAV extends Common {
 				return false;
 			}
 			if (isset($response['{DAV:}getetag'])) {
-				$cachedData = $this->getCache()->get($path);
 				$etag = \trim($response['{DAV:}getetag'], '"');
-				if (!empty($etag) && $cachedData['etag'] !== $etag) {
+				$cachedData = $this->getCache()->get($path);
+				$cachedEtag = $cachedData['etag'] ?? null;
+				if (!empty($etag) && $cachedEtag !== $etag) {
 					return true;
 				} elseif (isset($response['{http://open-collaboration-services.org/ns}share-permissions'])) {
 					$sharePermissions = (int)$response['{http://open-collaboration-services.org/ns}share-permissions'];
 					return $sharePermissions !== $cachedData['permissions'];
 				} elseif (isset($response['{http://owncloud.org/ns}permissions'])) {
 					$permissions = $this->parsePermissions($response['{http://owncloud.org/ns}permissions']);
-					return $permissions !== $cachedData['permissions'];
+					$cachedPermissions = $cachedData['permissions'] ?? null;
+					return $permissions !== $cachedPermissions;
 				} else {
 					return false;
 				}
@@ -821,6 +864,7 @@ class DAV extends Common {
 	 * @throws StorageInvalidException if the storage is invalid, for example
 	 * when the authentication expired or is invalid
 	 * @throws StorageNotAvailableException if the storage is not available,
+	 * @throws SabreException
 	 * which might be temporary
 	 */
 	private function convertException(Exception $e, $path = '') {
@@ -840,8 +884,9 @@ class DAV extends Common {
 			throw new StorageNotAvailableException(\get_class($e) . ': ' . $e->getMessage());
 		} elseif (($e instanceof StorageNotAvailableException)
 			|| ($e instanceof StorageInvalidException)
-			|| ($e instanceof \Sabre\DAV\Exception
-		)) {
+			|| (
+				$e instanceof SabreException
+			)) {
 			// rethrow
 			throw $e;
 		}

@@ -27,6 +27,26 @@ script('files_sharing', 'settings');
 		<p><?php p($l->t('Exclude groups from receiving shares')); ?></p>
 		<input name="blacklisted_receiver_groups" class="noautosave" value="<?php p($_['blacklistedReceivers']) ?>" style="width: 400px"/>
 		<br />
-		<em><?php p($l->t('These groups will not be available to share with. Members of the group are not restricted in initiating shares and can receive shares with other groups they are a member of as usual.')); ?></em>
+		<em><?php p($l->t('These groups will not be available to share with. Members of the group are not restricted in initiating shares and receiving personal shares/invitations. Furthermore they can receive shares addressed to other groups they are members of as usual.')); ?></em>
 	</div>
+
+	<p>
+		<input type="checkbox"
+			   name="public_share_sharers_groups_allowlist_enabled"
+			   id="publicShareSharersGroupsAllowlistEnabled" class="checkbox noautosave"
+			   value="1" <?php if ($_['publicShareSharersGroupsAllowlistEnabled'] === 'yes') {
+			   	print_unescaped('checked="checked"');
+			   } ?> />
+		<label for="publicShareSharersGroupsAllowlistEnabled"><?php p($l->t('Only certain groups are allowed to create public links')); ?></label><br/>
+		<span id="setAllowlistPublicShareSharersGroups"
+			  class="indent <?php if ($_['publicShareSharersGroupsAllowlistEnabled'] === 'no') {
+			  	p('hidden');
+			  } ?>">
+		  <input name="public_share_sharers_groups_allowlist"
+				 id="allowlistPublicShareSharersGroups"
+				 class="noautosave"
+				 value="<?php p($_['publicShareSharersGroupsAllowlist']) ?>"
+				 style="width: 400px"/>
+		  </span>
+		</p>
 </div>

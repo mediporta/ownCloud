@@ -33,12 +33,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ExpireVersions extends Command {
-
 	/**
 	 * @var Expiration
 	 */
 	private $expiration;
-	
+
 	/**
 	 * @var IUserManager
 	 */
@@ -48,8 +47,10 @@ class ExpireVersions extends Command {
 	 * @param IUserManager|null $userManager
 	 * @param Expiration|null $expiration
 	 */
-	public function __construct(IUserManager $userManager = null,
-								Expiration $expiration = null) {
+	public function __construct(
+		IUserManager $userManager = null,
+		Expiration $expiration = null
+	) {
 		parent::__construct();
 
 		$this->userManager = $userManager;
@@ -67,11 +68,11 @@ class ExpireVersions extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$maxAge = $this->expiration->getMaxAgeAsTimestamp();
 		if (!$maxAge) {
 			$output->writeln("Auto expiration is configured - expiration will be handled automatically.");
-			return;
+			return 1;
 		}
 
 		$users = $input->getArgument('user_id');
@@ -95,6 +96,7 @@ class ExpireVersions extends Command {
 			$p->finish();
 			$output->writeln('');
 		}
+		return 0;
 	}
 
 	public function expireVersionsForUser(IUser $user) {
@@ -112,7 +114,7 @@ class ExpireVersions extends Command {
 	 */
 	protected function setupFS($user) {
 		\OC_Util::tearDownFS();
-		\OC_Util::setupFS($user);
+		\OC_Util::setupFS($user, false);
 
 		// Check if this user has a version directory
 		$view = new \OC\Files\View('/' . $user);

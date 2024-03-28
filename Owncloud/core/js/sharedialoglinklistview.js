@@ -31,7 +31,7 @@
 			'</div>' +
 			'{{#if ../socialShareEnabled}}' +
 			'<div class="link-entry--icon-button shareLink" title="{{../shareText}}">' +
-			'	<span class="icon icon-share"></span>' +
+			'	<span class="icon icon-shared"></span>' +
 			'	<span class="hidden">{{../shareText}}</span>' +
 			'</div>' +
 			'{{/if}}' +
@@ -131,9 +131,7 @@
 
 		_generateName: function() {
 			var index = 1;
-			var baseName = t('core', '{fileName} link', {
-				fileName: this.fileInfoModel.get('name')
-			});
+			var baseName = OC.getCapabilities()['files_sharing']["public"]["defaultPublicLinkShareName"];
 			var name = baseName;
 
 			while (this.collection.findWhere({name: name})) {
@@ -252,7 +250,7 @@
 
 			this.$el.find('[title]').tooltip();
 
-			var clipboard = new Clipboard('#' + this.id + ' .clipboardButton');
+			var clipboard = new ClipboardJS('#' + this.id + ' .clipboardButton');
 			clipboard.on('success', function (e) {
 				var $input = $(e.trigger);
 				$input.tooltip({

@@ -4,7 +4,7 @@
  * @author Clark Tomlinson <fallen013@gmail.com>
  * @author Lukas Reschke <lukas@statuscode.ch>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -27,14 +27,13 @@ use OCA\Encryption\Exceptions\PrivateKeyMissingException;
 use \OCP\ISession;
 
 class Session {
-
 	/** @var ISession */
 	protected $session;
 
-	const NOT_INITIALIZED = '0';
-	const INIT_EXECUTED = '1';
-	const INIT_SUCCESSFUL = '2';
-	const RUN_MIGRATION = '3';
+	public const NOT_INITIALIZED = '0';
+	public const INIT_EXECUTED = '1';
+	public const INIT_SUCCESSFUL = '2';
+	public const RUN_MIGRATION = '3';
 
 	/**
 	 * @param ISession $session
@@ -59,8 +58,10 @@ class Session {
 	 */
 	public function getStatus() {
 		$status = $this->session->get('encryptionInitialized');
-		if (is_null($status)) {
-			if(\OC::$server->getAppConfig()->getValue('encryption', 'useMasterKey', '0') !== '0'
+		if ($status === null) {
+			/** @phan-suppress-next-line PhanDeprecatedFunction */
+			if (\OC::$server->getAppConfig()->getValue('encryption', 'useMasterKey', '0') !== '0'
+				/** @phan-suppress-next-line PhanDeprecatedFunction */
 			  or \OC::$server->getAppConfig()->getValue('encryption', 'userSpecificKey', '') !== '') {
 				$status = self::NOT_INITIALIZED;
 			}
@@ -77,8 +78,8 @@ class Session {
 	 */
 	public function getPrivateKey() {
 		$key = $this->session->get('privateKey');
-		if (is_null($key)) {
-			throw new Exceptions\PrivateKeyMissingException('please try to log-out and log-in again', 0);
+		if ($key === null) {
+			throw new Exceptions\PrivateKeyMissingException('please try to log-out and log-in again');
 		}
 		return $key;
 	}
@@ -90,7 +91,7 @@ class Session {
 	 */
 	public function isPrivateKeySet() {
 		$key = $this->session->get('privateKey');
-		if (is_null($key)) {
+		if ($key === null) {
 			return false;
 		}
 
@@ -138,9 +139,9 @@ class Session {
 	 */
 	public function getDecryptAllUid() {
 		$uid = $this->session->get('decryptAllUid');
-		if (is_null($uid) && $this->decryptAllModeActivated()) {
+		if (($uid === null) && $this->decryptAllModeActivated()) {
 			throw new \Exception('No uid found while in decrypt all mode');
-		} elseif (is_null($uid)) {
+		} elseif ($uid === null) {
 			throw new \Exception('Please activate decrypt all mode first');
 		}
 
@@ -155,9 +156,9 @@ class Session {
 	 */
 	public function getDecryptAllKey() {
 		$privateKey = $this->session->get('decryptAllKey');
-		if (is_null($privateKey) && $this->decryptAllModeActivated()) {
+		if (($privateKey === null) && $this->decryptAllModeActivated()) {
 			throw new PrivateKeyMissingException('No private key found while in decrypt all mode');
-		} elseif (is_null($privateKey)) {
+		} elseif ($privateKey === null) {
 			throw new PrivateKeyMissingException('Please activate decrypt all mode first');
 		}
 
@@ -175,5 +176,4 @@ class Session {
 		$this->session->remove('decryptAllKey');
 		$this->session->remove('decryptAllUid');
 	}
-
 }

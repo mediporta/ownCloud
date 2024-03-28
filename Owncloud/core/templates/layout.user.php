@@ -1,21 +1,23 @@
 <!DOCTYPE html>
-<html class="ng-csp" data-placeholder-focus="false" lang="<?php p($_['language']); ?>" >
+<html class="ng-csp" data-placeholder-focus="false" lang="<?php p($_['language']); ?>" translate="no">
 	<head data-user="<?php p($_['user_uid']); ?>" data-user-displayname="<?php p($_['user_displayname']); ?>" data-requesttoken="<?php p($_['requesttoken']); ?>">
 		<meta charset="utf-8">
+		<meta name="google" content="notranslate" />
 		<title>
 			<?php
+				/** @var OC_Theme $theme */
 				p(!empty($_['application'])?$_['application'].' - ':'');
 				p($theme->getTitle());
-			?>
+?>
 		</title>
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="referrer" content="never">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
 		<?php if ($theme->getiTunesAppId() !== '') {
-				?>
+			?>
 			<meta name="apple-itunes-app" content="app-id=<?php p($theme->getiTunesAppId()); ?>">
 		<?php
-			} ?>
+		} ?>
 		<meta name="apple-mobile-web-app-capable" content="yes">
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">
 		<meta name="apple-mobile-web-app-title" content="<?php p((!empty($_['application']) && $_['appid']!='files')? $_['application']:'ownCloud'); ?>">
@@ -23,7 +25,7 @@
 		<meta name="theme-color" content="<?php p($theme->getMailHeaderColor()); ?>">
 		<link rel="icon" href="<?php print_unescaped(image_path($_['appid'], 'favicon.ico')); /* IE11+ supports png */ ?>">
 		<link rel="apple-touch-icon-precomposed" href="<?php print_unescaped(image_path($_['appid'], 'favicon-touch.png')); ?>">
-		<link rel="mask-icon" sizes="any" href="<?php print_unescaped(image_path($_['appid'], 'favicon-mask.svg')); ?>" color="#1d2d44">
+		<link rel="mask-icon" sizes="any" href="<?php print_unescaped(image_path($_['appid'], 'favicon-mask.svg')); ?>" color="#041e42">
 		<link rel="manifest" href="<?php print_unescaped(image_path($_['appid'], 'manifest.json')); ?>">
 		<?php foreach ($_['cssfiles'] as $cssfile): ?>
 			<link rel="stylesheet" href="<?php print_unescaped($cssfile); ?>">
@@ -36,7 +38,11 @@
 		<?php endforeach; ?>
 		<?php print_unescaped($_['headers']); ?>
 	</head>
-	<body id="<?php p($_['bodyid']);?>">
+	<body id="<?php p($_['bodyid']);?>" <?php
+	
+	if ($theme->getName() !== 'ownCloud') {
+		print_unescaped('class="theme-' . \str_replace(' ', '-', $theme->getName()) . ' has-theme"');
+	} ?> >
 		<?php include('layout.noscript.warning.php'); ?>
 		<div id="notification-container">
 			<div id="notification"></div>
@@ -45,7 +51,7 @@
 			<div id="header">
 				<a href="<?php print_unescaped(link_to('', 'index.php')); ?>" id="owncloud" tabindex="1">
 					<h1 class="logo-icon">
-						<?php p($theme->getName()); ?>
+						<?php print_unescaped($theme->getHTMLName()); ?>
 					</h1>
 				</a>
 				<a href="#" class="header-appname-container menutoggle" tabindex="2">
@@ -56,15 +62,15 @@
 						<?php p(!empty($_['application']) ? $_['application'] : $l->t('Apps')); ?>
 					</h1>
 				</a>
-				<div id="logo-claim" style="display:none;"><?php p($theme->getLogoClaim()); ?></div>
+				<div id="logo-claim" style="display:none;"><?php print_unescaped($theme->getLogoClaim()); ?></div>
 				<div id="settings">
 					<div id="expand" tabindex="6" role="link" class="menutoggle">
 						<?php if ($_['enableAvatars']): ?>
 						<div class="avatardiv<?php if ($_['userAvatarSet']) {
-				print_unescaped(' avatardiv-shown');
-			} else {
-				print_unescaped('" style="display: none');
-			} ?>">
+							print_unescaped(' avatardiv-shown');
+						} else {
+							print_unescaped('" style="display: none');
+						} ?>">
 							<?php if ($_['userAvatarSet']): ?>
 								<img alt="" width="32" height="32"
 								src="<?php p(\OC::$server->getURLGenerator()->linkToRoute('core.avatar.getAvatar', ['userId' => $_['user_uid'], 'size' => 32]));?>"

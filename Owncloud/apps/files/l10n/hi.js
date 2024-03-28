@@ -1,13 +1,15 @@
 OC.L10N.register(
     "files",
     {
+    "All files" : "सभी फाइल्स",
     "Close" : "बंद करें ",
+    "Download" : "डाउनलोड",
+    "Delete" : "हटाना",
     "Files" : "फाइलें ",
     "Details" : "विवरण ",
     "New folder" : "नया फ़ोल्डर",
+    "Cancel" : "रद्द करें ",
     "Upload" : "अपलोड ",
-    "Save" : "सहेजें",
-    "Settings" : "सेटिंग्स",
-    "Delete" : "हटाना"
+    "Settings" : "सेटिंग्स"
 },
 "nplurals=2; plural=(n != 1);");

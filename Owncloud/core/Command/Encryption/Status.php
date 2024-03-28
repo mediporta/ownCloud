@@ -47,10 +47,11 @@ class Status extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$this->writeArrayInOutputFormat($input, $output, [
 			'enabled' => $this->encryptionManager->isEnabled(),
 			'defaultModule' => $this->encryptionManager->getDefaultEncryptionModuleId(),
 		]);
+		return 0;
 	}
 }

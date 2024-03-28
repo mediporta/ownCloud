@@ -69,7 +69,7 @@ class ListConfigs extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$app = $input->getArgument('app');
 		$noSensitiveValues = !$input->getOption('private');
 
@@ -78,7 +78,7 @@ class ListConfigs extends Base {
 				$configs = [
 					'system' => $this->getSystemConfigs($noSensitiveValues),
 				];
-			break;
+				break;
 
 			case 'all':
 				$apps = $this->appConfig->getApps();
@@ -89,7 +89,7 @@ class ListConfigs extends Base {
 				foreach ($apps as $appName) {
 					$configs['apps'][$appName] = $this->appConfig->getValues($appName, false);
 				}
-			break;
+				break;
 
 			default:
 				$configs = [
@@ -100,6 +100,7 @@ class ListConfigs extends Base {
 		}
 
 		$this->writeArrayInOutputFormat($input, $output, $configs);
+		return 0;
 	}
 
 	/**

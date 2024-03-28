@@ -41,7 +41,6 @@ use Sabre\HTTP\ResponseInterface;
  * @package OCA\DAV\DAV
  */
 class LazyOpsPlugin extends ServerPlugin {
-
 	/** @var Server */
 	private $server;
 	/** @var string */
@@ -59,11 +58,13 @@ class LazyOpsPlugin extends ServerPlugin {
 	/** @var JobStatusMapper */
 	private $mapper;
 
-	public function __construct(IUserSession $userSession,
-								IURLGenerator $urlGenerator,
-								IShutdownManager $shutdownManager,
-								JobStatusMapper $jobStatusMapper,
-								ILogger $logger) {
+	public function __construct(
+		IUserSession $userSession,
+		IURLGenerator $urlGenerator,
+		IShutdownManager $shutdownManager,
+		JobStatusMapper $jobStatusMapper,
+		ILogger $logger
+	) {
 		$this->userSession = $userSession;
 		$this->urlGenerator = $urlGenerator;
 		$this->shutdownManager = $shutdownManager;

@@ -30,7 +30,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 
 class ExpireVersions extends \OC\BackgroundJob\TimedJob {
-	const ITEMS_PER_SESSION = 1000;
+	public const ITEMS_PER_SESSION = 1000;
 
 	/**
 	 * @var Expiration
@@ -82,7 +82,7 @@ class ExpireVersions extends \OC\BackgroundJob\TimedJob {
 	 */
 	protected function setupFS($user) {
 		\OC_Util::tearDownFS();
-		\OC_Util::setupFS($user);
+		\OC_Util::setupFS($user, false);
 
 		// Check if this user has a versions directory
 		$view = new \OC\Files\View('/' . $user);

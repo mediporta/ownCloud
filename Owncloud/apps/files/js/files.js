@@ -29,6 +29,11 @@
 				state.dir = null;
 				state.call = null;
 				Files.updateMaxUploadFilesize(response);
+			}).fail(function() {
+				OC.Notification.show(
+					t('files', 'Encountered problem accessing the folder {name}', {name: currentDir}),
+					{type : 'error'}
+				);
 			});
 		},
 		/**
@@ -309,12 +314,14 @@
 		handleDownload: function(url, callback) {
 			var randomToken = Math.random().toString(36).substring(2),
 				checkForDownloadCookie = function() {
-					if (!OC.Util.isCookieSetToValue('ocDownloadStarted', randomToken)){
-						return false;
-					} else {
+					// Successful request should return cookie with token, failed with -1
+					if (OC.Util.isCookieSetToValue('ocDownloadStarted', randomToken) ||
+						OC.Util.isCookieSetToValue('ocDownloadStarted', '-1')) {
 						callback();
 						return true;
 					}
+
+					return false
 				};
 
 			if (url.indexOf('?') >= 0) {

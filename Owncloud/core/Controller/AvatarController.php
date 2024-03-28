@@ -50,7 +50,6 @@ use OCP\IUserSession;
  * @package OC\Core\Controller
  */
 class AvatarController extends Controller {
-
 	/** @var IAvatarManager */
 	protected $avatarManager;
 
@@ -83,15 +82,17 @@ class AvatarController extends Controller {
 	 * @param IRootFolder $rootFolder
 	 * @param ILogger $logger
 	 */
-	public function __construct($appName,
-								IRequest $request,
-								IAvatarManager $avatarManager,
-								File $cache,
-								IL10N $l10n,
-								IUserManager $userManager,
-								IUserSession $userSession,
-								IRootFolder $rootFolder,
-								ILogger $logger) {
+	public function __construct(
+		$appName,
+		IRequest $request,
+		IAvatarManager $avatarManager,
+		File $cache,
+		IL10N $l10n,
+		IUserManager $userManager,
+		IUserSession $userSession,
+		IRootFolder $rootFolder,
+		ILogger $logger
+	) {
 		parent::__construct($appName, $request);
 
 		$this->avatarManager = $avatarManager;
@@ -120,9 +121,11 @@ class AvatarController extends Controller {
 
 		try {
 			$avatar = $this->avatarManager->getAvatar($userId)->getFile($size);
-			$resp = new DataDisplayResponse($avatar->getContent(),
+			$resp = new DataDisplayResponse(
+				$avatar->getContent(),
 				Http::STATUS_OK,
-				['Content-Type' => $avatar->getMimeType()]);
+				['Content-Type' => $avatar->getMimeType()]
+			);
 			$resp->setETag($avatar->getEtag());
 		} catch (NotFoundException $e) {
 			$user = $this->userManager->get($userId);
@@ -155,6 +158,7 @@ class AvatarController extends Controller {
 	public function postAvatar($path) {
 		$userId = $this->userSession->getUser()->getUID();
 		$files = $this->request->getUploadedFile('files');
+		$tmpImage = null;
 
 		$headers = [];
 		if ($this->request->isUserAgent([Request::USER_AGENT_IE_8])) {
@@ -175,7 +179,7 @@ class AvatarController extends Controller {
 					$headers
 				);
 			}
-			$content = $node->getContent();
+			$handle = $node->fopen('r');
 		} elseif ($files !== null) {
 			if (
 				$files['error'][0] === 0 &&
@@ -189,9 +193,8 @@ class AvatarController extends Controller {
 						$headers
 					);
 				}
-				$this->cache->set('avatar_upload', \file_get_contents($files['tmp_name'][0]), 7200);
-				$content = $this->cache->get('avatar_upload');
-				\unlink($files['tmp_name'][0]);
+				$tmpImage = $files['tmp_name'][0];
+				$handle = \fopen($tmpImage, 'r');
 			} else {
 				return new DataResponse(
 					['data' => ['message' => $this->l->t('Invalid file provided')]],
@@ -210,8 +213,17 @@ class AvatarController extends Controller {
 
 		try {
 			$image = new \OC_Image();
-			$image->loadFromData($content);
+			$image->load($handle);
 			$image->fixOrientation();
+			// don't accept images with too big dimensions
+			// 4k - 4096×2160
+			if ($image->width() > 4096 || $image->height() > 2160) {
+				return new DataResponse(
+					['data' => ['message' => $this->l->t('Image too large')]],
+					Http::STATUS_OK,
+					$headers
+				);
+			}
 
 			if ($image->valid()) {
 				$mimeType = $image->mimeType();
@@ -239,6 +251,13 @@ class AvatarController extends Controller {
 		} catch (\Exception $e) {
 			$this->logger->logException($e, ['app' => 'core']);
 			return new DataResponse(['data' => ['message' => $this->l->t('An error occurred. Please contact your admin.')]], Http::STATUS_OK, $headers);
+		} finally {
+			if (\is_resource($handle)) {
+				\fclose($handle);
+			}
+			if ($tmpImage) {
+				\unlink($tmpImage);
+			}
 		}
 	}
 
@@ -268,17 +287,21 @@ class AvatarController extends Controller {
 	public function getTmpAvatar() {
 		$tmpAvatar = $this->cache->get('tmpAvatar');
 		if ($tmpAvatar === null) {
-			return new DataResponse(['data' => [
+			return new DataResponse(
+				['data' => [
 										'message' => $this->l->t("No temporary profile picture available, try again")
 									]],
-									Http::STATUS_NOT_FOUND);
+				Http::STATUS_NOT_FOUND
+			);
 		}
 
 		$image = new \OC_Image($tmpAvatar);
 
-		$resp = new DataDisplayResponse($image->data(),
-				Http::STATUS_OK,
-				['Content-Type' => $image->mimeType()]);
+		$resp = new DataDisplayResponse(
+			$image->data(),
+			Http::STATUS_OK,
+			['Content-Type' => $image->mimeType()]
+		);
 
 		$resp->setETag(\crc32($image->data()));
 		$resp->cacheFor(0);
@@ -296,21 +319,27 @@ class AvatarController extends Controller {
 		$userId = $this->userSession->getUser()->getUID();
 
 		if ($crop === null) {
-			return new DataResponse(['data' => ['message' => $this->l->t("No crop data provided")]],
-									Http::STATUS_BAD_REQUEST);
+			return new DataResponse(
+				['data' => ['message' => $this->l->t("No crop data provided")]],
+				Http::STATUS_BAD_REQUEST
+			);
 		}
 
 		if (!isset($crop['x'], $crop['y'], $crop['w'], $crop['h'])) {
-			return new DataResponse(['data' => ['message' => $this->l->t("No valid crop data provided")]],
-									Http::STATUS_BAD_REQUEST);
+			return new DataResponse(
+				['data' => ['message' => $this->l->t("No valid crop data provided")]],
+				Http::STATUS_BAD_REQUEST
+			);
 		}
 
 		$tmpAvatar = $this->cache->get('tmpAvatar');
 		if ($tmpAvatar === null) {
-			return new DataResponse(['data' => [
+			return new DataResponse(
+				['data' => [
 										'message' => $this->l->t("No temporary profile picture available, try again")
 									]],
-									Http::STATUS_BAD_REQUEST);
+				Http::STATUS_BAD_REQUEST
+			);
 		}
 
 		$image = new \OC_Image($tmpAvatar);
@@ -322,8 +351,10 @@ class AvatarController extends Controller {
 			$this->cache->remove('tmpAvatar');
 			return new DataResponse(['status' => 'success']);
 		} catch (NotSquareException $e) {
-			return new DataResponse(['data' => ['message' => $this->l->t('Crop is not square')]],
-									Http::STATUS_BAD_REQUEST);
+			return new DataResponse(
+				['data' => ['message' => $this->l->t('Crop is not square')]],
+				Http::STATUS_BAD_REQUEST
+			);
 		} catch (\Exception $e) {
 			$this->logger->logException($e, ['app' => 'core']);
 			return new DataResponse(['data' => ['message' => $this->l->t('An error occurred. Please contact your admin.')]], Http::STATUS_BAD_REQUEST);

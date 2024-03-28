@@ -36,8 +36,8 @@
  *
  */
 
+use OC\Log;
 use OC\TemplateLayout;
-use OCP\IL10N;
 use OCP\Theme\ITheme;
 
 require_once __DIR__.'/template/functions.php';
@@ -46,7 +46,6 @@ require_once __DIR__.'/template/functions.php';
  * This class provides the templates for ownCloud.
  */
 class OC_Template extends \OC\Template\Base {
-
 	/**
 	 * @var string
 	 */
@@ -103,7 +102,6 @@ class OC_Template extends \OC\Template\Base {
 	 */
 	public static function initTemplateEngine($renderAs) {
 		if (self::$initTemplateEngineFirstRun) {
-
 			//apps that started before the template initialization can load their own scripts/styles
 			//so to make sure this scripts/styles here are loaded first we use OC_Util::addScript() with $prepend=true
 			//meaning the last script/style in this list will be loaded first
@@ -165,7 +163,10 @@ class OC_Template extends \OC\Template\Base {
 				foreach (\array_reverse($coreDependencies['vendor']) as $vendorLibrary) {
 					// remove trailing ".js" as addVendorScript will append it
 					OC_Util::addVendorScript(
-							\substr($vendorLibrary, 0, \strlen($vendorLibrary) - 3), null, true);
+						\substr($vendorLibrary, 0, \strlen($vendorLibrary) - 3),
+						null,
+						true
+					);
 				}
 			} else {
 				throw new \Exception('Cannot read core/js/core.json');
@@ -364,6 +365,8 @@ class OC_Template extends \OC\Template\Base {
 	 */
 	public static function printExceptionErrorPage($exception, $fetchPage = false) {
 		try {
+			$trace = Log::replaceSensitiveData($exception->getTraceAsString());
+
 			$request = \OC::$server->getRequest();
 			$content = new \OC_Template('', 'exception', 'error', false);
 			$content->assign('errorClass', \get_class($exception));
@@ -371,7 +374,7 @@ class OC_Template extends \OC\Template\Base {
 			$content->assign('errorCode', $exception->getCode());
 			$content->assign('file', $exception->getFile());
 			$content->assign('line', $exception->getLine());
-			$content->assign('trace', $exception->getTraceAsString());
+			$content->assign('trace', $trace);
 			$content->assign('debugMode', \OC::$server->getSystemConfig()->getValue('debug', false));
 			$content->assign('remoteAddr', $request->getRemoteAddress());
 			$content->assign('requestID', $request->getId());

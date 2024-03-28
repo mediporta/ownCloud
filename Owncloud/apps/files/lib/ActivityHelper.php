@@ -26,7 +26,7 @@ use OCP\ITagManager;
 
 class ActivityHelper {
 	/** If a user has a lot of favorites the query might get too slow and long */
-	const FAVORITE_LIMIT = 50;
+	public const FAVORITE_LIMIT = 50;
 
 	/** @var \OCP\ITagManager */
 	protected $tagManager;
@@ -59,10 +59,9 @@ class ActivityHelper {
 		$rootFolder = \OC::$server->getUserFolder($user);
 		$folders = $items = [];
 		foreach ($favorites as $favorite) {
-			$nodes = $rootFolder->getById($favorite);
-			if (!empty($nodes)) {
-				/** @var \OCP\Files\Node $node */
-				$node = \array_shift($nodes);
+			$nodes = $rootFolder->getById($favorite, true);
+			$node = $nodes[0] ?? null;
+			if ($node) {
 				$path = \substr($node->getPath(), \strlen($user . '/files/'));
 
 				$items[] = $path;

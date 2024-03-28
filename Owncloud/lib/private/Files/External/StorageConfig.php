@@ -221,15 +221,6 @@ class StorageConfig implements IStorageConfig {
 					}
 					$backendOptions[$key] = $value;
 				}
-				if (\is_string($backendOptions[$key])) {
-					if (($key === 'public_key') || ($key === 'private_key')) {
-						if (\base64_decode($backendOptions[$key], true) === false) {
-							$backendOptions[$key] = \base64_encode($backendOptions[$key]);
-						}
-					}
-
-					$backendOptions[$key] = \str_replace(["\n", "\r"], "", $backendOptions[$key]);
-				}
 			}
 		}
 
@@ -242,13 +233,6 @@ class StorageConfig implements IStorageConfig {
 	 */
 	public function getBackendOption($key) {
 		if (isset($this->backendOptions[$key])) {
-			if (($key === 'private_key') || ($key === 'public_key')) {
-				$decodedString = \base64_decode($this->backendOptions[$key], true);
-				if ($decodedString !== false) {
-					return $decodedString;
-				}
-			}
-
 			return $this->backendOptions[$key];
 		}
 		return null;
@@ -272,7 +256,7 @@ class StorageConfig implements IStorageConfig {
 	}
 
 	/**
-	 * Sets the mount priotity
+	 * Sets the mount priority
 	 *
 	 * @param int $priority priority
 	 */

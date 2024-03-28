@@ -32,10 +32,10 @@ use OCP\IImage;
 
 class File extends Node implements \OCP\Files\File, IPreviewNode {
 	/**
-	 * Creates a Folder that represents a non-existing path
+	 * Creates a Folder that represents a nonexistent path
 	 *
 	 * @param string $path path
-	 * @return string non-existing node class
+	 * @return string nonexistent node class
 	 */
 	protected function createNonExistingNode($path) {
 		return new NonExistingFile($this->root, $this->view, $path);
@@ -57,16 +57,21 @@ class File extends Node implements \OCP\Files\File, IPreviewNode {
 	}
 
 	/**
-	 * @param string $data
+	 * Write the contents of data into this file node. It can be a whole
+	 * string or a stream resource
+	 * @param string|resource $data
 	 * @throws \OCP\Files\NotPermittedException
 	 */
 	public function putContent($data) {
-		if ($this->checkPermissions(\OCP\Constants::PERMISSION_UPDATE)) {
-			$this->sendHooks(['preWrite']);
-			$this->view->file_put_contents($this->path, $data);
-			$this->fileInfo = null;
-			$this->sendHooks(['postWrite']);
-		} else {
+		if (!$this->checkPermissions(\OCP\Constants::PERMISSION_UPDATE)) {
+			throw new NotPermittedException();
+		}
+
+		$this->sendHooks(['preWrite']);
+		$result = $this->view->file_put_contents($this->path, $data);
+		$this->fileInfo = null;
+		$this->sendHooks(['postWrite']);
+		if ($result === false) {
 			throw new NotPermittedException();
 		}
 	}
@@ -118,7 +123,6 @@ class File extends Node implements \OCP\Files\File, IPreviewNode {
 			$this->view->unlink($this->path);
 			$nonExisting = new NonExistingFile($this->root, $this->view, $this->path, $fileInfo);
 			$this->root->emit('\OC\Files', 'postDelete', [$nonExisting]);
-			$this->exists = false;
 			$this->fileInfo = null;
 		} else {
 			throw new NotPermittedException();

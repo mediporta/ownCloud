@@ -31,13 +31,18 @@ use OCP\IServerContainer;
  * @since 9.0.0
  */
 interface IProviderFactory {
-
 	/**
 	 * IProviderFactory constructor.
 	 * @param IServerContainer $serverContainer
 	 * @since 9.0.0
 	 */
 	public function __construct(IServerContainer $serverContainer);
+
+	/**
+	 * @return IShareProvider[]
+	 * @since 10.3.2
+	 */
+	public function getProviders();
 
 	/**
 	 * @param string $id

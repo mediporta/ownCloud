@@ -35,7 +35,8 @@ class Backends extends Base {
 	/** @var IStoragesBackendService */
 	private $backendService;
 
-	public function __construct(IStoragesBackendService $backendService
+	public function __construct(
+		IStoragesBackendService $backendService
 	) {
 		parent::__construct();
 
@@ -58,7 +59,7 @@ class Backends extends Base {
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$authBackends = $this->backendService->getAuthMechanisms();
 		$storageBackends = $this->backendService->getBackends();
 
@@ -86,6 +87,7 @@ class Backends extends Base {
 		}
 
 		$this->writeArrayInOutputFormat($input, $output, $data);
+		return 0;
 	}
 
 	private function serializeAuthBackend(\JsonSerializable $backend) {

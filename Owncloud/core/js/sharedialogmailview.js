@@ -92,32 +92,27 @@
 		/**
 		 * Send the link share information by email
 		 *
-		 * @param {string} recipientEmail recipient email address
+		 * @param {Object} mail
 		 */
 		_sendEmailPrivateLink: function(mail) {
 			var deferred           = $.Deferred();
-			var itemType           = this.itemModel.get('itemType');
-			var itemSource         = this.itemModel.get('itemSource');
 			var $formSentIndicator = this.$el.find('.emailPrivateLinkForm--sent-indicator');
-
+			if(mail.toSelf === true) {
+				this._addAddress(OC.getCurrentUser().email);
+			}
 			var params = {
-				action      : 'email',
-				toAddress   : this._addresses.join(','),
-				emailBody   : mail.body,
-				toSelf     : mail.toSelf,
-				link        : this.model.getLink(),
-				itemType    : itemType,
-				itemSource  : itemSource,
-				file        : this.itemModel.getFileInfo().get('name'),
-				expiration  : this.model.get('expireDate') || ''
+				recipients : this._addresses,
+				personalNote : mail.body,
+				link : this.model.getLink(),
+				format:'json'
 			};
-
 			$.post(
-				OC.generateUrl('core/ajax/share.php'), params,
+				OC.linkToOCS('apps/files_sharing/api/v1') + 'notification/notify-public-link-by-email',
+				params,
 				function(result) {
-					if (!result || result.status !== 'success') {
+					if (result.ocs.meta.statuscode !== 100) {
 						deferred.reject({
-							message: result.data.message
+							message: result.ocs.meta.message
 						});
 					} else {
 						$formSentIndicator.removeClass('hidden');
@@ -129,7 +124,6 @@
 			}).fail(function(error) {
 				return deferred.reject(error);
 			});
-
 			return deferred.promise();
 		},
 
@@ -137,7 +131,7 @@
 			if (email.length === 0)
 				return true
 
-			return email.match(/^[A-Za-z0-9\._%+-]+@(?:[A-Za-z0-9-]+\.)+[a-z]{2,}$/);
+			return OC.validateEmail(email);
 		},
 
 		sendEmails: function() {
@@ -159,7 +153,7 @@
 					$formSendIndicator.addClass('hidden');
 					deferred.resolve();
 				}).fail(function(error) {
-					OC.dialogs.info(error.message, t('core', 'An error occured while sending email'));
+					OC.dialogs.info(error.message, t('core', 'An error occurred while sending email'));
 					$formSendIndicator.addClass('hidden');
 					$formItems.prop('disabled', false);
 					deferred.reject();

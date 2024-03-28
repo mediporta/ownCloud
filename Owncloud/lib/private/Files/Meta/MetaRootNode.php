@@ -2,7 +2,7 @@
 /**
  * @author Thomas Müller <thomas.mueller@tmit.eu>
  *
- * @copyright Copyright (c) 2017, ownCloud GmbH
+ * @copyright Copyright (c) 2018, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ use OCP\Constants;
 use OCP\Files\FileInfo;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\IUserSession;
 
 /**
  * Class MetaRootNode - this class represents the root node of the meta endpoint
@@ -33,13 +34,34 @@ use OCP\Files\NotFoundException;
  * @package OC\Files\Meta
  */
 class MetaRootNode extends AbstractFolder {
-
-	/** @var IRootFolder */
+	/**
+	 * @var IRootFolder
+	 */
 	private $rootFolder;
+	/**
+	 * @var IUserSession
+	 */
+	private $userSession;
 
-	public function __construct(IRootFolder $rootFolder) {
+	public function __construct(IRootFolder $rootFolder, IUserSession $userSession) {
 		$this->rootFolder = $rootFolder;
+		$this->userSession = $userSession;
 	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getName() {
+		return 'meta';
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	public function getPath() {
+		return '/meta';
+	}
+
 	/**
 	 * @inheritdoc
 	 */
@@ -76,13 +98,14 @@ class MetaRootNode extends AbstractFolder {
 		$pieces = \explode('/', $path);
 		$fileId = (int)$pieces[0];
 
-		// check if file exists
-		if (empty($this->rootFolder->getById($fileId))) {
+		$uid = $this->userSession->getUser()->getUID();
+		$nodes = $this->rootFolder->getUserFolder($uid)->getById($fileId, true);
+		if (empty($nodes)) {
 			throw new NotFoundException();
 		}
 
 		\array_shift($pieces);
-		$node = new MetaFileIdNode($this, $this->rootFolder, $fileId);
+		$node = new MetaFileIdNode($this, $this->rootFolder, $nodes[0]);
 		if (empty($pieces)) {
 			return $node;
 		}
@@ -92,7 +115,7 @@ class MetaRootNode extends AbstractFolder {
 	/**
 	 * @inheritdoc
 	 */
-	public function getById($id) {
+	public function getById($id, $first = false) {
 		return [
 			$this->get("$id")
 			];
@@ -110,13 +133,6 @@ class MetaRootNode extends AbstractFolder {
 	 */
 	public function isCreatable() {
 		return false;
-	}
-
-	/**
-	 * @inheritdoc
-	 */
-	public function getPath() {
-		return '/meta';
 	}
 
 	/**
@@ -153,12 +169,5 @@ class MetaRootNode extends AbstractFolder {
 	 */
 	public function isShareable() {
 		return false;
-	}
-
-	/**
-	 * @inheritdoc
-	 */
-	public function getName() {
-		return 'meta';
 	}
 }

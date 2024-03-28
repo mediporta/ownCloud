@@ -25,7 +25,6 @@ use OCA\DAV\JobStatus\Entity\JobStatusMapper;
 use Sabre\DAV\File;
 
 class JobStatus extends File {
-
 	/** @var string */
 	private $jobId;
 	/** @var string */
@@ -37,9 +36,12 @@ class JobStatus extends File {
 	/** @var JobStatusEntity */
 	private $entity;
 
-	public function __construct($userId, $jobId,
-								JobStatusMapper $mapper,
-								JobStatusEntity $entity) {
+	public function __construct(
+		$userId,
+		$jobId,
+		JobStatusMapper $mapper,
+		JobStatusEntity $entity
+	) {
 		$this->userId = $userId;
 		$this->jobId = $jobId;
 		$this->mapper = $mapper;

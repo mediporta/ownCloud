@@ -9,8 +9,8 @@
 	<screenshot>https://raw.githubusercontent.com/owncloud/promo/e1dd604d66b4c5f765579b4c160de3268169ea3c/ownCloud%20logo%20square.png</screenshot>
 
 	<licence>AGPL</licence>
-	<author>Joas Schilling, Thomas Müller, Juan Pablo Villafañez</author>
-	<version>0.3.5</version>
+	<author>Joas Schilling, Thomas Müller</author>
+	<version>0.6.0</version>
 
 	<types>
 		<logging/>
@@ -24,13 +24,15 @@
 
 	<commands>
 		<command>OCA\Notifications\Command\Generate</command>
+		<command>OCA\Notifications\Command\RepairNotifications</command>
 	</commands>
 	<settings>
 		<personal>OCA\Notifications\Panels\Personal\NotificationsPanel</personal>
 	</settings>
 
 	<dependencies>
-		<owncloud min-version="10.0.9" max-version="10.1" />
+                <owncloud min-version="10.11" max-version="10" />
+                <php min-version="7.4" />
 	</dependencies>
 	<use-migrations>true</use-migrations>
 </info>

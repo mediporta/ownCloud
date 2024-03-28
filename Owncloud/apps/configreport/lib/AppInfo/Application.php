@@ -2,6 +2,7 @@
 
 namespace OCA\ConfigReport\AppInfo;
 
+use OC\Helper\UserTypeHelper;
 use OCA\ConfigReport\Controller\ReportController;
 use OCA\ConfigReport\ReportDataCollector;
 use \OCP\AppFramework\App;
@@ -13,14 +14,12 @@ use OCP\AppFramework\IAppContainer;
  * @package OCA\ConfigReport\AppInfo
  */
 class Application extends App {
-
 	/**
 	 * Application constructor.
 	 *
-	 * @param string $appName
 	 * @param array $urlParams
 	 */
-	public function __construct($appName, array $urlParams = []) {
+	public function __construct(array $urlParams = []) {
 		parent::__construct('configreport', $urlParams);
 		$this->registerServices();
 	}
@@ -32,14 +31,18 @@ class Application extends App {
 			return new ReportDataCollector(
 				\OC::$server->getIntegrityCodeChecker(),
 				\OC::$server->getUserManager(),
+				new UserTypeHelper(),
 				\OC::$server->getGroupManager(),
 				\OC_Util::getVersion(),
 				\OC_Util::getVersionString(),
 				\OC_Util::getEditionString(),
+				/* @phan-suppress-next-line PhanDeprecatedFunction */
 				\OCP\User::getDisplayName(),
+				/* @phan-suppress-next-line PhanAccessMethodInternal */
 				\OC::$server->getSystemConfig(),
 				\OC::$server->getAppConfig(),
-				\OC::$server->getDatabaseConnection()
+				\OC::$server->getDatabaseConnection(),
+				\OC::$server->getGlobalStoragesService()
 			);
 		});
 

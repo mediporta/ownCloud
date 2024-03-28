@@ -36,7 +36,6 @@ use OCP\AppFramework\Http\ICallbackResponse;
  * Handles all the dependency injection, controllers and output flow
  */
 class App {
-
 	/**
 	 * Turns an app id into a namespace by either reading the appinfo.xml's
 	 * namespace tag or uppercasing the appid's first letter
@@ -145,8 +144,12 @@ class App {
 	 * @param array $urlParams an array with variables extracted from the routes
 	 * @param DIContainer $container an instance of a pimple container.
 	 */
-	public static function part($controllerName, $methodName, array $urlParams,
-								DIContainer $container) {
+	public static function part(
+		$controllerName,
+		$methodName,
+		array $urlParams,
+		DIContainer $container
+	) {
 		$container['urlParams'] = $urlParams;
 		$controller = $container[$controllerName];
 

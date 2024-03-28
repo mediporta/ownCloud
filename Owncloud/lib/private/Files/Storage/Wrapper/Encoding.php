@@ -21,7 +21,6 @@
 
 namespace OC\Files\Storage\Wrapper;
 
-use OCP\ICache;
 use OC\Cache\CappedMemoryCache;
 
 /**
@@ -31,9 +30,8 @@ use OC\Cache\CappedMemoryCache;
  * the actual given name and then try its NFD form.
  */
 class Encoding extends Wrapper {
-
 	/**
-	 * @var ICache
+	 * @var CappedMemoryCache
 	 */
 	private $namesCache;
 
@@ -41,7 +39,7 @@ class Encoding extends Wrapper {
 	 * @param array $parameters
 	 */
 	public function __construct($parameters) {
-		$this->storage = $parameters['storage'];
+		parent::__construct($parameters);
 		$this->namesCache = new CappedMemoryCache();
 	}
 
@@ -403,6 +401,7 @@ class Encoding extends Wrapper {
 	 * @return array
 	 */
 	public function search($query) {
+		'@phan-var \OC\Files\Storage\Common $this->storage';
 		return $this->storage->search($query);
 	}
 

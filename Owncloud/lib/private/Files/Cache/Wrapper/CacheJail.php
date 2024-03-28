@@ -49,9 +49,12 @@ class CacheJail extends CacheWrapper {
 	protected function getSourcePath($path) {
 		if ($path === '') {
 			return $this->root;
-		} else {
-			return $this->root . '/' . \ltrim($path, '/');
 		}
+		if ($this->root === '') {
+			return \ltrim($path, '/');
+		}
+
+		return $this->root . '/' . \ltrim($path, '/');
 	}
 
 	/**
@@ -84,6 +87,9 @@ class CacheJail extends CacheWrapper {
 	}
 
 	protected function filterCacheEntry($entry) {
+		if ($this->root === '') {
+			return true;
+		}
 		$rootLength = \strlen($this->root) + 1;
 		return ($entry['path'] === $this->root) or (\substr($entry['path'], 0, $rootLength) === $this->root . '/');
 	}
@@ -187,7 +193,7 @@ class CacheJail extends CacheWrapper {
 	/**
 	 * @param string $file
 	 *
-	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW or Cache::COMPLETE
+	 * @return int Cache::NOT_FOUND, Cache::PARTIAL, Cache::SHALLOW, Cache::COMPLETE or Cache::NOT_SCANNED
 	 */
 	public function getStatus($file) {
 		return $this->cache->getStatus($this->getSourcePath($file));
@@ -306,9 +312,9 @@ class CacheJail extends CacheWrapper {
 	 */
 	public function moveFromCache(\OCP\Files\Cache\ICache $sourceCache, $sourcePath, $targetPath) {
 		if ($sourceCache === $this) {
-			return $this->move($sourcePath, $targetPath);
+			$this->move($sourcePath, $targetPath);
 		}
-		return $this->cache->moveFromCache($sourceCache, $sourcePath, $this->getSourcePath($targetPath));
+		$this->cache->moveFromCache($sourceCache, $sourcePath, $this->getSourcePath($targetPath));
 	}
 
 	protected function getMoveInfo($path) {

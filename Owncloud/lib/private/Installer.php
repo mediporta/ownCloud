@@ -39,9 +39,6 @@
 namespace OC;
 
 use Doctrine\DBAL\Exception\TableExistsException;
-use OC\App\CodeChecker\CodeChecker;
-use OC\App\CodeChecker\EmptyCheck;
-use OC\App\CodeChecker\PrivateCheck;
 use OC\DB\MigrationService;
 use OC_App;
 use OC_DB;
@@ -52,7 +49,6 @@ use OCP\App\AppAlreadyInstalledException;
  * This class provides the functionality needed to install, update and remove plugins/apps
  */
 class Installer {
-
 	/**
 	 *
 	 * This function installs an app. All information needed are passed in the
@@ -108,10 +104,9 @@ class Installer {
 			throw new \Exception($l->t("App directory already exists"));
 		}
 
-		if (!empty($data['pretent'])) {
+		if (!empty($data['pretend'])) {
 			return false;
 		}
-		OC_App::clearAppCache($info['id']);
 
 		//copy the app to the correct place
 		if (@!\mkdir($basedir)) {
@@ -223,16 +218,18 @@ class Installer {
 		$info = self::checkAppsIntegrity($info, $extractDir, $path, $isShipped);
 
 		$currentDir = OC_App::getAppPath($info['id']);
+		if ($currentDir !== false && \is_dir("$currentDir/.git")) {
+			throw new AppAlreadyInstalledException("App <{$info['id']}> is a git clone - it will not be updated.");
+		}
+
 		$basedir  = OC_App::getInstallPath();
 		$basedir .= '/';
 		$basedir .= $info['id'];
 
-		if ($currentDir !== false && \is_writable($currentDir)) {
+		if ($currentDir !== false && OC_App::isAppDirWritable($info['id'])) {
 			$basedir = $currentDir;
 		}
-		if (\is_dir("$basedir/.git")) {
-			throw new AppAlreadyInstalledException("App <{$info['id']}> is a git clone - it will not be updated.");
-		}
+
 		if (\is_dir($basedir)) {
 			OC_Helper::rmdirr($basedir);
 		}
@@ -270,7 +267,7 @@ class Installer {
 				throw new \Exception($l->t("No href specified when installing app from http"));
 			}
 			$client = \OC::$server->getHTTPClientService()->newClient();
-			$client->get($data['href'], ['save_to' => $path]);
+			$client->get($data['href'], ['sink' => $path]);
 		} else {
 			if (!isset($data['path'])) {
 				throw new \Exception($l->t("No path specified when installing app from local file"));
@@ -280,7 +277,7 @@ class Installer {
 
 		//detect the archive type
 		$mime = \OC::$server->getMimeTypeDetector()->detect($path);
-		if ($mime !=='application/zip' && $mime !== 'application/x-gzip' && $mime !== 'application/x-bzip2') {
+		if ($mime !=='application/zip' && $mime !== 'application/x-gzip' && $mime !== 'application/gzip' && $mime !== 'application/x-bzip2') {
 			throw new \Exception($l->t("Archives of type %s are not supported", [$mime]));
 		}
 
@@ -345,34 +342,21 @@ class Installer {
 		// We can't trust the parsed info.xml file as it may have been tampered
 		// with by an attacker and thus we need to use the local data to check
 		// whether the application needs to be signed.
-		$appId = OC_App::cleanAppId(isset($data['appdata']['id']) ? $data['appdata']['id'] : '');
-		$appBelongingToId = OC_App::getInternalAppIdByOcs($appId);
-		if (\is_string($appBelongingToId)) {
-			$previouslySigned = \OC::$server->getConfig()->getAppValue($appBelongingToId, 'signed', 'false');
-		} else {
-			$appBelongingToId = $info['id'];
-			$previouslySigned = 'false';
-		}
-		if (\file_exists($extractDir . '/appinfo/signature.json') || $previouslySigned === 'true') {
-			\OC::$server->getConfig()->setAppValue($appBelongingToId, 'signed', 'true');
-			$integrityResult = \OC::$server->getIntegrityCodeChecker()->verifyAppSignature(
-					$appBelongingToId,
+		if (\file_exists("$extractDir/appinfo/signature.json")) {
+			\OC::$server->getConfig()->setAppValue($info['id'], 'signed', 'true');
+			$integrityResult = \OC::$server->getIntegrityCodeChecker()
+				->verifyAppSignature(
+					$info['id'],
 					$extractDir
-			);
+				);
 			if ($integrityResult !== []) {
 				$e = new \Exception(
-						$l->t(
-								'Signature could not get checked. Please contact the app developer and check your admin screen.'
-						)
+					$l->t(
+						'Signature could not get checked. Please contact the app developer and check your admin screen.'
+					)
 				);
 				throw $e;
 			}
-		}
-
-		// check the code for not allowed calls
-		if (!$isShipped && !Installer::checkCode($extractDir)) {
-			OC_Helper::rmdirr($extractDir);
-			throw new \Exception($l->t("App can't be installed because of not allowed code in the App"));
 		}
 
 		// check if the app is compatible with this version of ownCloud
@@ -459,6 +443,12 @@ class Installer {
 			if ($dir = \opendir($app_dir['path'])) {
 				$nodes = \scandir($app_dir['path']);
 				foreach ($nodes as $filename) {
+					// Since core 10.5.0, enterprise_key app is no longer used
+					// Be sure not to accidentally enable it if it has been
+					// left behind in an apps dir.
+					if ($filename === 'enterprise_key') {
+						continue;
+					}
 					if (\substr($filename, 0, 1) != '.' and \is_dir($app_dir['path']."/$filename")) {
 						if (\file_exists($app_dir['path']."/$filename/appinfo/info.xml")) {
 							if (!Installer::isInstalled($filename)) {
@@ -535,7 +525,7 @@ class Installer {
 			$ms = new MigrationService($app, \OC::$server->getDatabaseConnection());
 			$ms->migrate();
 		} else {
-			if (\is_file($appPath.'/appinfo/database.xml')) {
+			if ($appPath !== false && \is_file($appPath.'/appinfo/database.xml')) {
 				\OC::$server->getLogger()->debug('Create app database from schema file');
 				OC_DB::createDbFromStructure($appPath . '/appinfo/database.xml');
 			}
@@ -555,9 +545,6 @@ class Installer {
 		$config = \OC::$server->getConfig();
 
 		$config->setAppValue($app, 'installed_version', OC_App::getAppVersion($app));
-		if (\array_key_exists('ocsid', $info)) {
-			$config->setAppValue($app, 'ocsid', $info['ocsid']);
-		}
 
 		//set remote/public handlers
 		foreach ($info['remote'] as $name=>$path) {
@@ -573,24 +560,7 @@ class Installer {
 	}
 
 	/**
-	 * check the code of an app with some static code checks
-	 * @param string $folder the folder of the app to check
-	 * @return boolean true for app is o.k. and false for app is not o.k.
-	 */
-	public static function checkCode($folder) {
-		// is the code checker enabled?
-		if (!\OC::$server->getConfig()->getSystemValue('appcodechecker', false)) {
-			return true;
-		}
-
-		$codeChecker = new CodeChecker(new PrivateCheck(new EmptyCheck()));
-		$errors = $codeChecker->analyseFolder($folder);
-
-		return empty($errors);
-	}
-
-	/**
-	 * @param $basedir
+	 * @param $script
 	 */
 	private static function includeAppScript($script) {
 		if (\file_exists($script)) {

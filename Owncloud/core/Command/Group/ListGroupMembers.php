@@ -53,7 +53,7 @@ class ListGroupMembers extends Base {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$groupName = $input->getArgument('group');
 		$group = $this->groupManager->get($groupName);
 		if (!$group) {
@@ -63,5 +63,6 @@ class ListGroupMembers extends Base {
 
 		$displayNames = $this->groupManager->displayNamesInGroup($group->getGID());
 		parent::writeArrayInOutputFormat($input, $output, $displayNames, self::DEFAULT_OUTPUT_PREFIX, true);
+		return 0;
 	}
 }

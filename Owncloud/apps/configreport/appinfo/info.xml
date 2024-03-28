@@ -2,19 +2,19 @@
 <info>
 	<id>configreport</id>
 	<name>Admin Config Report</name>
-	<description>Generate a Config Report</description>
-	<licence>AGPL</licence>
-	<author>owncloud.org</author>
-	<version>0.1.1</version>
 	<namespace>ConfigReport</namespace>
+	<licence>AGPL</licence>
+	<description>Generate a Config Report</description>
+	<summary>Generate a Config Report</summary>
+	<author>owncloud.org</author>
+	<version>0.2.2</version>
 	<default_enable/>
 	<types>
 		<filesystem/>
 	</types>
 	<dependencies>
-		<owncloud min-version="9.1" max-version="10.0" />
+		<owncloud min-version="10.8" max-version="11" />
 	</dependencies>
-	<shipped>true</shipped>
 	<default_enable/>
 	<commands>
 		<command>OCA\ConfigReport\Command\ConfigReport</command>
@@ -22,4 +22,8 @@
 	<settings>
 		<admin>OCA\ConfigReport\AdminPanel</admin>
 	</settings>
+	<category>tools</category>
+	<documentation>
+		<admin>https://doc.owncloud.com/server/next/admin_manual/troubleshooting/providing_logs_and_config_files.html#generate-a-config-report</admin>
+	</documentation>
 </info>

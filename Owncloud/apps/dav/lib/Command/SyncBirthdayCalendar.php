@@ -31,7 +31,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SyncBirthdayCalendar extends Command {
-
 	/** @var BirthdayService */
 	private $birthdayService;
 
@@ -52,16 +51,20 @@ class SyncBirthdayCalendar extends Command {
 		$this
 			->setName('dav:sync-birthday-calendar')
 			->setDescription('Synchronizes the birthday calendar')
-			->addArgument('user',
+			->addArgument(
+				'user',
 				InputArgument::OPTIONAL,
-				'User for whom the birthday calendar will be synchronized');
+				'User for whom the birthday calendar will be synchronized'
+			);
 	}
 
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
+	 *
+	 * @return int 0 if everything went fine, or an exit code
 	 */
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $input->getArgument('user');
 		if ($user !== null) {
 			if (!$this->userManager->userExists($user)) {
@@ -69,7 +72,7 @@ class SyncBirthdayCalendar extends Command {
 			}
 			$output->writeln("Start birthday calendar sync for $user");
 			$this->birthdayService->syncUser($user);
-			return;
+			return 0;
 		}
 		$output->writeln("Start birthday calendar sync for all users ...");
 		$p = new ProgressBar($output);
@@ -82,5 +85,6 @@ class SyncBirthdayCalendar extends Command {
 
 		$p->finish();
 		$output->writeln('');
+		return 0;
 	}
 }

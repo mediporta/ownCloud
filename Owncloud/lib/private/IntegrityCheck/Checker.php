@@ -37,8 +37,8 @@ use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\ITempManager;
-use phpseclib\Crypt\RSA;
-use phpseclib\File\X509;
+use phpseclib3\Crypt\RSA;
+use phpseclib3\File\X509;
 
 /**
  * Class Checker handles the code signing using X.509 and RSA. ownCloud ships with
@@ -51,7 +51,7 @@ use phpseclib\File\X509;
  * @package OC\IntegrityCheck
  */
 class Checker {
-	const CACHE_KEY = 'oc.integritycheck.checker';
+	public const CACHE_KEY = 'oc.integritycheck.checker';
 	/** @var EnvironmentHelper */
 	private $environmentHelper;
 	/** @var AppLocator */
@@ -76,13 +76,15 @@ class Checker {
 	 * @param IAppManager $appManager
 	 * @param ITempManager $tempManager
 	 */
-	public function __construct(EnvironmentHelper $environmentHelper,
-								FileAccessHelper $fileAccessHelper,
-								AppLocator $appLocator,
-								IConfig $config = null,
-								ICacheFactory $cacheFactory,
-								IAppManager $appManager = null,
-								ITempManager $tempManager) {
+	public function __construct(
+		EnvironmentHelper $environmentHelper,
+		FileAccessHelper $fileAccessHelper,
+		AppLocator $appLocator,
+		IConfig $config = null,
+		ICacheFactory $cacheFactory,
+		IAppManager $appManager = null,
+		ITempManager $tempManager
+	) {
 		$this->environmentHelper = $environmentHelper;
 		$this->fileAccessHelper = $fileAccessHelper;
 		$this->appLocator = $appLocator;
@@ -151,8 +153,10 @@ class Checker {
 	 * @param string $path
 	 * @return array Array of hashes.
 	 */
-	private function generateHashes(\RecursiveIteratorIterator $iterator,
-									$path) {
+	private function generateHashes(
+		\RecursiveIteratorIterator $iterator,
+		$path
+	) {
 		$hashes = [];
 		$copiedWebserverSettingFiles = false;
 		$tmpFolder = '';
@@ -224,24 +228,30 @@ class Checker {
 	 * Creates the signature data
 	 *
 	 * @param array $hashes
-	 * @param X509 $certificate
+	 * @param array $certificate
 	 * @param RSA $privateKey
+	 * @param X509 $x509,
 	 * @return array
 	 */
-	private function createSignatureData(array $hashes,
-										 X509 $certificate,
-										 RSA $privateKey) {
+	private function createSignatureData(
+		array $hashes,
+		array $certificate,
+		RSA $privateKey,
+		X509 $x509
+	) {
 		\ksort($hashes);
 
-		$privateKey->setSignatureMode(RSA::SIGNATURE_PSS);
-		$privateKey->setMGFHash('sha512');
-		$privateKey->setSaltLength(0);
+		$privateKey = $privateKey
+			->withMGFHash('sha512')
+			->withSaltLength(0)
+			->withPadding(RSA::SIGNATURE_PSS);
+
 		$signature = $privateKey->sign(\json_encode($hashes));
 
 		return [
 				'hashes' => $hashes,
 				'signature' => \base64_encode($signature),
-				'certificate' => $certificate->saveX509($certificate->currentCert),
+				'certificate' => $x509->saveX509($certificate),
 			];
 	}
 
@@ -249,20 +259,24 @@ class Checker {
 	 * Write the signature of the app in the specified folder
 	 *
 	 * @param string $path
-	 * @param X509 $certificate
+	 * @param array $certificate
+	 * @param X509 $x509
 	 * @param RSA $privateKey
 	 * @throws \Exception
 	 */
-	public function writeAppSignature($path,
-									  X509 $certificate,
-									  RSA $privateKey) {
+	public function writeAppSignature(
+		string $path,
+		array $certificate,
+		X509 $x509,
+		RSA $privateKey
+	) {
 		$appInfoDir = $path . '/appinfo';
 		$this->fileAccessHelper->assertDirectoryExists($path);
 		$this->fileAccessHelper->assertDirectoryExists($appInfoDir);
 
 		$iterator = $this->getFolderIterator($path);
 		$hashes = $this->generateHashes($iterator, $path);
-		$signature = $this->createSignatureData($hashes, $certificate, $privateKey);
+		$signature = $this->createSignatureData($hashes, $certificate, $privateKey, $x509);
 		try {
 			$this->fileAccessHelper->file_put_contents(
 				$appInfoDir . '/signature.json',
@@ -279,21 +293,25 @@ class Checker {
 	/**
 	 * Write the signature of core
 	 *
-	 * @param X509 $certificate
-	 * @param RSA $rsa
 	 * @param string $path
+	 * @param array $certificate
+	 * @param X509 $x509
+	 * @param RSA $privateKey
 	 * @throws \Exception
 	 */
-	public function writeCoreSignature(X509 $certificate,
-									   RSA $rsa,
-									   $path) {
+	public function writeCoreSignature(
+		string $path,
+		array $certificate,
+		X509 $x509,
+		RSA $privateKey
+	) {
 		$coreDir = $path . '/core';
 		$this->fileAccessHelper->assertDirectoryExists($path);
 		$this->fileAccessHelper->assertDirectoryExists($coreDir);
 
 		$iterator = $this->getFolderIterator($path, $path);
 		$hashes = $this->generateHashes($iterator, $path);
-		$signatureData = $this->createSignatureData($hashes, $certificate, $rsa);
+		$signatureData = $this->createSignatureData($hashes, $certificate, $privateKey, $x509);
 		try {
 			$this->fileAccessHelper->file_put_contents(
 				$coreDir . '/signature.json',
@@ -335,7 +353,7 @@ class Checker {
 		$certificate = $signatureData['certificate'];
 
 		// Check if certificate is signed by ownCloud Root Authority
-		$x509 = new \phpseclib\File\X509();
+		$x509 = new \phpseclib3\File\X509();
 		$rootCertificatePublicKey = $this->fileAccessHelper->file_get_contents($this->environmentHelper->getServerRoot().'/resources/codesigning/root.crt');
 		$x509->loadCA($rootCertificatePublicKey);
 		$loadedCertificate = $x509->loadX509($certificate);
@@ -346,7 +364,7 @@ class Checker {
 		// Check if the certificate has been revoked
 		$crlFileContent = $this->fileAccessHelper->file_get_contents($this->environmentHelper->getServerRoot().'/resources/codesigning/intermediate.crl.pem');
 		if ($crlFileContent && \strlen($crlFileContent) > 0) {
-			$crl = new \phpseclib\File\X509();
+			$crl = new \phpseclib3\File\X509();
 			$crl->loadCA($rootCertificatePublicKey);
 			$crl->loadCRL($crlFileContent);
 			if (!$crl->validateSignature()) {
@@ -366,15 +384,17 @@ class Checker {
 		if ($x509->getDN(X509::DN_OPENSSL)['CN'] !== $certificateCN && $x509->getDN(X509::DN_OPENSSL)['CN'] !== 'core') {
 			$cn = $x509->getDN(true)['CN'];
 			throw new InvalidSignatureException(
-					"Certificate is not valid for required scope. (Requested: $certificateCN, current: CN=$cn)");
+				"Certificate is not valid for required scope. (Requested: $certificateCN, current: CN=$cn)"
+			);
 		}
 
-		// Check if the signature of the files is valid
-		$rsa = new \phpseclib\Crypt\RSA();
-		$rsa->loadKey($x509->currentCert['tbsCertificate']['subjectPublicKeyInfo']['subjectPublicKey']);
-		$rsa->setSignatureMode(RSA::SIGNATURE_PSS);
-		$rsa->setSaltLength(0);
-		$rsa->setMGFHash('sha512');
+		/** @phan-suppress-next-line PhanUndeclaredMethod */
+		$rsa = RSA::load($loadedCertificate['tbsCertificate']['subjectPublicKeyInfo']['subjectPublicKey'])
+			->withHash('sha1')
+			->withMGFHash('sha512')
+			->withPadding(RSA::SIGNATURE_PSS)
+			->withSaltLength(0);
+
 		if (!$rsa->verify(\json_encode($expectedHashes), $signature)) {
 			throw new InvalidSignatureException('Signature could not get verified.');
 		}
@@ -384,9 +404,9 @@ class Checker {
 
 		// Compare the list of files which are not identical
 		$currentInstanceHashes = $this->generateHashes($this->getFolderIterator($basePath), $basePath);
-		$differencesA = \array_diff($expectedHashes, $currentInstanceHashes);
-		$differencesB = \array_diff($currentInstanceHashes, $expectedHashes);
-		$differences = \array_unique(\array_merge($differencesA, $differencesB));
+		$differencesA = \array_diff_assoc($expectedHashes, $currentInstanceHashes);
+		$differencesB = \array_diff_assoc($currentInstanceHashes, $expectedHashes);
+		$differences = \array_merge($differencesA, $differencesB);
 		$differenceArray = [];
 		foreach ($differences as $filename => $hash) {
 			//If filename in exclude files list, then ignore it
@@ -461,6 +481,8 @@ class Checker {
 		}
 
 		$this->setAppValue(self::CACHE_KEY, \json_encode($resultArray));
+		//Set cache for each app
+		$this->cache->set($scope, \json_encode($resultArray));
 		$this->cache->set(self::CACHE_KEY, \json_encode($resultArray));
 	}
 
@@ -533,6 +555,29 @@ class Checker {
 		if ($this->config !== null) {
 			$this->config->deleteAppValue('core', $key);
 		}
+	}
+
+	/**
+	 * Get the verified apps from the cache, if the result is cached.
+	 * If the app result is not cached, then verification result will get cached
+	 * and then returned.
+	 *
+	 * The reason for introducing this method:
+	 * verifyAppSignature() internally calls verify() which does call phpseclib
+	 * routines like validateSignature(). validateSignature is taking lot of memory.
+	 * Hence its better to cache the results to avoid huge memory consumption.
+	 *
+	 * @param string $appId
+	 * @param string $path Optional path. If none is given it will be guessed.
+	 * @param bool $force force check even if disabled
+	 * @return array
+	 */
+	public function getVerifiedAppsFromCache($appId, $path = '', $force = false) {
+		$cacheVal = $this->cache->get($appId);
+		if ($cacheVal !== null) {
+			return $cacheVal;
+		}
+		return $this->verifyAppSignature($appId, $path, $force);
 	}
 
 	/**
@@ -637,9 +682,9 @@ class Checker {
 	public function verifyCoreSignature() {
 		try {
 			$result = $this->verify(
-					$this->environmentHelper->getServerRoot() . '/core/signature.json',
-					$this->environmentHelper->getServerRoot(),
-					'core'
+				$this->environmentHelper->getServerRoot() . '/core/signature.json',
+				$this->environmentHelper->getServerRoot(),
+				'core'
 			);
 		} catch (\Exception $e) {
 			$result = [

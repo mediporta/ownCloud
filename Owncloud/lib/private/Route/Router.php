@@ -130,8 +130,9 @@ class Router implements IRouter {
 			if (isset($this->loadedApps[$app])) {
 				return;
 			}
-			$file = \OC_App::getAppPath($app) . '/appinfo/routes.php';
-			if ($file !== false && \file_exists($file)) {
+			$appPath = \OC_App::getAppPath($app);
+			$file = $appPath . '/appinfo/routes.php';
+			if ($appPath !== false && \file_exists($file)) {
 				$routingFiles = [$app => $file];
 			} else {
 				$routingFiles = [];
@@ -155,7 +156,7 @@ class Router implements IRouter {
 
 				// Also add the OCS collection
 				$collection = $this->getCollection($app.'.ocs');
-				$collection->addPrefix('/ocsapp/apps/' . $app);
+				$collection->addPrefix('/ocsapp');
 				$this->root->addCollection($collection);
 			}
 		}
@@ -172,7 +173,6 @@ class Router implements IRouter {
 		}
 		if ($this->loaded) {
 			// include ocs routes, must be loaded last for /ocs prefix
-			require_once __DIR__ . '/../../../ocs/routes.php';
 			$collection = $this->getCollection('ocs');
 			$collection->addPrefix('/ocs');
 			$this->root->addCollection($collection);
@@ -237,10 +237,12 @@ class Router implements IRouter {
 	 * @param array $requirements An array of requirements for parameters (regexes)
 	 * @return \OC\Route\Route
 	 */
-	public function create($name,
-						   $pattern,
-						   array $defaults = [],
-						   array $requirements = []) {
+	public function create(
+		$name,
+		$pattern,
+		array $defaults = [],
+		array $requirements = []
+	) {
 		$route = new Route($pattern, $defaults, $requirements);
 		$this->collection->add($name, $route);
 		return $route;
@@ -280,7 +282,7 @@ class Router implements IRouter {
 
 		$matcher = new UrlMatcher($this->root, $this->context);
 
-		if (\OC::$server->getRequest()->getMethod() === "OPTIONS") {
+		if (\OC::$server->getRequest()->getMethod() === "OPTIONS" && \OC::$server->getRequest()->getHeader('Access-Control-Request-Method')) {
 			try {
 				// Checking whether the actual request (one which OPTIONS is pre-flight for)
 				// Is actually valid
@@ -370,9 +372,11 @@ class Router implements IRouter {
 	 * @param bool $absolute
 	 * @return string
 	 */
-	public function generate($name,
-							 $parameters = [],
-							 $absolute = false) {
+	public function generate(
+		$name,
+		$parameters = [],
+		$absolute = false
+	) {
 		$this->loadRoutes();
 		try {
 			$referenceType = UrlGenerator::ABSOLUTE_URL;
@@ -401,7 +405,7 @@ class Router implements IRouter {
 	 * register the routes for the app. The application class will be chosen by
 	 * camelcasing the appname, e.g.: my_app will be turned into
 	 * \OCA\MyApp\AppInfo\Application. If that class does not exist, a default
-	 * App will be intialized. This makes it optional to ship an
+	 * App will be initialized. This makes it optional to ship an
 	 * appinfo/application.php by using the built in query resolver
 	 *
 	 * @param array $routes the application routes

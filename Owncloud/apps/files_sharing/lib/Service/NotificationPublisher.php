@@ -26,7 +26,6 @@ use OCP\IGroupManager;
 use OCP\Share\IShare;
 
 class NotificationPublisher {
-
 	/** @var \OCP\Notification\IManager */
 	private $notificationManager;
 	/** @var IGroupManager */
@@ -81,10 +80,8 @@ class NotificationPublisher {
 			return;
 		}
 
-		$fileLink = $this->urlGenerator->linkToRouteAbsolute('files.viewcontroller.showFile', ['fileId' => $share->getNode()->getId()]);
-		$endpointUrl = $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->linkTo('', 'ocs/v1.php/apps/files_sharing/api/v1/shares/pending/' . $share->getId())
-		);
+		$fileLink = $this->urlGenerator->linkToRoute('files.viewcontroller.showFile', ['fileId' => $share->getNode()->getId()]);
+		$endpointUrl = $this->urlGenerator->linkTo('', 'ocs/v1.php/apps/files_sharing/api/v1/shares/pending/' . $share->getId());
 
 		foreach ($this->getAffectedUsers($share) as $userId) {
 			$notification = $this->notificationManager->createNotification();
@@ -93,7 +90,7 @@ class NotificationPublisher {
 				->setDateTime(new \DateTime())
 				->setObject('local_share', $share->getFullId());
 			// the fullId is used here to be able to retrieve the share using the core's share manager
-			// in case we need to retreive the share object from the notification.
+			// in case we need to retrieve the share object from the notification.
 			// it can be used later to discard the notification if the share isn't valid any longer.
 
 			$notification->setIcon(

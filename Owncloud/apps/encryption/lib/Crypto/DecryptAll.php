@@ -2,7 +2,7 @@
 /**
  * @author Björn Schießle <bjoern@schiessle.org>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -19,9 +19,7 @@
  *
  */
 
-
 namespace OCA\Encryption\Crypto;
-
 
 use OC\Helper\EnvironmentHelper;
 use OC\User\LoginException;
@@ -32,11 +30,9 @@ use OCP\IUserManager;
 use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
 class DecryptAll {
-
 	/** @var Util  */
 	protected $util;
 
@@ -132,7 +128,7 @@ class DecryptAll {
 			// Must either be using recovery keys, or just decrypting one user and know their password
 
 			// Check a method has been passed
-			if(!$input->hasOption('method') && !in_array($input->getOption('method'),['recovery', 'password'])) {
+			if (!$input->hasOption('method') && !\in_array($input->getOption('method'), ['recovery', 'password'])) {
 				$output->writeln('A method must be supplied when decrypting from user-key state');
 				return false;
 			}
@@ -199,8 +195,7 @@ class DecryptAll {
 							$output->writeln('OC password not set in the envrironment');
 							$throwLoginException = true;
 						}
-				}
-
+					}
 				}
 			}
 
@@ -209,7 +204,8 @@ class DecryptAll {
 			}
 		}
 
-		$privateKey = $this->getPrivateKey($user, $password);
+		/** @phan-suppress-next-line PhanPossiblyUndeclaredVariable */
+		$privateKey = $this->getPrivateKey($user, $password); /** @phpstan-ignore-line */
 		if ($privateKey !== false) {
 			$this->updateSession($user, $privateKey);
 			return true;

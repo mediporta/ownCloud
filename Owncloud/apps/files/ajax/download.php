@@ -29,7 +29,7 @@
  */
 
 // Check if we are a user
-OCP\User::checkLoggedIn();
+OCP\User::checkLoggedIn(true);
 \OC::$server->getSession()->close();
 
 // files can be an array with multiple "files[]=one.txt&files[]=two.txt" or a single file with "files=filename.txt"
@@ -38,7 +38,12 @@ $dir = isset($_GET['dir']) ? $_GET['dir']: '';
 
 // in case we get only a single file
 if (!\is_array($files_list)) {
-	$files_list = [$files_list];
+	// in case we get the whole user directory
+	if ($files_list !== '') {
+		$files_list = [$files_list];
+	} else {
+		$files_list = [];
+	}
 } else {
 	$files_list = \array_map(function ($file) {
 		return $file;
@@ -62,7 +67,7 @@ $server_params = ['head' => \OC::$server->getRequest()->getMethod() == 'HEAD'];
  * Http range requests support
  */
 if (isset($_SERVER['HTTP_RANGE'])) {
-	$server_params['range'] = \OC::$server->getRequest()->getHeader('Range');
+	$server_params['range'] = \OC::$server->getRequest()->getHeader('Range') ?? '';
 }
 
 OC_Files::get($dir, $files_list, $server_params);

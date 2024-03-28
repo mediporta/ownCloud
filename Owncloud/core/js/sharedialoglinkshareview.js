@@ -27,11 +27,23 @@
 				'<label class="bold" for="sharingDialogAllowPublicRead-{{cid}}">{{publicReadLabel}}</label>' +
 				'<p><em>{{publicReadDescription}}</em></p>' +
 			'</div>' +
-			'{{#if publicUploadPossible}}' +
-			'<div id="allowPublicReadWrite-{{cid}}" class="public-link-modal--item">' +
-				'<input type="radio" value="{{publicReadWriteValue}}" name="publicPermissions" id="sharingDialogAllowPublicReadWrite-{{cid}}" class="checkbox publicPermissions" {{#if publicReadWriteSelected}}checked{{/if}} />' +
-				'<label class="bold" for="sharingDialogAllowPublicReadWrite-{{cid}}">{{publicReadWriteLabel}}</label>' +
-				'<p><em>{{publicReadWriteDescription}}</em></p>' +
+			'{{#if publicUploadFilePossible}}' +
+			'<div id="allowPublicFileReadWrite-{{cid}}" class="public-link-modal--item">' +
+				'<input type="radio" value="{{publicFileReadWriteValue}}" name="publicPermissions" id="sharingDialogAllowPublicFileReadWrite-{{cid}}" class="checkbox publicPermissions" {{#if publicFileReadWriteSelected}}checked{{/if}} />' +
+				'<label class="bold" for="sharingDialogAllowPublicFileReadWrite-{{cid}}">{{publicFileReadWriteLabel}}</label>' +
+				'<p><em>{{publicFileReadWriteDescription}}</em></p>' +
+			'</div>' +
+			'{{/if}}' +
+			'{{#if publicUploadFolderPossible}}' +
+			'<div id="allowPublicUploadWrite-{{cid}}" class="public-link-modal--item">' +
+				'<input type="radio" value="{{publicUploadWriteValue}}" name="publicPermissions" id="sharingDialogAllowpublicUploadWrite-{{cid}}" class="checkbox publicPermissions" {{#if publicUploadWriteSelected}}checked{{/if}} />' +
+				'<label class="bold" for="sharingDialogAllowpublicUploadWrite-{{cid}}">{{publicUploadWriteLabel}}</label>' +
+				'<p><em>{{publicUploadWriteDescription}}</em></p>' +
+			'</div>' +
+			'<div id="allowPublicFolderReadWrite-{{cid}}" class="public-link-modal--item">' +
+				'<input type="radio" value="{{publicFolderReadWriteValue}}" name="publicPermissions" id="sharingDialogAllowPublicFolderReadWrite-{{cid}}" class="checkbox publicPermissions" {{#if publicFolderReadWriteSelected}}checked{{/if}} />' +
+				'<label class="bold" for="sharingDialogAllowPublicFolderReadWrite-{{cid}}">{{publicFolderReadWriteLabel}}</label>' +
+				'<p><em>{{publicFolderReadWriteDescription}}</em></p>' +
 			'</div>' +
 			'<div id="allowPublicUploadWrapper-{{cid}}" class="public-link-modal--item">' +
 				'<input type="radio" value="{{publicUploadValue}}" name="publicPermissions" id="sharingDialogAllowPublicUpload-{{cid}}" class="checkbox publicPermissions" {{#if publicUploadSelected}}checked{{/if}} />' +
@@ -41,7 +53,7 @@
 			'{{/if}}' +
 			'<div id="linkPass-{{cid}}" class="public-link-modal--item linkPass">' +
 				'<label class="public-link-modal--label" for="linkPassText-{{cid}}">{{passwordLabel}}</label>' +
-				'<input class="public-link-modal--input linkPassText" id="linkPassText-{{cid}}" type="password" placeholder="{{passwordPlaceholder}}" />' +
+				'<input class="public-link-modal--input linkPassText" id="linkPassText-{{cid}}" type="password" autocomplete="off" placeholder="{{passwordPlaceholder}}" />' +
 				'<span class="error-message hidden"></span>' +
 			'</div>' +
 			'<div class="expirationDateContainer"></div>' +
@@ -84,7 +96,7 @@
 				throw 'missing OC.Share.ShareItemModel';
 			}
 
-			this.expirationView = new OC.Share.ShareDialogExpirationView({
+			this.expirationView = new OC.Share.ShareDialogLinkExpirationView({
 				model: this.model,
 				itemModel: this.itemModel
 			});
@@ -104,13 +116,31 @@
 			return (permissions) ? parseInt(permissions, 10) : OC.PERMISSION_READ;
 		},
 
+		/**
+		 * These are all cases as per OCA.Share.ShareDialogLinkShareView.render,
+		 * matching passwordMustBeEnforced from server side
+		 * 
+		 * @returns {boolean}
+		 */
 		_shouldRequirePassword: function() {
-			// matching passwordMustBeEnforced from server side
 			var permissions = this._getPermissions();
-			var roEnforcement = permissions === OC.PERMISSION_READ && this.configModel.get('enforceLinkPasswordReadOnly');
-			var woEnforcement = permissions === OC.PERMISSION_CREATE && this.configModel.get('enforceLinkPasswordWriteOnly');
-			var rwEnforcement = (permissions !== OC.PERMISSION_READ && permissions !== OC.PERMISSION_CREATE) && this.configModel.get('enforceLinkPasswordReadWrite');
-			if (roEnforcement || woEnforcement || rwEnforcement) {
+
+			// Download / View (file and folder)
+			var publicRead = permissions === OC.PERMISSION_READ && this.configModel.get('enforceLinkPasswordReadOnly');
+
+			// Upload only (File Drop folder)
+			var publicUploadFolder = permissions === OC.PERMISSION_CREATE && this.configModel.get('enforceLinkPasswordWriteOnly');
+
+			// Download / View / Upload (folder)
+			var publicReadUploadFolder = (permissions === (OC.PERMISSION_READ | OC.PERMISSION_CREATE) && this.configModel.get('enforceLinkPasswordReadWrite'));
+
+			// Download / View / Upload / Edit (folder)
+			var publicReadWriteFolder = (permissions === (OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE) && this.configModel.get('enforceLinkPasswordReadWriteDelete'));
+
+			// Download / View / Edit (file)
+			var publicReadWriteFile = (permissions === (OC.PERMISSION_READ | OC.PERMISSION_UPDATE) && this.configModel.get('enforceLinkPasswordReadWriteDelete'));
+
+			if (publicRead || publicUploadFolder || publicReadUploadFolder || publicReadWriteFolder || publicReadWriteFile) {
 				return true;
 			} else {
 				return false;
@@ -121,15 +151,15 @@
 			var deferred = $.Deferred();
 			var $el = this.$el;
 
-			var $dialog = $el,
-				$formElements = $el.find('input, textarea, select, button'),
-				$select2Elements = $el.find('.select2-search-choice-close'),
-				$password = $el.find('.linkPassText'),
-				$inputs = $el.find('.linkPassText, .expirationDate, .permission'), // all input fields combined
+			var $formElements       = $el.find('input, textarea, select, button'),
+				$select2Elements    = $el.find('.select2-search-choice-close'),
+				$password           = $el.find('.linkPassText'),
+				$inputs             = $el.find('.linkPassText, .expirationDate, .permission'), // all input fields combined
 				$errorMessageGlobal = $el.find('.error-message-global'),
-				$loading = $el.find('.loading'),
-				password = $password.val(),
-				expirationDate = this.expirationView.getValue();
+				$loading            = $el.find('.loading'),
+
+				password            = $password.val(),
+				expirationDate      = this.expirationView.getValue();
 
 			$el.find('.error-message').addClass('hidden');
 
@@ -137,9 +167,7 @@
 			$formElements.attr('disabled', true);
 			$select2Elements.addClass('hidden');
 
-			// remove errors (if present)
-			// ***
-
+			// remove errors
 			$inputs.removeClass('error');
 			$errorMessageGlobal.addClass('hidden');
 
@@ -164,17 +192,17 @@
 			var validates = true;
 			validates &= this.expirationView.validate();
 
-			if (!password
-				&& this._shouldRequirePassword()
-				&& (this.model.isNew() || !this.model.get('encryptedPassword'))
-			) {
+			if (!(password || this.model.get('encryptedPassword')) && this._shouldRequirePassword()) {
 				$password.addClass('error');
 				$password.next('.error-message').removeClass('hidden').text(t('core', 'Password required'));
 				validates = false;
 			}
 
 			if (!validates) {
-				deferred.reject(this.model);
+				$loading.addClass('hidden');
+				$formElements.removeAttr('disabled');
+				$select2Elements.removeClass('hidden');
+				return deferred.reject(this.model);
 			}
 
 			if (this.model.isNew()) {
@@ -226,9 +254,18 @@
 			this.model.destroy();
 		},
 
-		_isPublicUploadPossible: function() {
-			// TODO: in the future to read directly from the FileInfoModel
-			return this.itemModel.isFolder() && this.itemModel.createPermissionPossible() && this.configModel.isPublicUploadEnabled();
+		_isPublicFolderUploadPossible: function() {
+			if (this.itemModel.isFolder()) {
+				return this.itemModel.createPermissionPossible() && this.configModel.isPublicUploadEnabled();
+			}
+			return false;
+		},
+
+		_isPublicFileUploadPossible: function() {
+			if (this.itemModel.isFolder()) {
+				return false;
+			}
+			return this.itemModel.updatePermissionPossible() && this.configModel.isPublicUploadEnabled();
 		},
 
 		render: function () {
@@ -248,7 +285,8 @@
 				fileNameLabel              : t('core', 'Filename'),
 				passwordLabel              : t('core', 'Password'),
 
-				publicUploadPossible       : this._isPublicUploadPossible(),
+				publicUploadFolderPossible : this._isPublicFolderUploadPossible(),
+				publicUploadFilePossible   : this._isPublicFileUploadPossible(),
 
 				publicUploadLabel          : t('core', 'Upload only') + ' (File Drop)',
 				publicUploadDescription    : t('core', 'Receive files from multiple recipients without revealing the contents of the folder.'),
@@ -260,10 +298,20 @@
 				publicReadValue            : OC.PERMISSION_READ,
 				publicReadSelected         : this.model.get('permissions') === OC.PERMISSION_READ,
 
-				publicReadWriteLabel       : t('core', 'Download / View / Upload'),
-				publicReadWriteDescription : t('core', 'Recipients can view, download, edit, delete and upload contents.'),
-				publicReadWriteValue       : OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE,
-				publicReadWriteSelected    : this.model.get('permissions') >= (OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE),
+				publicUploadWriteLabel       : t('core', 'Download / View / Upload'),
+				publicUploadWriteDescription : t('core', 'Recipients can view, download and upload contents.'),
+				publicUploadWriteValue       : OC.PERMISSION_READ | OC.PERMISSION_CREATE,
+				publicUploadWriteSelected    : this.model.get('permissions') === (OC.PERMISSION_READ | OC.PERMISSION_CREATE),
+
+				publicFolderReadWriteLabel       : t('core', 'Download / View / Upload / Edit'),
+				publicFolderReadWriteDescription : t('core', 'Recipients can view, download, edit, delete and upload contents.'),
+				publicFolderReadWriteValue       : OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE,
+				publicFolderReadWriteSelected    : this.model.get('permissions') >= (OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE),
+
+				publicFileReadWriteLabel       : t('core', 'Download / View / Edit'),
+				publicFileReadWriteDescription : t('core', 'Recipients can view, download and edit contents.'),
+				publicFileReadWriteValue       : OC.PERMISSION_READ | OC.PERMISSION_UPDATE,
+				publicFileReadWriteSelected    : this.model.get('permissions') >= (OC.PERMISSION_READ | OC.PERMISSION_UPDATE),
 
 				isMailEnabled: showEmailField
 			}));
@@ -291,9 +339,13 @@
 		},
 
 		_onClickReset: function () {
-			var $dialog              = $('.oc-dialog:visible'),
-				$inputPassword       = $dialog.find('.linkPassText'),
-				$buttonReset         = $dialog.find('.removePassword');
+			if (this._shouldRequirePassword()) {
+				this.$el.find('.linkPassText').addClass('error').next('.error-message').removeClass('hidden').text(t('core', 'Can not remove required password'));
+				return false;
+			}
+			var $dialog        = $('.oc-dialog:visible'),
+				$inputPassword = $dialog.find('.linkPassText'),
+				$buttonReset   = $dialog.find('.removePassword');
 
 			this.model.set("resetPassword", true);
 
@@ -353,7 +405,7 @@
 				})
 			}
 
-			if (this.model.get('encryptedPassword')) {
+			if (this.model.get('encryptedPassword') && !this.linkPasswordRequired()) {
 				buttons.push({
 					classes: 'removePassword',
 					text: t('core', 'Remove password'),
@@ -378,6 +430,24 @@
 				self.$dialog.html(self.$el);
 				self.$el.find('input:first').focus();
 			});
+		},
+
+		linkPasswordRequired: function() {
+			if (this.model.get('permissions') === OC.PERMISSION_CREATE) {
+				return oc_appconfig.core.enforceLinkPasswordWriteOnly;
+			}
+
+			if (this.model.get('permissions') === OC.PERMISSION_READ) {
+				return oc_appconfig.core.enforceLinkPasswordReadOnly;
+			}
+
+			if (this.model.get('permissions') === (OC.PERMISSION_READ | OC.PERMISSION_CREATE)) {
+				return oc_appconfig.core.enforceLinkPasswordReadWrite;
+			}
+
+			if (this.model.get('permissions') >= (OC.PERMISSION_READ | OC.PERMISSION_UPDATE | OC.PERMISSION_CREATE | OC.PERMISSION_DELETE)) {
+				return oc_appconfig.core.enforceLinkPasswordReadWriteDelete;
+			}
 		}
 
 });

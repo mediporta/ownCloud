@@ -36,7 +36,6 @@ use OCP\Util;
  * @package OC\Preview
  */
 abstract class Bitmap implements IProvider2 {
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -84,7 +83,9 @@ abstract class Bitmap implements IProvider2 {
 	private function getResizedPreview($stream, $maxX, $maxY) {
 		$bp = new Imagick();
 
+		# setIteratorIndex(0) will make previews to be generated from the first page
 		$bp->readImageFile($stream);
+		$bp->setIteratorIndex(0);
 
 		$bp = $this->resize($bp, $maxX, $maxY);
 

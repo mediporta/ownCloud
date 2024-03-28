@@ -29,7 +29,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class CreateAddressBook extends Command {
-
 	/** @var IUserManager */
 	private $userManager;
 
@@ -40,8 +39,9 @@ class CreateAddressBook extends Command {
 	 * @param IUserManager $userManager
 	 * @param CardDavBackend $cardDavBackend
 	 */
-	public function __construct(IUserManager $userManager,
-						 CardDavBackend $cardDavBackend
+	public function __construct(
+		IUserManager $userManager,
+		CardDavBackend $cardDavBackend
 	) {
 		parent::__construct();
 		$this->userManager = $userManager;
@@ -52,15 +52,19 @@ class CreateAddressBook extends Command {
 		$this
 				->setName('dav:create-addressbook')
 				->setDescription('Create a dav addressbook')
-				->addArgument('user',
-						InputArgument::REQUIRED,
-						'User for whom the addressbook will be created')
-				->addArgument('name',
-						InputArgument::REQUIRED,
-						'Name of the addressbook');
+				->addArgument(
+					'user',
+					InputArgument::REQUIRED,
+					'User for whom the addressbook will be created'
+				)
+				->addArgument(
+					'name',
+					InputArgument::REQUIRED,
+					'Name of the addressbook'
+				);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$user = $input->getArgument('user');
 		if (!$this->userManager->userExists($user)) {
 			throw new \InvalidArgumentException("User <$user> in unknown.");
@@ -68,5 +72,6 @@ class CreateAddressBook extends Command {
 
 		$name = $input->getArgument('name');
 		$this->cardDavBackend->createAddressBook("principals/users/$user", $name, []);
+		return 0;
 	}
 }

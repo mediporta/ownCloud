@@ -6,7 +6,6 @@ OC.L10N.register(
     "Username" : "Nomine de usator",
     "Password" : "Contrasigno",
     "Save" : "Salveguardar",
-    "Region" : "Region",
     "URL" : "URL",
     "Location" : "Loco",
     "Share" : "Compartir",

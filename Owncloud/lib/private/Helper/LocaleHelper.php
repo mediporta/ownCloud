@@ -104,13 +104,14 @@ class LocaleHelper {
 
 		$availableCodes = $langFactory->findAvailableLanguages();
 		foreach ($availableCodes as $languageCode) {
-			$l = $langFactory->get('settings', $languageCode);
+			$l = $langFactory->get('lib', $languageCode);
 
 			// TRANSLATORS this is a self-name of your language for the language switcher
 			$endonym = (string)$l->t('__language_name__');
 			// Check if the language name is in the translation file
 			// Fallback to hardcoded language name if it isn't
-			$languageName = ($l->getLanguageCode() === $languageCode
+			$languageName = (
+				$l->getLanguageCode() === $languageCode
 				&& \substr($endonym, 0, 1) !== '_'
 			) ? $endonym
 				: $this->getLanguageNameByCode($languageCode);

@@ -27,7 +27,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ShowKeyStorageRoot extends Command {
-
 	/** @var Util  */
 	protected $util;
 
@@ -46,11 +45,12 @@ class ShowKeyStorageRoot extends Command {
 			->setDescription('Show current key storage root.');
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$currentRoot = $this->util->getKeyStorageRoot();
 
 		$rootDescription = $currentRoot !== '' ? $currentRoot : 'default storage location (data/)';
 
 		$output->writeln("Current key storage root:  <info>$rootDescription</info>");
+		return 0;
 	}
 }

@@ -32,12 +32,14 @@
 	 * @property {string} share_with
 	 * @property {string} displayname_owner
 	 * @property {number} permissions
+	 * @property {OC.Share.Types.ShareAttribute[]} attributes
 	 */
 
 	/**
 	 * @typedef {object} OC.Share.Types.ShareInfo
 	 * @property {number} share_type
 	 * @property {number} permissions
+	 * @property {OC.Share.Types.ShareAttribute[]} attributes
 	 * @property {number} file_source optional
 	 * @property {number} item_source
 	 * @property {string} token
@@ -57,12 +59,41 @@
 	 */
 
 	/**
+	 * @typedef {object} OC.Share.Types.ShareAttribute
+	 * @property {string} key
+	 * @property {string} scope
+	 * @property {bool}   enabled
+	 */
+
+	/**
+	 * ShareAttributesApi v1 registered attributes
+	 * @typedef {object} OC.Share.Types.RegisteredShareAttribute
+	 * @property {string} key
+	 * @property {bool}   default
+	 * @property {string} scope
+	 * @property {string} label
+	 * @property {string} description
+	 * @property {number[]} shareType
+	 * @property {number[]} incompatiblePermissions
+	 * @property {number[]} requiredPermissions
+	 * @property {OC.Share.Types.ShareAttribute[]} incompatibleAttributes
+	 * @deprecated shareAttributesApi v2 requires apps to extend ShareItemModel with attributes
+	 */
+
+	/**
 	 * These properties are sometimes returned by the server as strings instead
 	 * of integers, so we need to convert them accordingly...
 	 */
 	var SHARE_RESPONSE_INT_PROPS = [
 		'id', 'file_parent', 'mail_send', 'file_source', 'item_source', 'permissions',
 		'storage', 'share_type', 'parent', 'stime'
+	];
+
+	/**
+	 * Properties which are json and need to be parsed
+	 */
+	var SHARE_RESPONSE_JSON_PROPS = [
+		'attributes'
 	];
 
 	/**
@@ -84,6 +115,12 @@
 
 		_linkSharesCollection: null,
 
+		/**
+		 * @type {OC.Share.Types.RegisteredShareAttribute[]} registered available share permissions for this file/folder share
+		 * @deprecated shareAttributesApi v2 requires apps to extend ShareItemModel with attributes
+		 */
+		_registeredAttributes: null,
+
 		initialize: function(attributes, options) {
 			if(!_.isUndefined(options.configModel)) {
 				this.configModel = options.configModel;
@@ -94,8 +131,10 @@
 			}
 
 			this._linkSharesCollection = new OC.Share.SharesCollection();
+			this._registeredAttributes = [];
 
 			_.bindAll(this, 'addShare');
+			OC.Plugins.attach('OC.Share.ShareItemModel', this);
 		},
 
 		defaults: {
@@ -121,40 +160,47 @@
 			return this.fileInfoModel;
 		},
 
-		addShare: function(attributes, options) {
-			var shareType = attributes.shareType;
+		addShare: function(properties, options) {
+			var shareType = properties.shareType;
 			options = options || {};
-			attributes = _.extend({}, attributes);
+			properties = _.extend({}, properties);
 
-			var defaultPermissions = OC.getCapabilities()['files_sharing']['default_permissions'] || OC.PERMISSION_ALL;
-
-			// Default permissions are Edit (CRUD) and Share
-			// Check if these permissions are possible
-			var possiblePermissions = OC.PERMISSION_READ;
-			if (this.updatePermissionPossible()) {
-				possiblePermissions = possiblePermissions | OC.PERMISSION_UPDATE;
-			}
-			if (this.createPermissionPossible()) {
-				possiblePermissions = possiblePermissions | OC.PERMISSION_CREATE;
-			}
-			if (this.deletePermissionPossible()) {
-				possiblePermissions = possiblePermissions | OC.PERMISSION_DELETE;
-			}
-			if (this.configModel.get('isResharingAllowed') && (this.sharePermissionPossible())) {
-				possiblePermissions = possiblePermissions | OC.PERMISSION_SHARE;
+			// Set default expiration date
+			if (
+				this.configModel.isDefaultExpireDateUserEnabled() && (
+					shareType === OC.Share.SHARE_TYPE_USER ||
+					shareType === OC.Share.SHARE_TYPE_GUEST)
+				) {
+				properties.expireDate = this.configModel.getDefaultExpireDateUser('YYYY-MM-DD')
 			}
 
-			attributes.permissions = defaultPermissions & possiblePermissions;
-			if (_.isUndefined(attributes.path)) {
-				attributes.path = this.fileInfoModel.getFullPath();
+			else if (this.configModel.isDefaultExpireDateGroupEnabled() && shareType === OC.Share.SHARE_TYPE_GROUP) {
+				properties.expireDate = this.configModel.getDefaultExpireDateGroup('YYYY-MM-DD')
+			} else if (this.configModel.isDefaultExpireDateRemoteEnabled() && shareType === OC.Share.SHARE_TYPE_REMOTE) {
+				properties.expireDate = this.configModel.getDefaultExpireDateRemote('YYYY-MM-DD')
+			}
+
+			// Get default permissions
+			var permissions = properties.permissions || OC.PERMISSION_ALL;
+			properties.permissions = permissions & this.getDefaultPermissions();
+
+			// Extend attributes for new share
+			// note: required only for compatibility with attributes v1
+			if (this._registeredAttributes.length) {
+				properties.attributes = this._handleAddShareAttributes(properties, options);
+			}
+
+			if (_.isUndefined(properties.path)) {
+				properties.path = this.fileInfoModel.getFullPath();
 			}
 
 			var self = this;
 			return $.ajax({
 				type: 'POST',
 				url: this._getUrl('shares'),
-				data: attributes,
-				dataType: 'json'
+				data: JSON.stringify(properties),
+				dataType: 'json',
+				contentType: "application/json"
 			}).done(function() {
 				self.fetch().done(function() {
 					if (_.isFunction(options.success)) {
@@ -176,14 +222,21 @@
 			});
 		},
 
-		updateShare: function(shareId, attrs, options) {
+		updateShare: function(shareId, properties, options) {
 			var self = this;
-			options = options || {};
+
+			// Extend attributes for update share if provided for update.
+			// note: required only for compatibility with attributes v1
+			if (this._registeredAttributes.length) {
+				properties.attributes = this._handleUpdateShareAttributes(shareId, properties, options);
+			}
+
 			return $.ajax({
 				type: 'PUT',
 				url: this._getUrl('shares/' + encodeURIComponent(shareId)),
-				data: attrs,
-				dataType: 'json'
+				data: JSON.stringify(properties),
+				dataType: 'json',
+				contentType: "application/json"
 			}).done(function() {
 				self.fetch({
 					success: function() {
@@ -240,6 +293,31 @@
 					OC.dialogs.alert(msg, t('core', 'Error removing share'));
 				}
 			});
+		},
+
+		/**
+		 * Default permissions are Edit (CRUD) and Share
+		 * Check if these permissions are possible
+		 *
+		 * @returns {number}
+		 */
+		getDefaultPermissions: function() {
+			var defaultPermissions = OC.getCapabilities()['files_sharing']['default_permissions'] || OC.PERMISSION_ALL;
+			var possiblePermissions = OC.PERMISSION_READ;
+			if (this.updatePermissionPossible()) {
+				possiblePermissions = possiblePermissions | OC.PERMISSION_UPDATE;
+			}
+			if (this.createPermissionPossible()) {
+				possiblePermissions = possiblePermissions | OC.PERMISSION_CREATE;
+			}
+			if (this.deletePermissionPossible()) {
+				possiblePermissions = possiblePermissions | OC.PERMISSION_DELETE;
+			}
+			if (this.configModel.get('isResharingAllowed') && (this.sharePermissionPossible())) {
+				possiblePermissions = possiblePermissions | OC.PERMISSION_SHARE;
+			}
+
+			return defaultPermissions & possiblePermissions;
 		},
 
 		/**
@@ -319,6 +397,13 @@
 		},
 
 		/**
+		 * @returns {OC.Share.Types.ShareAttribute[]}
+		 */
+		getReshareAttributes: function() {
+			return this.get('reshare').attributes;
+		},
+
+		/**
 		 * Returns all share entries that only apply to the current item
 		 * (file/folder)
 		 *
@@ -330,6 +415,24 @@
 			return _.filter(shares, function(share) {
 				return share.item_source === fileId;
 			});
+		},
+
+		/**
+		 * Returns share entry by share id. Share will only be returned that only apply to the current item
+		 * (file/folder)
+		 *
+		 * @param shareId
+		 * @return {OC.Share.Types.ShareInfo}
+		 */
+		getShareById: function(shareId) {
+			var shares = this.get('shares') || [];
+			for(var shareIndex = 0; shareIndex < shares.length; shareIndex++) {
+				if (shares[shareIndex].id === shareId) {
+					return shares[shareIndex];
+				}
+			}
+
+			throw t('core', 'Unknown Share');
 		},
 
 		/**
@@ -380,6 +483,27 @@
 			return share.share_type;
 		},
 
+		getExpirationDate: function(shareIndex) {
+			/** @type OC.Share.Types.ShareInfo **/
+			var share = this.get('shares')[shareIndex];
+			if(!_.isObject(share)) {
+				throw "Unknown Share";
+			}
+			return (share.expiration !== null) ? moment(share.expiration).format('DD-MM-YYYY') : null;
+		},
+
+		/**
+		 * whether permission is in permission bitmap
+		 *
+		 * @param {number} permissions
+		 * @param {number} permission
+		 * @returns {boolean}
+		 * @private
+		 */
+		_hasPermission: function(permissions, permission) {
+			return (permissions & permission) === permission;
+		},
+
 		/**
 		 * whether a share from shares has the requested permission
 		 *
@@ -394,7 +518,7 @@
 			if(!_.isObject(share)) {
 				throw "Unknown Share";
 			}
-			return (share.permissions & permission) === permission;
+			return this._hasPermission(share.permissions, permission);
 		},
 
 		notificationMailWasSent: function(shareIndex) {
@@ -416,11 +540,13 @@
 		sendNotificationForShare: function(shareType, shareWith, state) {
 			var itemType = this.get('itemType');
 			var itemSource = this.get('itemSource');
+			var baseUrl = OC.linkToOCS('/apps/files_sharing/api/v1/notification/', 2);
+			var action = state ? 'send' : 'marksent';
 
 			return $.post(
-				OC.generateUrl('core/ajax/share.php'),
+				baseUrl + action,
 				{
-					action: state ? 'informRecipients' : 'informRecipientsDisabled',
+					format: 'json',
 					recipient: shareWith,
 					shareType: shareType,
 					itemSource: itemSource,
@@ -565,14 +691,16 @@
 			return superShare;
 		},
 
-		fetch: function() {
+		fetch: function(options) {
 			var model = this;
+
 			this.trigger('request', this);
 
 			var deferred = $.when(
 				this._fetchShares(),
 				this._fetchReshare()
 			);
+
 			deferred.done(function(data1, data2) {
 				model.trigger('sync', 'GET', this);
 				var sharesMap = {};
@@ -585,10 +713,16 @@
 					reshare = model._groupReshares(data2[0].ocs.data);
 				}
 
+				// update model properties,
+				// this should cause rerendering of the object
 				model.set(model.parse({
 					shares: sharesMap,
 					reshare: reshare
-				}));
+				}), {
+					// do not allow silent, as apps might rely on reacting to
+					// changes to the model
+					silent: false,
+				});
 			});
 
 			return deferred;
@@ -644,24 +778,24 @@
 				return {};
 			}
 
+			// check if this file has received shares to current user (direct incoming shared_with_me shares)
 			var permissions = this.get('possiblePermissions');
 			if(!_.isUndefined(data.reshare) && !_.isUndefined(data.reshare.permissions) && data.reshare.uid_owner !== OC.currentUser) {
-				permissions = permissions & data.reshare.permissions;
+				if (this.fileInfoModel.get('mountType') === 'shared' && this.fileInfoModel.isDirectory()) {
+					// if this file is already contained in a share (subfolder of shared folder) combine incoming shares permissions
+					// with parent folder share permissions. This handles a case of resharing a file/folder reshared from same 
+					// share mountpoint multiple times in subfolders
+					permissions = permissions & (this.fileInfoModel.get('sharePermissions') | data.reshare.permissions);
+				} else {
+					permissions = permissions & data.reshare.permissions;
+				}
 			}
 
 			/** @type {OC.Share.Types.ShareInfo[]} **/
-			var shares = _.map(data.shares, function(share) {
-				// properly parse some values because sometimes the server
-				// returns integers as string...
-				var i;
-				for (i = 0; i < SHARE_RESPONSE_INT_PROPS.length; i++) {
-					var prop = SHARE_RESPONSE_INT_PROPS[i];
-					if (!_.isUndefined(share[prop])) {
-						share[prop] = parseInt(share[prop], 10);
-					}
-				}
-				return share;
-			});
+			var shares = _.map(data.shares, this._parseShare);
+
+			/** @type {OC.Share.Types.Reshare} **/
+			var reshare = this._parseShare(data.reshare);
 
 			this._legacyFillCurrentShares(shares);
 
@@ -678,14 +812,6 @@
 						|| share.item_source === this.get('itemSource'));
 
 					if (isShareLink) {
-						/*
-						 * Ignore reshared link shares for now
-						 * FIXME: Find a way to display properly
-						 */
-						if (share.uid_owner !== OC.currentUser) {
-							return share;
-						}
-
 						linkShares.push(share);
 						return share;
 					}
@@ -698,10 +824,36 @@
 
 			// use the old crappy way for other shares for now
 			return {
-				reshare: data.reshare,
+				reshare: reshare,
 				shares: shares,
 				permissions: permissions
 			};
+		},
+
+		/**
+		 * Parse fields of the response
+		 *
+		 * @param {OC.Share.Types.ShareInfo} share
+		 * @returns {OC.Share.Types.ShareInfo} share
+		 */
+		_parseShare: function(share) {
+			// properly parse some values because sometimes the server
+			// returns integers as string...
+			var i;
+			for (i = 0; i < SHARE_RESPONSE_INT_PROPS.length; i++) {
+				var propInt = SHARE_RESPONSE_INT_PROPS[i];
+				if (!_.isUndefined(share[propInt])) {
+					share[propInt] = parseInt(share[propInt], 10);
+				}
+			}
+			for (i = 0; i < SHARE_RESPONSE_JSON_PROPS.length; i++) {
+				// Parse JSON if not yet parsed
+				var propJson = SHARE_RESPONSE_JSON_PROPS[i];
+				if (!_.isUndefined(share[propJson]) && !_.isObject(share[propJson])) {
+					share[propJson] = JSON.parse(share[propJson]);
+				}
+			}
+			return share;
 		},
 
 		/**
@@ -736,7 +888,250 @@
 				result.push(OC.Share.SHARE_TYPE_LINK);
 			}
 			return _.uniq(result);
+		},
+
+		/**
+		 * Returns share attributes for given share index
+		 *
+		 * @param shareIndex
+		 * @returns OC.Share.Types.ShareAttribute[]
+		 * @deprecated ShareAttributesAPI v1 registration will be deprecated. ShareAttributesAPI v2 requires apps to extend this class
+		 */
+		getShareAttributes: function(shareIndex) {
+			/** @type OC.Share.Types.ShareInfo **/
+			var share = this.get('shares')[shareIndex];
+			if(!_.isObject(share)) {
+				throw "Unknown Share";
+			}
+
+			if (_.isNull(share.attributes) || _.isUndefined(share.attributes)) {
+				return [];
+			}
+			return share.attributes;
+		},
+
+		/**
+		 * @param {array} properties
+		 * @param {array} options
+		 * @returns {OC.Share.Types.ShareAttribute[]}
+		 * @deprecated ShareAttributesAPI v1 will be deprecated. ShareAttributesAPI v2 requires apps to overwrite addShare
+		 * @private
+		 */
+		_handleAddShareAttributes: function(properties, options) {
+			var shareAttributesV1 = [];
+			var filteredRegisteredAttributes = this._filterRegisteredAttributes(properties.permissions);
+			_.map(filteredRegisteredAttributes, function (filteredRegisteredAttribute) {
+				var isCompatible = true;
+				// Check if this attribute can be added due to its incompatible attributes
+				_.map(filteredRegisteredAttribute.incompatibleAttributes, function (incompatibleAttribute) {
+					_.map(filteredRegisteredAttributes, function (checkAttr) {
+						if (incompatibleAttribute.scope === checkAttr.scope &&
+							incompatibleAttribute.key === checkAttr.key &&
+							incompatibleAttribute.enabled === checkAttr.default) {
+							isCompatible = false;
+						}
+					});
+				});
+
+				if (isCompatible) {
+					shareAttributesV1.push({
+						scope: filteredRegisteredAttribute.scope,
+						key: filteredRegisteredAttribute.key,
+						enabled: filteredRegisteredAttribute.default
+					});
+				}
+			});
+			var shareAttributes = shareAttributesV1;
+
+			/**
+			 * ShareAttributesAPI v2
+			 */
+			var shareAttributesV2 = properties.attributes || {};
+			for(var i in shareAttributesV2) {
+				var attr = shareAttributesV2[i];
+				shareAttributes = this._updateShareAttribute(shareAttributes, attr);
+			}
+
+			return shareAttributes;
+		},
+
+		/**
+		 * @param {number} shareId
+		 * @param {array} properties
+		 * @param {array} options
+		 * @returns {OC.Share.Types.ShareAttribute[]}
+		 * @deprecated ShareAttributesAPI v1 will be deprecated. ShareAttributesAPI v2 requires apps to overwrite updateShare
+		 * @private
+		 */
+		_handleUpdateShareAttributes: function(shareId, properties, options) {
+			var shareAttributesV1 = [];
+			var filteredAttributes = [];
+			var filteredRegisteredAttributes = this._filterRegisteredAttributes(properties.permissions);
+			_.map(filteredRegisteredAttributes, function(filteredRegisteredAttribute) {
+				// Check if this allowed registered attribute
+				// is on the list of currently set properties,
+				// and set this attribute
+				var found = false;
+				_.map(properties.attributes, function(currentAttribute) {
+					if (currentAttribute.key === filteredRegisteredAttribute.key
+						&& currentAttribute.scope === filteredRegisteredAttribute.scope) {
+						found = true;
+						filteredAttributes.push({
+							scope : filteredRegisteredAttribute.scope,
+							key: filteredRegisteredAttribute.key,
+							incompatibleAttributes: filteredRegisteredAttribute.incompatibleAttributes,
+							enabled: currentAttribute.enabled
+						});
+					}
+				});
+
+				// Make sure allowed registered attributes which are
+				// not yet set are added. These can become available
+				// e.g. because of share permission/attr change
+				// and need to be initialized with their default value
+				if (!found) {
+					filteredAttributes.push({
+						scope : filteredRegisteredAttribute.scope,
+						key: filteredRegisteredAttribute.key,
+						incompatibleAttributes: filteredRegisteredAttribute.incompatibleAttributes,
+						enabled: filteredRegisteredAttribute.default
+					});
+				}
+			});
+
+			_.map(filteredAttributes, function(filteredAttribute) {
+				// Filter attributes by their incompatible attributes
+				var isCompatible = true;
+				// Check if this attribute can be added due to its incompatible attributes
+				_.map(filteredAttribute.incompatibleAttributes, function(incompatibleAttribute) {
+					_.map(filteredAttributes, function(checkAttr) {
+						if (incompatibleAttribute.scope === checkAttr.scope &&
+							incompatibleAttribute.key === checkAttr.key &&
+							incompatibleAttribute.enabled === checkAttr.enabled) {
+							isCompatible = false;
+						}
+					});
+				});
+
+				if (isCompatible) {
+					shareAttributesV1.push({
+						scope : filteredAttribute.scope,
+						key: filteredAttribute.key,
+						enabled: filteredAttribute.enabled
+					});
+				}
+			});
+
+			var shareAttributes = shareAttributesV1;
+
+			/**
+			 * ShareAttributesAPI v2
+			 */
+			var shareAttributesV2 = properties.attributes || {};
+			for(var i in shareAttributesV2) {
+				var attr = shareAttributesV2[i];
+				if (!this.getRegisteredShareAttribute(attr.scope , attr.key)) {
+					// modify only ShareAttributesAPI v2
+					shareAttributes = this._updateShareAttribute(shareAttributes, attr);
+				}
+			}
+
+			return shareAttributes;
+		},
+
+		_updateShareAttribute: function(shareAttributes, attr) {
+			var exists = false;
+			for(var i in shareAttributes) {
+				if (shareAttributes[i].scope === attr.scope
+					&& shareAttributes[i].key === attr.key) {
+					shareAttributes[i] = attr;
+					exists = true;
+				}
+			}
+			if (!exists) {
+				shareAttributes.push(attr);
+			}
+
+			return shareAttributes;
+		},
+
+		/**
+		 * Filter registered attributes by current share permissions
+		 *
+		 * @param {number} permissions
+		 * @returns {OC.Share.Types.RegisteredShareAttribute[]}
+		 * @deprecated ShareAttributesAPI v1 registration will be deprecated. ShareAttributesAPI v2 requires apps to extend this class
+		 * @private
+		 */
+		_filterRegisteredAttributes: function(permissions) {
+			var filteredByPermissions = [];
+			for(var i in this._registeredAttributes) {
+				var compatible = true;
+				var attr = this._registeredAttributes[i];
+				for(var ii in attr.incompatiblePermissions) {
+					if (this._hasPermission(permissions, attr.incompatiblePermissions[ii])) {
+						compatible = false;
+					}
+				}
+				for(var ii in attr.requiredPermissions) {
+					if (!this._hasPermission(permissions, attr.requiredPermissions[ii])) {
+						compatible = false;
+					}
+				}
+
+				if (compatible) {
+					filteredByPermissions.push(attr);
+				}
+			}
+
+			return filteredByPermissions;
+		},
+
+		/**
+		 * Returns share attribute label for given attribute scope and name. If
+		 * attribute does not exist, null is returned.
+		 *
+		 * @param scope
+		 * @param key
+		 * @returns {OC.Share.Types.RegisteredShareAttribute}
+		 * @deprecated ShareAttributesAPI v1 registration will be deprecated. ShareAttributesAPI v2 requires apps to extend this class
+		 */
+		getRegisteredShareAttribute: function(scope, key) {
+			for(var i in this._registeredAttributes) {
+				if (this._registeredAttributes[i].scope === scope
+					&& this._registeredAttributes[i].key === key) {
+					return this._registeredAttributes[i];
+				}
+			}
+			return null;
+		},
+
+		/**
+		 * Apps can register default share attributes. The applications
+		 * registering share attributes are required to follow the rules:
+		 *   attribute enabled -> functionality is added (e.g. can download)
+		 *   attribute disabled -> functionality is restricted
+		 *   incompatible attribute -> functionality is ignored
+		 *
+		 * @param {OC.Share.Types.RegisteredShareAttribute} $shareAttribute
+		 * @deprecated ShareAttributesAPI v1 registration will be deprecated. ShareAttributesAPI v2 requires apps to extend this class
+		 */
+		registerShareAttribute: function($shareAttribute) {
+			// Add extra permission or update if already existing
+			var exists = false;
+			for(var i in this._registeredAttributes) {
+				if (this._registeredAttributes[i].scope === $shareAttribute.scope
+					&& this._registeredAttributes[i].key === $shareAttribute.key) {
+					this._registeredAttributes[i] = $shareAttribute;
+					exists = true;
+				}
+			}
+			if (!exists) {
+				this._registeredAttributes.push($shareAttribute);
+			}
+
 		}
+
 	});
 
 	OC.Share.ShareItemModel = ShareItemModel;

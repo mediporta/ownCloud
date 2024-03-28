@@ -1,7 +1,9 @@
 OC.L10N.register(
     "files",
     {
+    "Delete" : "Устгах",
     "Files" : "Файлууд",
+    "Cancel" : "Цуцлах",
     "Upload" : "Байршуулах",
     "A new file or folder has been <strong>created</strong>" : "Файл эсвэл хавтас амжилттай <strong>үүсгэгдлээ</strong>",
     "A file or folder has been <strong>changed</strong>" : "Файл эсвэл хавтас амжилттай <strong>солигдлоо</strong>",
@@ -16,8 +18,6 @@ OC.L10N.register(
     "%2$s deleted %1$s" : "%2$s %1$s-ийг устгалаа",
     "You restored %1$s" : "Та %1$s-ийг сэргээлээ",
     "%2$s restored %1$s" : "%2$s %1$s-ийг сэргээлээ",
-    "Save" : "Хадгалах",
-    "Settings" : "Тохиргоо",
-    "Delete" : "Устгах"
+    "Settings" : "Тохиргоо"
 },
 "nplurals=2; plural=(n != 1);");

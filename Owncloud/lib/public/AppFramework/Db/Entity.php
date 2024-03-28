@@ -28,11 +28,17 @@ namespace OCP\AppFramework\Db;
  * @method void setId(integer $id)
  * @since 7.0.0
  */
-abstract class Entity {
+abstract class Entity implements EntityInterface {
 	public $id;
 
 	private $_updatedFields = [];
 	private $_fieldTypes = ['id' => 'integer'];
+
+	/**
+	 * @since 10.14.0
+	 */
+	public function __construct() {
+	}
 
 	/**
 	 * Simple alternative constructor for building entities from a request
@@ -89,6 +95,10 @@ abstract class Entity {
 
 	/**
 	 * Generic setter for properties
+
+	 * @param string $name
+	 * @param array $args
+	 *
 	 * @since 7.0.0
 	 */
 	protected function setter($name, $args) {

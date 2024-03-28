@@ -28,9 +28,9 @@ use Doctrine\DBAL\Schema\ColumnDiff;
 use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 
 class OracleMigrator extends Migrator {
-
 	/**
 	 * Quote a column's name but changing the name requires recreating
 	 * the column instance and copying over all properties.
@@ -67,7 +67,7 @@ class OracleMigrator extends Migrator {
 	 */
 	protected function quoteIndex($index) {
 		return new Index(
-		//TODO migrate existing uppercase indexes, then $this->connection->quoteIdentifier($index->getName()),
+			//TODO migrate existing uppercase indexes, then $this->connection->quoteIdentifier($index->getName()),
 			$index->getName(),
 			\array_map(function ($columnName) {
 				return $this->connection->quoteIdentifier($columnName);
@@ -76,6 +76,27 @@ class OracleMigrator extends Migrator {
 			$index->isPrimary(),
 			$index->getFlags(),
 			$index->getOptions()
+		);
+	}
+
+	/**
+	 * Quote an ForeignKeyConstraint's name but changing the name requires recreating
+	 * the ForeignKeyConstraint instance and copying over all properties.
+	 *
+	 * @param ForeignKeyConstraint $fkc old fkc
+	 * @return ForeignKeyConstraint new fkc instance with new name
+	 */
+	protected function quoteForeignKeyConstraint($fkc) {
+		return new ForeignKeyConstraint(
+			\array_map(function ($columnName) {
+				return $this->connection->quoteIdentifier($columnName);
+			}, $fkc->getLocalColumns()),
+			$this->connection->quoteIdentifier($fkc->getForeignTableName()),
+			\array_map(function ($columnName) {
+				return $this->connection->quoteIdentifier($columnName);
+			}, $fkc->getForeignColumns()),
+			$fkc->getName(),
+			$fkc->getOptions()
 		);
 	}
 
@@ -97,7 +118,9 @@ class OracleMigrator extends Migrator {
 				\array_map(function (Index $index) {
 					return $this->quoteIndex($index);
 				}, $table->getIndexes()),
-				$table->getForeignKeys(),
+				\array_map(function (ForeignKeyConstraint $fck) {
+					return $this->quoteForeignKeyConstraint($fck);
+				}, $table->getForeignKeys()),
 				0,
 				$table->getOptions()
 			);
@@ -155,9 +178,17 @@ class OracleMigrator extends Migrator {
 				return $this->quoteIndex($index);
 			}, $tableDiff->renamedIndexes);
 
-			// TODO handle $tableDiff->addedForeignKeys
-			// TODO handle $tableDiff->changedForeignKeys
-			// TODO handle $tableDiff->removedForeignKeys
+			$tableDiff->addedForeignKeys = \array_map(function (ForeignKeyConstraint $fkc) {
+				return $this->quoteForeignKeyConstraint($fkc);
+			}, $tableDiff->addedForeignKeys);
+
+			$tableDiff->changedForeignKeys = \array_map(function (ForeignKeyConstraint $fkc) {
+				return $this->quoteForeignKeyConstraint($fkc);
+			}, $tableDiff->changedForeignKeys);
+
+			$tableDiff->removedForeignKeys = \array_map(function (ForeignKeyConstraint $fkc) {
+				return $this->quoteForeignKeyConstraint($fkc);
+			}, $tableDiff->removedForeignKeys);
 		}
 
 		return $schemaDiff;

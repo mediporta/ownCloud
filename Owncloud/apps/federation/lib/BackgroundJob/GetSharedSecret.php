@@ -43,7 +43,6 @@ use OCP\IURLGenerator;
  * @package OCA\Federation\Backgroundjob
  */
 class GetSharedSecret extends Job {
-
 	/** @var IClient */
 	private $httpClient;
 
@@ -65,7 +64,7 @@ class GetSharedSecret extends Job {
 	/** @var bool */
 	protected $retainJob = false;
 
-	private $endPoint = '/ocs/v2.php/apps/federation/api/v1/shared-secret?format=json';
+	private $endPoint = '/ocs/v2.php/apps/federation/api/v1/shared-secret';
 
 	/**
 	 * RequestSharedSecret constructor.
@@ -144,11 +143,11 @@ class GetSharedSecret extends Job {
 			$result = $this->httpClient->get(
 				$target . $this->endPoint,
 				[
-					'query' =>
-						[
-							'url' => $source,
-							'token' => $token
-						],
+					'query' => [
+						'url' => $source,
+						'token' => $token,
+						'format' => 'json'
+					],
 					'timeout' => 3,
 					'connect_timeout' => 3,
 				]
@@ -183,13 +182,13 @@ class GetSharedSecret extends Job {
 			$result = \json_decode($body, true);
 			if (isset($result['ocs']['data']['sharedSecret'])) {
 				$this->trustedServers->addSharedSecret(
-						$target,
-						$result['ocs']['data']['sharedSecret']
+					$target,
+					$result['ocs']['data']['sharedSecret']
 				);
 			} else {
 				$this->logger->error(
-						'remote server "' . $target . '"" does not return a valid shared secret',
-						['app' => 'federation']
+					'remote server "' . $target . '"" does not return a valid shared secret',
+					['app' => 'federation']
 				);
 				$this->trustedServers->setServerStatus($target, TrustedServers::STATUS_FAILURE);
 			}

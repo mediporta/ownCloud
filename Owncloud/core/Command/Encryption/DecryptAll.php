@@ -37,7 +37,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 
 class DecryptAll extends Command {
-
 	/** @var IManager */
 	protected $encryptionManager;
 
@@ -110,7 +109,7 @@ class DecryptAll extends Command {
 		$this->setHelp(
 			'This will disable server-side encryption and decrypt all files for '
 			. 'all users if it is supported by your encryption module. '
-			. 'Please make sure that no user access his files during this process!'
+			. 'Please make sure that no user accesses their files during this process!'
 		);
 		$this->addArgument(
 			'user',
@@ -133,11 +132,11 @@ class DecryptAll extends Command {
 		);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$confirmed = $input->getOption('continue');
 		if (($confirmed !== 'yes') && ($confirmed !== 'no')) {
 			$output->writeln('Continue can accept either yes or no');
-			return null;
+			return 2;
 		}
 
 		try {
@@ -147,7 +146,7 @@ class DecryptAll extends Command {
 				$output->writeln('done.');
 			} else {
 				$output->writeln('Server side encryption not enabled. Nothing to do.');
-				return;
+				return 0;
 			}
 
 			$uid = $input->getArgument('user');
@@ -161,7 +160,7 @@ class DecryptAll extends Command {
 			$output->writeln("You are about to start to decrypt all files stored in $message.");
 			$output->writeln('It will depend on the encryption module and your setup if this is possible.');
 			$output->writeln('Depending on the number and size of your files this can take some time');
-			$output->writeln('Please make sure that no user access his files during this process!');
+			$output->writeln('Please make sure that no user accesses their files during this process!');
 			$output->writeln('');
 			$question = new ConfirmationQuestion('Do you really want to continue? (y/n) ', false);
 			if (($confirmed === 'yes') || $this->questionHelper->ask($input, $output, $question)) {
@@ -189,5 +188,6 @@ class DecryptAll extends Command {
 			$this->resetSingleUserAndTrashbin();
 			throw $e;
 		}
+		return 0;
 	}
 }

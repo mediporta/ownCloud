@@ -26,7 +26,6 @@ use Sabre\VObject\Property;
 use Sabre\VObject\Reader;
 
 class CalendarObject extends \Sabre\CalDAV\CalendarObject {
-
 	/**
 	 * @inheritdoc
 	 */
@@ -61,6 +60,7 @@ class CalendarObject extends \Sabre\CalDAV\CalendarObject {
 			$vElement = $vObject->VTODO;
 		}
 		if ($vElement !== null) {
+			/* @phan-suppress-next-line PhanUndeclaredMethod */
 			foreach ($vElement->children() as &$property) {
 				/** @var Property $property */
 				switch ($property->name) {
@@ -76,13 +76,14 @@ class CalendarObject extends \Sabre\CalDAV\CalendarObject {
 						$property->setValue('Busy');
 						break;
 					default:
+						/* @phan-suppress-next-line PhanUndeclaredMethod */
 						$vElement->__unset($property->name);
 						unset($property);
 						break;
 				}
 			}
 		}
-		
+
 		return $vObject->serialize();
 	}
 }

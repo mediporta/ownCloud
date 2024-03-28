@@ -27,14 +27,24 @@ script('core', 'lostpassword');
 ?>
 
 <form action="<?php print_unescaped($_['link']) ?>" id="reset-password" method="post">
-	<fieldset>
-		<p>
-			<label for="password" class="infield"><?php p($l->t('New password')); ?></label>
-			<input type="password" name="password" id="password" value="" placeholder="<?php p($l->t('New Password')); ?>" required autofocus />
-		</p>
-		<input type="submit" id="submit" value="<?php p($l->t('Reset password')); ?>" />
-		<p class="text-center">
-			<img class="hidden" id="float-spinner" src="<?php p(image_path('core', 'loading-dark.gif'));?>"/>
-		</p>
-	</fieldset>
+		<div class="grouptop<?php if (!empty($_['invalidpassword'])) {
+			echo ' shake';
+		} ?>">
+			<label for="password"><?php p($l->t('New password')); ?></label>
+			<input type="password" name="password" id="password" value="" autocomplete="off" required autofocus aria-label="<?php p($l->t('New password')); ?>" placeholder="<?php p($l->t('New password')); ?>" />
+		</div>
+
+		<div class="groupbottom<?php if (!empty($_['invalidpassword'])) {
+			echo ' shake';
+		} ?>">	
+			<label for="password"><?php p($l->t('Confirm Password')); ?></label>
+			<input type="password" name="retypepassword" id="retypepassword" value="" aria-label="<?php p($l->t('Confirm password')); ?>" placeholder="<?php p($l->t('Confirm Password')); ?>" />
+		</div>
+		<div class="submit-wrap">
+			<span id="message"></span>
+			<button type="submit" id="submit">
+				<span><?php p($l->t('Reset password')); ?></span>
+				<div class="loading-spinner"><div></div><div></div><div></div><div></div></div>
+			</button>
+		</div>
 </form>

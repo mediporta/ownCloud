@@ -44,7 +44,7 @@ class Export extends ListCommand {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$listCommand = new ListCommand($this->globalService, $this->userService, $this->userSession, $this->userManager);
 		$listInput = new ArrayInput([], $listCommand->getDefinition());
 		$listInput->setArgument('user_id', $input->getArgument('user_id'));
@@ -52,6 +52,8 @@ class Export extends ListCommand {
 		$listInput->setOption('output', 'json_pretty');
 		$listInput->setOption('show-password', true);
 		$listInput->setOption('full', true);
+		$listInput->setOption('importable-format', true);
 		$listCommand->execute($listInput, $output);
+		return 0;
 	}
 }

@@ -29,7 +29,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Enable extends Base {
-
 	/** @var Manager */
 	private $manager;
 
@@ -50,14 +49,15 @@ class Enable extends Base {
 		$this->addArgument('uid', InputArgument::REQUIRED);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uid = $input->getArgument('uid');
 		$user = $this->userManager->get($uid);
 		if ($user === null) {
 			$output->writeln("<error>Invalid UID</error>");
-			return;
+			return 1;
 		}
 		$this->manager->enableTwoFactorAuthentication($user);
 		$output->writeln("Two-factor authentication enabled for user $uid");
+		return 0;
 	}
 }

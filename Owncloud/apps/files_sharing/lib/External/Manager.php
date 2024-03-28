@@ -29,7 +29,10 @@
 
 namespace OCA\Files_Sharing\External;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use OC\Files\Filesystem;
+use OC\User\NoUserException;
+use OCA\Files_Sharing\Helper;
 use OCP\Files;
 use OCP\Notification\IManager;
 use OCP\Share\Events\AcceptShare;
@@ -38,7 +41,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
 class Manager {
-	const STORAGE = '\OCA\Files_Sharing\External\Storage';
+	public const STORAGE = '\OCA\Files_Sharing\External\Storage';
 
 	/**
 	 * @var string
@@ -78,12 +81,14 @@ class Manager {
 	 * @param EventDispatcherInterface $eventDispatcher
 	 * @param string $uid
 	 */
-	public function __construct(\OCP\IDBConnection $connection,
-								\OC\Files\Mount\Manager $mountManager,
-								\OCP\Files\Storage\IStorageFactory $storageLoader,
-								IManager $notificationManager,
-								EventDispatcherInterface $eventDispatcher,
-								$uid) {
+	public function __construct(
+		\OCP\IDBConnection $connection,
+		\OC\Files\Mount\Manager $mountManager,
+		\OCP\Files\Storage\IStorageFactory $storageLoader,
+		IManager $notificationManager,
+		EventDispatcherInterface $eventDispatcher,
+		$uid
+	) {
 		$this->connection = $connection;
 		$this->mountManager = $mountManager;
 		$this->storageLoader = $storageLoader;
@@ -102,7 +107,7 @@ class Manager {
 	 * @param string $owner
 	 * @param boolean $accepted
 	 * @param string $user
-	 * @param int $remoteId
+	 * @param string $remoteId
 	 * @return Mount|null
 	 */
 	public function addShare($remote, $token, $password, $name, $owner, $accepted=false, $user = null, $remoteId = -1) {
@@ -141,8 +146,9 @@ class Manager {
 			return null;
 		}
 
-		$mountPoint = Files::buildNotExistingFileName('/', $name);
-		$mountPoint = Filesystem::normalizePath('/' . $mountPoint);
+		$shareFolder = Helper::getShareFolder();
+		$mountPoint = Files::buildNotExistingFileName($shareFolder, $name);
+		$mountPoint = Filesystem::normalizePath($mountPoint);
 		$hash = \md5($mountPoint);
 
 		$query = $this->connection->prepare('
@@ -179,6 +185,54 @@ class Manager {
 	}
 
 	/**
+	 * Get the file id for an accepted share. Returns null when
+	 * the file id cannot be determined.
+	 *
+	 * @param mixed $share
+	 * @param string $mountPoint
+	 * @return string|null
+	 */
+	public function getShareFileId($share, $mountPoint) {
+		$options = [
+			'remote'	=> $share['remote'],
+			'token'		=> $share['share_token'],
+			'mountpoint'	=> $mountPoint,
+			'owner'		=> $share['owner']
+		];
+
+		// We need to scan the new file/folder here to get its fileId
+		// which will be passed to the event for further processing.
+		$mount = $this->getMount($options);
+		$storage = $mount->getStorage();
+
+		if ($storage) {
+			$scanner = $storage->getScanner('');
+
+			// No need to scan all the folder contents as we only care about the root share
+			$file = $scanner->scanFile('');
+
+			if (isset($file['fileid'])) {
+				return $file['fileid'];
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get the mount point of a newly received share.
+	 *
+	 * @param mixed $share
+	 * @return string
+	 */
+	public function getShareRecipientMountPoint($share) {
+		\OC_Util::setupFS($share['user']);
+		$shareFolder = Helper::getShareFolder();
+		$mountPoint = Files::buildNotExistingFileName($shareFolder, $share['name']);
+		return Filesystem::normalizePath($mountPoint);
+	}
+
+	/**
 	 * accept server-to-server share
 	 *
 	 * @param int $id
@@ -188,8 +242,7 @@ class Manager {
 		$share = $this->getShare($id);
 
 		if ($share) {
-			$mountPoint = Files::buildNotExistingFileName('/', $share['name']);
-			$mountPoint = Filesystem::normalizePath('/' . $mountPoint);
+			$mountPoint = $this->getShareRecipientMountPoint($share);
 			$hash = \md5($mountPoint);
 
 			$acceptShare = $this->connection->prepare('
@@ -200,13 +253,25 @@ class Manager {
 				WHERE `id` = ? AND `user` = ?');
 			$acceptShare->execute([1, $mountPoint, $hash, $id, $this->uid]);
 
+			$fileId = $this->getShareFileId($share, $mountPoint);
+
 			$this->eventDispatcher->dispatch(
-				AcceptShare::class, new AcceptShare($share)
+				new AcceptShare($share),
+				AcceptShare::class
 			);
 
-			$event = new GenericEvent(null, ['sharedItem' => $share['name'], 'shareAcceptedFrom' => $share['owner'],
-				'remoteUrl' => $share['remote']]);
-			$this->eventDispatcher->dispatch('remoteshare.accepted', $event);
+			$event = new GenericEvent(
+				null,
+				[
+					'sharedItem' => $share['name'],
+					'shareAcceptedFrom' => $share['owner'],
+					'remoteUrl' => $share['remote'],
+					'fileId' => $fileId, // can be null in case the file was not scanned properly
+					'shareId' => $id,
+					'shareRecipient' => $this->uid,
+				]
+			);
+			$this->eventDispatcher->dispatch($event, 'remoteshare.accepted');
 			\OC_Hook::emit('OCP\Share', 'federated_share_added', ['server' => $share['remote']]);
 
 			$this->processNotification($id);
@@ -231,13 +296,13 @@ class Manager {
 			$removeShare->execute([$id, $this->uid]);
 
 			$this->eventDispatcher->dispatch(
-				DeclineShare::class,
-				new DeclineShare($share)
+				new DeclineShare($share),
+				DeclineShare::class
 			);
 
 			$event = new GenericEvent(null, ['sharedItem' => $share['name'], 'shareAcceptedFrom' => $share['owner'],
 				'remoteUrl' => $share['remote']]);
-			$this->eventDispatcher->dispatch('remoteshare.declined', $event);
+			$this->eventDispatcher->dispatch($event, 'remoteshare.declined');
 
 			$this->processNotification($id);
 			return true;
@@ -264,7 +329,7 @@ class Manager {
 	 * @return string
 	 */
 	protected function stripPath($path) {
-		$prefix = '/' . $this->uid . '/files';
+		$prefix = "/{$this->uid}/files";
 		return \rtrim(\substr($path, \strlen($prefix)), '/');
 	}
 
@@ -310,12 +375,36 @@ class Manager {
 			WHERE `mountpoint_hash` = ?
 			AND `user` = ?
 		');
-		$result = (bool)$query->execute([$target, $targetHash, $sourceHash, $this->uid]);
+		try {
+			$result = (bool)$query->execute([$target, $targetHash, $sourceHash, $this->uid]);
+		} catch (UniqueConstraintViolationException $e) {
+			$result = false;
+		}
 
 		return $result;
 	}
 
+	/**
+	 * Explicitly set uid when the shares are managed in CLI
+	 *
+	 * @param string|null $uid
+	 */
+	public function setUid($uid) {
+		// FIXME: External manager should not depend on uid
+		$this->uid = $uid;
+	}
+
+	/**
+	 * @param $mountPoint
+	 * @return bool
+	 *
+	 * @throws NoUserException
+	 */
 	public function removeShare($mountPoint) {
+		if ($this->uid === null) {
+			throw new NoUserException();
+		}
+
 		$mountPointObj = $this->mountManager->find($mountPoint);
 		$id = $mountPointObj->getStorage()->getCache()->getId('');
 
@@ -330,10 +419,12 @@ class Manager {
 
 		if ($result) {
 			$share = $getShare->fetch();
-			$this->eventDispatcher->dispatch(
-				DeclineShare::class,
-				new DeclineShare($share)
-			);
+			if ($share !== false) {
+				$this->eventDispatcher->dispatch(
+					new DeclineShare($share),
+					DeclineShare::class
+				);
+			}
 		}
 		$getShare->closeCursor();
 
@@ -347,7 +438,7 @@ class Manager {
 		if ($result) {
 			$this->removeReShares($id);
 			$event = new GenericEvent(null, ['user' => $this->uid, 'targetmount' => $mountPoint]);
-			$this->eventDispatcher->dispatch('\OCA\Files_Sharing::unshareEvent', $event);
+			$this->eventDispatcher->dispatch($event, '\OCA\Files_Sharing::unshareEvent');
 		}
 
 		return $result;
@@ -392,8 +483,8 @@ class Manager {
 			$shares = $getShare->fetchAll();
 			foreach ($shares as $share) {
 				$this->eventDispatcher->dispatch(
-					DeclineShare::class,
-					new DeclineShare($share)
+					new DeclineShare($share),
+					DeclineShare::class
 				);
 			}
 		}

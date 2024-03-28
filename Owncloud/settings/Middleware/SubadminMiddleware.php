@@ -25,7 +25,7 @@
 namespace OC\Settings\Middleware;
 
 use OC\AppFramework\Http;
-use OC\AppFramework\Middleware\Security\Exceptions\NotAdminException;
+use OC\AppFramework\Middleware\Security\Exceptions\NotSubadminException;
 use OC\AppFramework\Utility\ControllerMethodReflector;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Middleware;
@@ -46,8 +46,10 @@ class SubadminMiddleware extends Middleware {
 	 * @param ControllerMethodReflector $reflector
 	 * @param bool $isSubAdmin
 	 */
-	public function __construct(ControllerMethodReflector $reflector,
-								$isSubAdmin) {
+	public function __construct(
+		ControllerMethodReflector $reflector,
+		$isSubAdmin
+	) {
 		$this->reflector = $reflector;
 		$this->isSubAdmin = $isSubAdmin;
 	}
@@ -61,7 +63,7 @@ class SubadminMiddleware extends Middleware {
 	public function beforeController($controller, $methodName) {
 		if (!$this->reflector->hasAnnotation('NoSubadminRequired')) {
 			if (!$this->isSubAdmin) {
-				throw new NotAdminException('Logged in user must be a subadmin');
+				throw new NotSubadminException();
 			}
 		}
 	}
@@ -75,7 +77,7 @@ class SubadminMiddleware extends Middleware {
 	 * @throws \Exception
 	 */
 	public function afterException($controller, $methodName, \Exception $exception) {
-		if ($exception instanceof NotAdminException) {
+		if ($exception instanceof NotSubadminException) {
 			$response = new TemplateResponse('core', '403', [], 'guest');
 			$response->setStatus(Http::STATUS_FORBIDDEN);
 			return $response;

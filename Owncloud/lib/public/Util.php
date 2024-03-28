@@ -57,11 +57,11 @@ use DateTimeZone;
  */
 class Util {
 	// consts for Logging
-	const DEBUG=0;
-	const INFO=1;
-	const WARN=2;
-	const ERROR=3;
-	const FATAL=4;
+	public const DEBUG=0;
+	public const INFO=1;
+	public const WARN=2;
+	public const ERROR=3;
+	public const FATAL=4;
 
 	/** \OCP\Share\IManager */
 	private static $shareManager;
@@ -74,7 +74,7 @@ class Util {
 	public static function getVersion() {
 		return(\OC_Util::getVersion());
 	}
-	
+
 	/**
 	 * Set current update channel
 	 * @param string $channel
@@ -85,7 +85,7 @@ class Util {
 		\OC::$server->getSession()->set('OC_Version_Timestamp', 0);
 		\OC::$server->getAppConfig()->setValue('core', 'OC_Channel', $channel);
 	}
-	
+
 	/**
 	 * Get current update channel
 	 * @return string
@@ -111,8 +111,19 @@ class Util {
 	 * @deprecated 8.1.0 Use \OCP\Mail\IMailer instead
 	 * @since 4.0.0
 	 */
-	public static function sendMail($toaddress, $toname, $subject, $mailtext, $fromaddress, $fromname,
-		$html = 0, $altbody = '', $ccaddress = '', $ccname = '', $bcc = '') {
+	public static function sendMail(
+		$toaddress,
+		$toname,
+		$subject,
+		$mailtext,
+		$fromaddress,
+		$fromname,
+		$html = 0,
+		$altbody = '',
+		$ccaddress = '',
+		$ccname = '',
+		$bcc = ''
+	) {
 		$mailer = \OC::$server->getMailer();
 		$message = $mailer->createMessage();
 		$message->setTo([$toaddress => $toname]);
@@ -453,7 +464,7 @@ class Util {
 	/**
 	 * Make a computer file size (2 kB to 2048)
 	 * @param string $str file size in a fancy format
-	 * @return int a file size in bytes
+	 * @return float|false a file size in bytes
 	 *
 	 * Inspired by: http://www.php.net/manual/en/function.filesize.php#92418
 	 * @since 4.0.0
@@ -733,7 +744,7 @@ class Util {
 	 * @return array
 	 * @since 10.0
 	 */
-	public static function getStatusInfo($includeVersion = false, $serverHide = false) {
+	public static function getStatusInfo($includeVersion = false, $serverHide = false, $hostnameShort = false) {
 		$systemConfig = \OC::$server->getSystemConfig();
 
 		$installed = (bool) $systemConfig->getValue('installed', false);
@@ -749,7 +760,8 @@ class Util {
 			'version' => '',
 			'versionstring' => '',
 			'edition' => '',
-			'productname' => ''];
+			'productname' => '', // deprecated
+			'product' => ''];
 
 		// expose version and servername details
 		if ($includeVersion || (bool) $systemConfig->getValue('version.hide', false) === false) {
@@ -757,9 +769,16 @@ class Util {
 			$values['versionstring'] = \OC_Util::getVersionString();
 			$values['edition'] = \OC_Util::getEditionString();
 			$values['productname'] = $defaults->getName();
+			$values['product'] = $defaults->getName();
 			// expose the servername only if allowed via version, but never when called via status.php
 			if ($serverHide === false) {
-				$values['hostname'] = \gethostname();
+				$hostname = \gethostname();
+				if (($hostnameShort) &&
+					(\is_string($hostname))) {
+					$splitted = \explode('.', $hostname);
+					$hostname = $splitted[0];
+				}
+				$values['hostname'] = $hostname;
 			}
 		}
 

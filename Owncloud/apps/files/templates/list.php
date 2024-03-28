@@ -28,6 +28,7 @@
 	<div class="icon-folder"></div>
 	<h2><?php p($l->t('No files in here')); ?></h2>
 	<p class="uploadmessage hidden"><?php p($l->t('Upload some content or sync with your devices!')); ?></p>
+	<p class="nouploadmessage hidden"><?php p($l->t('You don’t have permission to upload or create files here')); ?></p>
 </div>
 
 <div class="nofilterresults emptycontent hidden">
@@ -51,6 +52,12 @@
 							<span class="icon icon-download"></span>
 							<span><?php p($l->t('Download'))?></span>
 						</a>
+						<a href="" class="download mobile button">
+							<span class="icon icon-download "></span>
+						</a>
+						<a href="" class="delete-selected mobile button">
+							<span class="icon icon-delete"></span>
+						</a>
 					</span>
 				</div>
 			</th>
@@ -60,8 +67,8 @@
 			<th id="headerDate" class="hidden column-mtime">
 				<a id="modified" class="columntitle" data-sort="mtime"><span><?php p($l->t('Modified')); ?></span><span class="sort-indicator"></span></a>
 					<span class="selectedActions"><a href="" class="delete-selected">
-						<span><?php p($l->t('Delete'))?></span>
 						<span class="icon icon-delete"></span>
+						<span><?php p($l->t('Delete'))?></span>
 					</a></span>
 			</th>
 		</tr>

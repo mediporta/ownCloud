@@ -19,13 +19,10 @@ OC.L10N.register(
     "Choose" : "ရွေးချယ်",
     "Ok" : "အိုကေ",
     "Cancel" : "ပယ်ဖျက်မည်",
-    "Set expiration date" : "သက်တမ်းကုန်ဆုံးမည့်ရက်သတ်မှတ်မည်",
-    "Expiration date" : "သက်တမ်းကုန်ဆုံးမည့်ရက်",
     "Password" : "စကားဝှက်",
     "can edit" : "ပြင်ဆင်နိုင်",
     "create" : "ဖန်တီးမည်",
     "delete" : "ဖျက်မည်",
-    "Resharing is not allowed" : "ပြန်လည်ဝေမျှခြင်းခွင့်မပြုပါ",
     "Add" : "ပေါင်းထည့်",
     "Users" : "သုံးစွဲသူ",
     "Apps" : "Apps",
@@ -38,7 +35,6 @@ OC.L10N.register(
     "Database password" : "Database စကားဝှက်",
     "Database name" : "Database အမည်",
     "Finish setup" : "တပ်ဆင်ခြင်းပြီးပါပြီ။",
-    "Log in" : "ဝင်ရောက်ရန်",
     "New password" : "စကားဝှက်အသစ်"
 },
 "nplurals=1; plural=0;");

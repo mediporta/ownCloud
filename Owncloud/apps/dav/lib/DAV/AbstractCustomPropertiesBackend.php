@@ -21,9 +21,10 @@
 
 namespace OCA\DAV\DAV;
 
+use OCP\Files\IRootFolder;
 use OCP\IDBConnection;
 use OCP\IUser;
-use Sabre\Dav\Exception\Forbidden;
+use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\Exception\ServiceUnavailable;
 use Sabre\DAV\INode;
@@ -31,8 +32,23 @@ use Sabre\DAV\PropertyStorage\Backend\BackendInterface;
 use Sabre\DAV\PropFind;
 use Sabre\DAV\PropPatch;
 use Sabre\DAV\Tree;
+use Sabre\DAV\Xml\Property\Complex;
 
 abstract class AbstractCustomPropertiesBackend implements BackendInterface {
+	/**
+	 * Value is stored as string.
+	 */
+	public const VT_STRING = 1;
+
+	/**
+	 * Value is stored as XML fragment.
+	 */
+	public const VT_XML = 2;
+
+	/**
+	 * Value is stored as a property object.
+	 */
+	public const VT_OBJECT = 3;
 
 	/**
 	 * Ignored properties
@@ -67,6 +83,11 @@ abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 	protected $user;
 
 	/**
+	 * @var IRootFolder
+	 */
+	protected $rootFolder;
+
+	/**
 	 * Property cache for the filesystem items
 	 * @var array
 	 */
@@ -80,10 +101,13 @@ abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 	public function __construct(
 		Tree $tree,
 		IDBConnection $connection,
-		IUser $user) {
+		IUser $user,
+		IRootFolder $rootFolder
+	) {
 		$this->tree = $tree;
 		$this->connection = $connection;
 		$this->user = $user->getUID();
+		$this->rootFolder = $rootFolder;
 	}
 
 	/**
@@ -222,7 +246,7 @@ abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 
 		$props = [];
 		while ($row = $result->fetch()) {
-			$props[$row['propertyname']] = $row['propertyvalue'];
+			$props[$row['propertyname']] = $this->decodeValue($row['propertyvalue'], (int) $row['propertytype']);
 		}
 
 		$result->closeCursor();
@@ -255,5 +279,40 @@ abstract class AbstractCustomPropertiesBackend implements BackendInterface {
 			);
 		}
 		return null;
+	}
+
+	/**
+	 * @param mixed|Complex $value
+	 * @return array
+	 */
+	protected function encodeValue($value) {
+		if (\is_scalar($value)) {
+			$valueType = self::VT_STRING;
+		} elseif ($value instanceof Complex) {
+			$valueType = self::VT_XML;
+			$value = $value->getXml();
+		} else {
+			$valueType = self::VT_OBJECT;
+			$value = \serialize($value);
+		}
+		return [
+			'value' => $value,
+			'type' => $valueType
+		];
+	}
+
+	/**
+	 * @param string $value
+	 * @param int $valueType
+	 * @return mixed|Complex
+	 */
+	protected function decodeValue($value, $valueType) {
+		if ($valueType === self::VT_STRING) {
+			return $value;
+		} elseif ($valueType === self::VT_XML) {
+			return new Complex($value);
+		} elseif ($valueType === self::VT_OBJECT) {
+			return \unserialize($value);
+		}
 	}
 }

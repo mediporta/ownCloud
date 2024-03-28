@@ -28,7 +28,6 @@ use OCP\Settings\ISettings;
 use OCP\Template;
 
 class Personal implements ISettings {
-
 	/** @var IStoragesBackendService */
 	protected $backendService;
 	/** @var IUserStoragesService */
@@ -38,10 +37,12 @@ class Personal implements ISettings {
 	/** @var IConfig */
 	protected $config;
 
-	public function __construct(IStoragesBackendService $backendService,
-								IUserStoragesService $userStorages,
-								IConfig $config,
-								Manager $encManager) {
+	public function __construct(
+		IStoragesBackendService $backendService,
+		IUserStoragesService $userStorages,
+		IConfig $config,
+		Manager $encManager
+	) {
 		$this->backendService = $backendService;
 		$this->userStorages = $userStorages;
 		$this->config = $config;

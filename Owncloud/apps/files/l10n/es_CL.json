@@ -5,6 +5,7 @@
     "Files" : "Archivos",
     "Details" : "detalles",
     "New folder" : "Nuevo directorio",
+    "Cancel" : "Cancelar",
     "Upload" : "Subir",
     "A new file or folder has been <strong>created</strong>" : "Un nuevo archivo o carpeta ha sido <strong>creado</strong>",
     "A file or folder has been <strong>changed</strong>" : "Un archivo o carpeta ha sido <strong>cambiado</strong>",
@@ -16,5 +17,5 @@
     "You deleted %1$s" : "Ha borrado %1$s",
     "%2$s deleted %1$s" : "%2$s borró %1$s",
     "Settings" : "Configuración"
-},"pluralForm" :"nplurals=2; plural=(n != 1);"
+},"pluralForm" :"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 }

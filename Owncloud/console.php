@@ -33,32 +33,20 @@ use Symfony\Component\Console\Output\ConsoleOutput;
 
 \define('OC_CONSOLE', 1);
 
-// Show warning if a PHP version below 5.6.0 is used, this has to happen here
-// because base.php will already use 5.6 syntax.
-if (\version_compare(PHP_VERSION, '5.6.0') === -1) {
-	echo 'This version of ownCloud requires at least PHP 5.6.0'.PHP_EOL;
-	echo 'You are currently running PHP ' . PHP_VERSION . '. Please update your PHP version.'.PHP_EOL;
-	exit(1);
-}
-
-// Show warning if PHP 7.3 is used as ownCloud is not compatible with PHP 7.3
-if (\version_compare(PHP_VERSION, '7.3.0alpha1') !== -1) {
-	echo 'This version of ownCloud is not compatible with PHP 7.3' . PHP_EOL;
-	echo 'You are currently running PHP ' . PHP_VERSION . '.' . PHP_EOL;
-	exit(1);
-}
-
-// running oC on Windows is unsupported since 8.1, this has to happen here because
-// is seems that the autoloader on Windows fails later and just throws an exception.
-if (\strtoupper(\substr(PHP_OS, 0, 3)) === 'WIN') {
-	echo 'ownCloud Server does not support Microsoft Windows.';
-	exit(1);
-}
-
 function exceptionHandler($exception) {
-	echo "An unhandled exception has been thrown:" . PHP_EOL;
-	echo $exception;
-	exit(1);
+	try {
+		// try to log the exception
+		\OC::$server->getLogger()->logException($exception, ['app' => 'index']);
+	} catch (\Throwable $ex) {
+		// if we can't log normally, use the crashLog
+		\OC::crashLog($exception);
+		\OC::crashLog($ex);
+	} finally {
+		// always show the exception in the console
+		echo 'An unhandled exception has been thrown:' . PHP_EOL;
+		echo $exception;
+		exit(1);
+	}
 }
 try {
 	require_once __DIR__ . '/lib/base.php';
@@ -104,8 +92,6 @@ try {
 	$application = new Application(\OC::$server->getConfig(), \OC::$server->getEventDispatcher(), \OC::$server->getRequest());
 	$application->loadCommands(new ArgvInput(), new ConsoleOutput());
 	$application->run();
-} catch (Exception $ex) {
-	exceptionHandler($ex);
-} catch (Error $ex) {
+} catch (\Throwable $ex) {
 	exceptionHandler($ex);
 }

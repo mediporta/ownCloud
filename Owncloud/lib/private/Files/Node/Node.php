@@ -69,10 +69,10 @@ class Node implements \OCP\Files\Node {
 	}
 
 	/**
-	 * Creates a Node of the same type that represents a non-existing path
+	 * Creates a Node of the same type that represents a nonexistent path
 	 *
 	 * @param string $path path
-	 * @return string non-existing node class
+	 * @return string nonexistent node class
 	 */
 	protected function createNonExistingNode($path) {
 		throw new \Exception('Must be implemented by subclasses');
@@ -191,7 +191,7 @@ class Node implements \OCP\Files\Node {
 	}
 
 	/**
-	 * @return int
+	 * @return int|float
 	 * @throws InvalidPathException
 	 * @throws NotFoundException
 	 */
@@ -423,5 +423,9 @@ class Node implements \OCP\Files\Node {
 		} else {
 			throw new NotPermittedException('No permission to move to path ' . $targetPath);
 		}
+	}
+
+	public function getView() {
+		return $this->view;
 	}
 }

@@ -28,7 +28,6 @@ use OCP\Settings\ISettings;
 use OCP\Template;
 
 class Admin implements ISettings {
-
 	/** @var IGlobalStoragesService */
 	protected $globalStoragesService;
 	/** @var IStoragesBackendService */
@@ -38,10 +37,12 @@ class Admin implements ISettings {
 	/** @var Manager */
 	protected $encManager;
 
-	public function __construct(IGlobalStoragesService $globalStoragesService,
-								IStoragesBackendService $backendService,
-								IConfig $config,
-								Manager $encManager) {
+	public function __construct(
+		IGlobalStoragesService $globalStoragesService,
+		IStoragesBackendService $backendService,
+		IConfig $config,
+		Manager $encManager
+	) {
 		$this->globalStoragesService = $globalStoragesService;
 		$this->backendService = $backendService;
 		$this->config = $config;

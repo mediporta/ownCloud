@@ -3,7 +3,7 @@
  * @author Björn Schießle <bjoern@schiessle.org>
  * @author Joas Schilling <coding@schilljs.com>
  *
- * @copyright Copyright (c) 2018, ownCloud GmbH
+ * @copyright Copyright (c) 2019, ownCloud GmbH
  * @license AGPL-3.0
  *
  * This code is free software: you can redistribute it and/or modify
@@ -36,7 +36,6 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 
 class SettingsController extends Controller {
-
 	/** @var IL10N */
 	private $l;
 
@@ -73,17 +72,18 @@ class SettingsController extends Controller {
 	 * @param ISession $ocSession
 	 * @param Util $util
 	 */
-	public function __construct($AppName,
-								IRequest $request,
-								IL10N $l10n,
-								IUserManager $userManager,
-								IUserSession $userSession,
-								KeyManager $keyManager,
-								Crypt $crypt,
-								Session $session,
-								ISession $ocSession,
-								Util $util
-) {
+	public function __construct(
+		$AppName,
+		IRequest $request,
+		IL10N $l10n,
+		IUserManager $userManager,
+		IUserSession $userSession,
+		KeyManager $keyManager,
+		Crypt $crypt,
+		Session $session,
+		ISession $ocSession,
+		Util $util
+	) {
 		parent::__construct($AppName, $request);
 		$this->l = $l10n;
 		$this->userSession = $userSession;
@@ -94,7 +94,6 @@ class SettingsController extends Controller {
 		$this->ocSession = $ocSession;
 		$this->util = $util;
 	}
-
 
 	/**
 	 * @NoAdminRequired
@@ -149,7 +148,6 @@ class SettingsController extends Controller {
 				Http::STATUS_BAD_REQUEST
 			);
 		}
-
 	}
 
 	/**

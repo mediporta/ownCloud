@@ -22,6 +22,20 @@ class Data
     protected static $cacheGeneric = array();
 
     /**
+     * Custom overrides of CLDR data (locale-specific).
+     *
+     * @var array
+     */
+    protected static $overrides = array();
+
+    /**
+     * Custom overrides of CLDR data (not locale-specific).
+     *
+     * @var array
+     */
+    protected static $overridesGeneric = array();
+
+    /**
      * The current default locale.
      *
      * @var string
@@ -34,6 +48,13 @@ class Data
      * @var string
      */
     protected static $fallbackLocale = 'en_US';
+
+    /**
+     * The data root directory.
+     *
+     * @var string
+     */
+    protected static $directory;
 
     /**
      * Return the current default locale.
@@ -113,10 +134,101 @@ class Data
     }
 
     /**
+     * Get custom overrides of CLDR locale data.
+     *
+     * If a locale is specified, overrides for that locale are returned, indexed
+     * by identifier. If no locale is specified, overrides for all locales are
+     * returned index by locale.
+     *
+     * @param mixed|null $locale
+     *
+     * @return array Associative array
+     */
+    public static function getOverrides($locale = null)
+    {
+        if (!$locale) {
+            return static::$overrides;
+        }
+        if (isset(static::$overrides[$locale])) {
+            return static::$overrides[$locale];
+        }
+
+        return array();
+    }
+
+    /**
+     * Set custom overrides of CLDR locale data.
+     *
+     * Overrides may be provides either one locale at a time or all locales at once.
+     *
+     * @param array $overrides Associative array index by locale (if $locale is null) or identifier
+     * @param string $locale
+     */
+    public static function setOverrides(array $overrides, $locale = null)
+    {
+        static::$cache = array();
+
+        if ($locale) {
+            static::$overrides[$locale] = $overrides;
+        } else {
+            static::$overrides = $overrides;
+        }
+    }
+
+    /**
+     * Get custom overrides of CLDR generic data.
+     *
+     * @return array Associative array indexed by identifier
+     */
+    public static function getOverridesGeneric()
+    {
+        return static::$overridesGeneric;
+    }
+
+    /**
+     * Set custom overrides of CLDR locale.
+     *
+     * @param array $overrides Associative array indexed by identifier
+     */
+    public static function setOverridesGeneric(array $overrides)
+    {
+        static::$cacheGeneric = array();
+
+        static::$overridesGeneric = $overrides;
+    }
+
+    /**
+     * Get the data root directory.
+     *
+     * @return string
+     */
+    public static function getDataDirectory()
+    {
+        if (!isset(static::$directory)) {
+            static::$directory = __DIR__ . DIRECTORY_SEPARATOR . 'data';
+        }
+
+        return static::$directory;
+    }
+
+    /**
+     * Set the data root directory.
+     *
+     * @param string $directory
+     */
+    public static function setDataDirectory($directory)
+    {
+        static::$directory = $directory;
+
+        static::$cache = array();
+    }
+
+    /**
      * Get the locale data.
      *
      * @param string $identifier The data identifier
      * @param string $locale The locale identifier (if empty we'll use the current default locale)
+     * @param bool $exactMatch when $locale is specified, don't look for alternatives
      *
      * @throws \Punic\Exception Throws an exception in case of problems
      *
@@ -124,27 +236,35 @@ class Data
      *
      * @internal
      */
-    public static function get($identifier, $locale = '')
+    public static function get($identifier, $locale = '', $exactMatch = false)
     {
         if (!is_string($identifier) || $identifier === '') {
             throw new Exception\InvalidDataFile($identifier);
         }
         if (empty($locale)) {
             $locale = static::$defaultLocale;
+            $exactMatch = false;
+        } elseif ($exactMatch && !preg_match('/^\w+$/', $locale)) {
+            $exactMatch = false;
         }
-        if (!isset(static::$cache[$locale])) {
-            static::$cache[$locale] = array();
+        $cacheKey = $locale . '@' . ($exactMatch ? '1' : '0');
+        if (!isset(static::$cache[$cacheKey])) {
+            static::$cache[$cacheKey] = array();
         }
-        if (!isset(static::$cache[$locale][$identifier])) {
+        if (!isset(static::$cache[$cacheKey][$identifier])) {
             if (!@preg_match('/^[a-zA-Z0-9_\\-]+$/', $identifier)) {
                 throw new Exception\InvalidDataFile($identifier);
             }
-            $dir = static::getLocaleFolder($locale);
-            if ($dir === '') {
-                throw new Exception\DataFolderNotFound($locale, static::$fallbackLocale);
+            if ($exactMatch) {
+                $dir = $locale;
+            } else {
+                $dir = static::getLocaleFolder($locale);
+                if ($dir === '') {
+                    throw new Exception\DataFolderNotFound($locale, static::$fallbackLocale);
+                }
             }
-            $file = $dir.DIRECTORY_SEPARATOR.$identifier.'.php';
-            if (!is_file(__DIR__.DIRECTORY_SEPARATOR.$file)) {
+            $file = static::getDataDirectory() . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $identifier . '.php';
+            if (!is_file($file)) {
                 throw new Exception\DataFileNotFound($identifier, $locale, static::$fallbackLocale);
             }
             $data = include $file;
@@ -153,11 +273,14 @@ class Data
             if (!is_array($data)) {
                 throw new Exception\BadDataFileContents($file, file_get_contents($file));
             }
-            //@codeCoverageIgnoreEnd
-            static::$cache[$locale][$identifier] = $data;
+            if (isset(static::$overrides[$locale][$identifier])) {
+                $data = static::merge($data, static::$overrides[$locale][$identifier]);
+            }
+            /** @codeCoverageIgnoreEnd */
+            static::$cache[$cacheKey][$identifier] = $data;
         }
 
-        return static::$cache[$locale][$identifier];
+        return static::$cache[$cacheKey][$identifier];
     }
 
     /**
@@ -182,8 +305,8 @@ class Data
         if (!preg_match('/^[a-zA-Z0-9_\\-]+$/', $identifier)) {
             throw new Exception\InvalidDataFile($identifier);
         }
-        $file = 'data'.DIRECTORY_SEPARATOR."$identifier.php";
-        if (!is_file(__DIR__.DIRECTORY_SEPARATOR.$file)) {
+        $file = static::getDataDirectory() . DIRECTORY_SEPARATOR . "{$identifier}.php";
+        if (!is_file($file)) {
             throw new Exception\DataFileNotFound($identifier);
         }
         $data = include $file;
@@ -193,6 +316,9 @@ class Data
             throw new Exception\BadDataFileContents($file, file_get_contents($file));
         }
         //@codeCoverageIgnoreEnd
+        if (isset(static::$overridesGeneric[$identifier])) {
+            $data = static::merge($data, static::$overridesGeneric[$identifier]);
+        }
         static::$cacheGeneric[$identifier] = $data;
 
         return $data;
@@ -208,12 +334,12 @@ class Data
     public static function getAvailableLocales($allowGroups = false)
     {
         $locales = array();
-        $dir = __DIR__.DIRECTORY_SEPARATOR.'data';
+        $dir = static::getDataDirectory();
         if (is_dir($dir) && is_readable($dir)) {
             $contents = @scandir($dir);
             if (is_array($contents)) {
                 foreach (array_diff($contents, array('.', '..')) as $item) {
-                    if (is_dir($dir.DIRECTORY_SEPARATOR.$item)) {
+                    if (is_dir($dir . DIRECTORY_SEPARATOR . $item)) {
                         if ($item === 'root') {
                             $item = 'en-US';
                         }
@@ -222,9 +348,9 @@ class Data
                             if ((!$allowGroups) && preg_match('/^[0-9]{3}$/', $info['territory'])) {
                                 foreach (Territory::getChildTerritoryCodes($info['territory'], true) as $territory) {
                                     if ($info['script'] !== '') {
-                                        $locales[] = "{$info['language']}-{$info['script']}-$territory";
+                                        $locales[] = "{$info['language']}-{$info['script']}-{$territory}";
                                     } else {
-                                        $locales[] = "{$info['language']}-$territory";
+                                        $locales[] = "{$info['language']}-{$territory}";
                                     }
                                 }
                                 $locales[] = $item;
@@ -259,16 +385,16 @@ class Data
         $data = static::getGeneric('likelySubtags');
         $keys = array();
         if (!empty($script)) {
-            $keys[] = "$language-$script";
+            $keys[] = "{$language}-{$script}";
         }
         $keys[] = $language;
         foreach ($keys as $key) {
             if (isset($data[$key])) {
                 $result = $data[$key];
-                if ($script !== '' && stripos($result, "$language-$script-") !== 0) {
+                if ($script !== '' && stripos($result, "{$language}-{$script}-") !== 0) {
                     $parts = static::explodeLocale($result);
                     if ($parts !== null) {
-                        $result = "{$parts['language']}-$script-{$parts['territory']}";
+                        $result = "{$parts['language']}-{$script}-{$parts['territory']}";
                     }
                 }
                 break;
@@ -279,7 +405,7 @@ class Data
     }
 
     /**
-     * Return the terrotory associated to the locale (guess it if it's not present in $locale).
+     * Return the territory associated to the locale (guess it if it's not present in $locale).
      *
      * @param string $locale The locale identifier (if empty we'll use the current default locale)
      * @param bool $checkFallbackLocale Set to true to check the fallback locale if $locale (or the default locale) don't have an associated territory, false to don't fallback to fallback locale
@@ -316,7 +442,7 @@ class Data
      * @param array $data The parent array for which you want the territory node
      * @param string $locale The locale identifier (if empty we'll use the current default locale)
      *
-     * @return null|mixed Returns null if the node was not found, the node data otherwise
+     * @return mixed|null Returns null if the node was not found, the node data otherwise
      *
      * @internal
      */
@@ -341,7 +467,7 @@ class Data
      * @param array $data The parent array for which you want the language node
      * @param string $locale The locale identifier (if empty we'll use the current default locale)
      *
-     * @return null|mixed Returns null if the node was not found, the node data otherwise
+     * @return mixed|null Returns null if the node was not found, the node data otherwise
      *
      * @internal
      */
@@ -367,7 +493,7 @@ class Data
      * @param array $data The data containing the locale info
      * @param string $locale The locale identifier (if empty we'll use the current default locale)
      *
-     * @return null|mixed Returns null if $data is not an array or it does not contain locale info, the array item otherwise
+     * @return mixed|null Returns null if $data is not an array or it does not contain locale info, the array item otherwise
      *
      * @internal
      */
@@ -394,7 +520,7 @@ class Data
      *
      * @param string $locale
      *
-     * @return null|string[] Return null if $locale is not valid; if $locale is valid returns an array with keys 'language', 'script', 'territory', 'parentLocale'
+     * @return string[]|null Return null if $locale is not valid; if $locale is valid returns an array with keys 'language', 'script', 'territory', 'parentLocale'
      *
      * @internal
      */
@@ -414,7 +540,7 @@ class Data
                     $parentLocale = '';
                     $ok = true;
                     $chunkCount = count($chunks);
-                    for ($i = 1; $ok && ($i < $chunkCount); ++$i) {
+                    for ($i = 1; $ok && ($i < $chunkCount); $i++) {
                         if (preg_match('/^[a-z]{4}$/', $chunks[$i])) {
                             if ($script !== '') {
                                 $ok = false;
@@ -433,12 +559,12 @@ class Data
                     }
                     if ($ok) {
                         $parentLocales = static::getGeneric('parentLocales');
-                        if ($script !== '' && $territory !== '' && isset($parentLocales["$language-$script-$territory"])) {
-                            $parentLocale = $parentLocales["$language-$script-$territory"];
-                        } elseif ($script !== '' && isset($parentLocales["$language-$script"])) {
-                            $parentLocale = $parentLocales["$language-$script"];
-                        } elseif ($territory !== '' && isset($parentLocales["$language-$territory"])) {
-                            $parentLocale = $parentLocales["$language-$territory"];
+                        if ($script !== '' && $territory !== '' && isset($parentLocales["{$language}-{$script}-{$territory}"])) {
+                            $parentLocale = $parentLocales["{$language}-{$script}-{$territory}"];
+                        } elseif ($script !== '' && isset($parentLocales["{$language}-{$script}"])) {
+                            $parentLocale = $parentLocales["{$language}-{$script}"];
+                        } elseif ($territory !== '' && isset($parentLocales["{$language}-{$territory}"])) {
+                            $parentLocale = $parentLocales["{$language}-{$territory}"];
                         } elseif (isset($parentLocales[$language])) {
                             $parentLocale = $parentLocales[$language];
                         }
@@ -454,6 +580,31 @@ class Data
         }
 
         return $result;
+    }
+
+    /**
+     * Get value from nested array.
+     *
+     * @param array $data the nested array to descend into
+     * @param array $path Path of array keys. Each part of the path may be a string or an array of alternative strings.
+     *
+     * @return mixed|null
+     */
+    public static function getArrayValue(array $data, array $path)
+    {
+        $alternatives = array_shift($path);
+        if ($alternatives === null) {
+            return $data;
+        }
+        foreach ((array) $alternatives as $alternative) {
+            if (array_key_exists($alternative, $data)) {
+                $data = $data[$alternative];
+
+                return is_array($data) ? self::getArrayValue($data, $path) : ($path ? null : $data);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -492,12 +643,12 @@ class Data
         static $cache = array();
         $result = '';
         if (is_string($locale)) {
-            $key = $locale.'/'.static::$fallbackLocale;
+            $key = $locale . '/' . static::$fallbackLocale;
             if (!isset($cache[$key])) {
+                $dir = static::getDataDirectory();
                 foreach (static::getLocaleAlternatives($locale) as $alternative) {
-                    $dir = 'data'.DIRECTORY_SEPARATOR.$alternative;
-                    if (is_dir(__DIR__.DIRECTORY_SEPARATOR.$dir)) {
-                        $result = $dir;
+                    if (is_dir($dir . DIRECTORY_SEPARATOR . $alternative)) {
+                        $result = $alternative;
                         break;
                     }
                 }
@@ -564,20 +715,42 @@ class Data
         if ($addFallback && ($locale !== static::$fallbackLocale)) {
             $result = array_merge($result, static::getLocaleAlternatives(static::$fallbackLocale, false));
         }
-        for ($i = count($result) - 1; $i > 1; --$i) {
-            for ($j = 0; $j < $i; ++$j) {
+        for ($i = count($result) - 1; $i > 1; $i--) {
+            for ($j = 0; $j < $i; $j++) {
                 if ($result[$i] === $result[$j]) {
                     array_splice($result, $i, 1);
                     break;
                 }
             }
         }
-        $i = array_search('root', $result, true);
-        if ($i !== false) {
-            array_splice($result, $i, 1);
-            $result[] = 'root';
+        if ($locale !== 'root') {
+            $i = array_search('root', $result, true);
+            if ($i !== false) {
+                array_splice($result, $i, 1);
+                $result[] = 'root';
+            }
         }
 
         return $result;
+    }
+
+    protected static function merge(array $data, array $overrides)
+    {
+        foreach ($overrides as $key => $override) {
+            if (isset($data[$key])) {
+                if (gettype($override) !== gettype($data[$key])) {
+                    throw new Exception\InvalidOverride($data[$key], $override);
+                }
+                if (is_array($data[$key])) {
+                    $data[$key] = static::merge($data[$key], $override);
+                } else {
+                    $data[$key] = $override;
+                }
+            } else {
+                $data[$key] = $override;
+            }
+        }
+
+        return $data;
     }
 }

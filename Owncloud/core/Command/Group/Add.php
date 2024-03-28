@@ -50,7 +50,7 @@ class Add extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$groupName = $input->getArgument('group');
 		$group = $this->groupManager->get($groupName);
 		if (!$group) {
@@ -66,5 +66,6 @@ class Add extends Command {
 			$output->writeln('<error>The group "' . $group->getGID() . '" already exists</error>');
 			return 1;
 		}
+		return 0;
 	}
 }

@@ -45,7 +45,7 @@ OCA.Sharing.App = {
 		this._registerPendingShareActions(fileActions);
 		this._extendFileList(this._inFileList);
 		this._inFileList.appName = t('files_sharing', 'Shared with you');
-		this._inFileList.$el.find('#emptycontent').html('<div class="icon-share"></div>' +
+		this._inFileList.$el.find('#emptycontent').html('<div class="icon-shared"></div>' +
 			'<h2>' + t('files_sharing', 'Nothing shared with you yet') + '</h2>' +
 			'<p>' + t('files_sharing', 'Files and folders others share with you will show up here') + '</p>');
 		return this._inFileList;
@@ -55,20 +55,24 @@ OCA.Sharing.App = {
 		if (this._outFileList) {
 			return this._outFileList;
 		}
+
+		var fileActions = this._createFileActions();
+		this._adjustOutAndLinkShareActions(fileActions);
+
 		this._outFileList = new OCA.Sharing.FileList(
 			$el,
 			{
 				id: 'shares.others',
 				scrollContainer: $('#app-content'),
 				sharedWithUser: false,
-				fileActions: this._createFileActions(),
+				fileActions: fileActions,
 				config: OCA.Files.App.getFilesConfig()
 			}
 		);
 
 		this._extendFileList(this._outFileList);
 		this._outFileList.appName = t('files_sharing', 'Shared with others');
-		this._outFileList.$el.find('#emptycontent').html('<div class="icon-share"></div>' +
+		this._outFileList.$el.find('#emptycontent').html('<div class="icon-shared"></div>' +
 			'<h2>' + t('files_sharing', 'Nothing shared yet') + '</h2>' +
 			'<p>' + t('files_sharing', 'Files and folders you share will show up here') + '</p>');
 		return this._outFileList;
@@ -78,13 +82,17 @@ OCA.Sharing.App = {
 		if (this._linkFileList) {
 			return this._linkFileList;
 		}
+
+		var fileActions = this._createFileActions();
+		this._adjustOutAndLinkShareActions(fileActions);
+
 		this._linkFileList = new OCA.Sharing.FileList(
 			$el,
 			{
 				id: 'shares.link',
 				scrollContainer: $('#app-content'),
 				linksOnly: true,
-				fileActions: this._createFileActions(),
+				fileActions: fileActions,
 				config: OCA.Files.App.getFilesConfig()
 			}
 		);
@@ -201,17 +209,19 @@ OCA.Sharing.App = {
 		fileList.fileSummary.$el.find('.filesize').remove();
 	},
 
-	_setShareState: function(fileId, state) {
+	_setShareState: function(fileId, state, isRemote, shareType) {
 		var method = 'POST';
 		if (state === OC.Share.STATE_REJECTED) {
 			method = 'DELETE';
 		}
-
+		var endPoint = isRemote === true ? 'remote_shares/pending/' : 'shares/pending/';
 		var xhr = $.ajax({
-			url: OC.linkToOCS('apps/files_sharing/api/v1') + 'shares/pending/' + encodeURIComponent(fileId) + '?format=json',
+			url: OC.linkToOCS('apps/files_sharing/api/v1') + endPoint + encodeURIComponent(fileId) + '?format=json',
 			contentType: 'application/json',
 			dataType: 'json',
 			type: method,
+			// be aware that `shareType` should not be an empty string
+			data: JSON.stringify((shareType !== undefined ? { shareType: shareType } : {})),
 		});
 		xhr.fail(function(response) {
 			var message = '';
@@ -219,34 +229,32 @@ OCA.Sharing.App = {
 			if(response.responseJSON && response.responseJSON.message) {
 				message = ': ' + response.responseJSON.message;
 			}
-			OC.Notification.show(t('files', 'An error occurred while updating share state: {message}', {message:  message}), {type: 'error'});
+			OC.Notification.show(t('files_sharing', 'An error occurred while updating share state: {message}', {message:  message}), {type: 'error'});
 		});
 		return xhr;
 	},
 
 	_shareStateActionHandler: function(context, newState) {
+		var targetFileData = context.fileList.elementToFile(context.$file);
+		var isRemote = targetFileData.shareLocationType === 'remote';
+		const shareType = targetFileData.shareType;
 		function responseCallback(response, status) {
 			if (status === 'success') {
-				// note: there could be multiple shares/responses but
-				// we assume that the relevant content is the same
-				// for all (state, file_target)
-				var data = response.ocs.data[0];
 				var meta = response.ocs.meta;
 				if (meta.status === 'ok') {
-					context.fileInfoModel.set({
-						shareState: data.state,
-						name: OC.basename(data.file_target),
-						path: OC.dirname(data.file_target)
-					});
+					context.fileList.reload();
 				} else {
-					OC.Notification.show(t('files', 'An error occurred while updating share state: {message}', {message: meta.message}), {type: 'error'});
+					OC.Notification.show(
+						t('files_sharing', 'An error occurred while updating share state: {message}',
+							{message: meta.message}, 0, {escape: false}), {type: 'error'}
+					);
+					context.fileList.showFileBusyState(context.$file, false);
 				}
 			}
-			context.fileList.showFileBusyState(context.$file, false);
 		}
 
 		context.fileList.showFileBusyState(context.$file, true);
-		this._setShareState(context.fileInfoModel.get('shares')[0].id, newState)
+		this._setShareState(context.fileInfoModel.get('shares')[0].id, newState, isRemote, shareType)
 			.then(responseCallback);
 	},
 
@@ -257,7 +265,7 @@ OCA.Sharing.App = {
 		fileActions.registerAction({
 			name: 'Accept',
 			type: OCA.Files.FileActions.TYPE_INLINE,
-			displayName: t('files', 'Accept Share'),
+			displayName: t('files_sharing', 'Accept Share'),
 			mime: 'all',
 			iconClass: 'icon-checkmark',
 			permissions: OC.PERMISSION_READ,
@@ -268,7 +276,7 @@ OCA.Sharing.App = {
 		fileActions.registerAction({
 			name: 'Reject',
 			type: OCA.Files.FileActions.TYPE_INLINE,
-			displayName: t('files', 'Decline Share'),
+			displayName: t('files_sharing', 'Decline Share'),
 			iconClass: 'icon-close',
 			mime: 'all',
 			permissions: OC.PERMISSION_READ,
@@ -287,8 +295,16 @@ OCA.Sharing.App = {
 			var targetFileData = context.fileList.elementToFile(context.$file);
 			if (targetFileData.shareLocationType === 'remote') {
 				// accept and reject will be removed for remote shares
-				delete(actions.Accept);
-				delete(actions.Reject);
+				if (shareState === OC.Share.STATE_PENDING) {
+					delete(actions.Download);
+					delete(actions.Details);
+					delete(actions.Delete);
+					delete(actions.Unshare);
+				} else {
+					delete(actions.Accept);
+					delete(actions.Reject);
+				}
+
 				return actions;
 			}
 
@@ -315,6 +331,18 @@ OCA.Sharing.App = {
 			}
 
 			return newActions;
+		});
+	},
+
+	_adjustOutAndLinkShareActions: function(fileActions) {
+		fileActions.addAdvancedFilter(function(actions, context) {
+			// delete action is removed to prevent confusion. Users might accidentally
+			// delete a file or a folder instead of unsharing it.
+			// If the user clicks in the folder, he'll be moved to the "all files" section,
+			// so there is no need check for additional context and we'll remove the delete
+			// action from all the files and folders in the list.
+			delete(actions.Delete);
+			return actions;
 		});
 	}
 };

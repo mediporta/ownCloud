@@ -29,6 +29,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Sabre\DAV\Exception\MethodNotAllowed;
 use Sabre\DAV\Exception\NotFound;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class EntityTypeCollection
@@ -42,7 +43,6 @@ use Sabre\DAV\Exception\NotFound;
  * @package OCA\Comments\Dav
  */
 class EntityTypeCollection extends RootCollection {
-
 	/** @var ILogger */
 	protected $logger;
 
@@ -57,6 +57,7 @@ class EntityTypeCollection extends RootCollection {
 	 * @param ICommentsManager $commentsManager
 	 * @param IUserManager $userManager
 	 * @param IUserSession $userSession
+	 * @param EventDispatcherInterface $dispatcher
 	 * @param ILogger $logger
 	 * @param \Closure $childExistsFunction
 	 */
@@ -65,6 +66,7 @@ class EntityTypeCollection extends RootCollection {
 		ICommentsManager $commentsManager,
 		IUserManager $userManager,
 		IUserSession $userSession,
+		EventDispatcherInterface $dispatcher,
 		ILogger $logger,
 		\Closure $childExistsFunction
 	) {
@@ -72,11 +74,8 @@ class EntityTypeCollection extends RootCollection {
 		if (empty($name) || !\is_string($name)) {
 			throw new \InvalidArgumentException('"name" parameter must be non-empty string');
 		}
+		parent::__construct($commentsManager, $userManager, $userSession, $dispatcher, $logger);
 		$this->name = $name;
-		$this->commentsManager = $commentsManager;
-		$this->logger = $logger;
-		$this->userManager = $userManager;
-		$this->userSession = $userSession;
 		$this->childExistsFunction = $childExistsFunction;
 	}
 
@@ -100,6 +99,7 @@ class EntityTypeCollection extends RootCollection {
 			$this->commentsManager,
 			$this->userManager,
 			$this->userSession,
+			$this->dispatcher,
 			$this->logger
 		);
 	}

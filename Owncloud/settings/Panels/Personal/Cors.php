@@ -25,7 +25,6 @@ use OCP\Settings\ISettings;
 use OCP\Template;
 
 class Cors implements ISettings {
-
 	/**
 	 * @var IUserSession
 	 */
@@ -42,7 +41,8 @@ class Cors implements ISettings {
 	public function __construct(
 		IUserSession $userSession,
 		IURLGenerator $urlGenerator,
-		IConfig $config) {
+		IConfig $config
+	) {
 		$this->config = $config;
 		$this->userSession = $userSession;
 		$this->urlGenerator = $urlGenerator;

@@ -37,7 +37,6 @@ namespace OC\Files\Cache;
 use OC\Files\Filesystem;
 use OC\Hooks\BasicEmitter;
 use OCA\Files_Sharing\ISharedStorage;
-use OCP\Config;
 use OCP\Files\Cache\IScanner;
 use OCP\Files\ForbiddenException;
 use OCP\Files\IHomeStorage;
@@ -90,7 +89,7 @@ class Scanner extends BasicEmitter implements IScanner {
 		$this->storage = $storage;
 		$this->storageId = $this->storage->getId();
 		$this->cache = $storage->getCache();
-		$this->cacheActive = !Config::getSystemValue('filesystem_cache_readonly', false);
+		$this->cacheActive = !\OC::$server->getConfig()->getSystemValue('filesystem_cache_readonly', false);
 		$this->lockingProvider = \OC::$server->getLockingProvider();
 	}
 
@@ -140,10 +139,8 @@ class Scanner extends BasicEmitter implements IScanner {
 	 * @throws \OC\ServerNotAvailableException
 	 */
 	public function scanFile($file, $reuseExisting = 0, $parentId = -1, $cacheData = null, $lock = true) {
-
 		// only proceed if $file is not a partial file nor a blacklisted file
 		if (!self::isPartialFile($file) and !Filesystem::isFileBlacklisted($file)) {
-
 			//acquire a lock
 			if ($lock && $this->storage->instanceOfStorage(ILockingStorage::class)) {
 				$this->storage->acquireLock($file, ILockingProvider::LOCK_SHARED, $this->lockingProvider);
@@ -152,7 +149,6 @@ class Scanner extends BasicEmitter implements IScanner {
 			try {
 				$data = $this->getData($file);
 				if ($data) {
-
 					// pre-emit only if it was a file. By that we avoid counting/treating folders as files
 					if ($data['mimetype'] !== 'httpd/unix-directory') {
 						$this->emit('\OC\Files\Cache\Scanner', 'scanFile', [$file, $this->storageId]);
@@ -172,7 +168,7 @@ class Scanner extends BasicEmitter implements IScanner {
 						$parentData = $this->scanFile($parent);
 						$parentId = $parentData['fileid'];
 					}
-					if ($parent) {
+					if ($parent && $parentId !== null) {
 						$data['parent'] = $parentId;
 					}
 					if ($cacheData === null) {
@@ -189,16 +185,19 @@ class Scanner extends BasicEmitter implements IScanner {
 						$fileId = $cacheData['fileid'];
 						$data['fileid'] = $fileId;
 						// only reuse data if the file hasn't explicitly changed
-						if (isset($data['storage_mtime'], $cacheData['storage_mtime'])   && $data['storage_mtime'] === $cacheData['storage_mtime']) {
+						if (isset($data['storage_mtime'], $cacheData['storage_mtime']) && $data['storage_mtime'] === $cacheData['storage_mtime']) {
 							$data['mtime'] = $cacheData['mtime'];
-							if (($reuseExisting & self::REUSE_SIZE) && ($data['size'] === -1)) {
+							if (($reuseExisting & self::REUSE_SIZE) && ($data['size'] === IScanner::SIZE_NEEDS_SCAN)) {
 								$data['size'] = $cacheData['size'];
 							}
 							if ($reuseExisting & self::REUSE_ETAG) {
-								$data['etag'] = $etag;
+								if (($data['mimetype'] !== 'httpd/unix-directory') || !($reuseExisting & self::REUSE_ONLY_FOR_FILES)) {
+									$data['etag'] = $etag;
+								}
 							}
 						}
 						// Only update metadata that has changed
+						'@phan-var \OC\Files\Cache\CacheEntry $cacheData';
 						$newData = \array_diff_assoc($data, $cacheData->getData());
 					} else {
 						$newData = $data;
@@ -206,7 +205,8 @@ class Scanner extends BasicEmitter implements IScanner {
 					}
 					if (!empty($newData)) {
 						// Only reset checksum on file change
-						if ($fileId > 0 && !isset($newData['checksum'])) {
+						if ($fileId > 0 && !isset($newData['checksum']) && !isset($data['checksum'])) {
+							// file in filecache, checksum hasn't changed and new checksum isn't present
 							foreach (['size', 'storage_mtime', 'mtime', 'etag'] as $dataKey) {
 								if (isset($newData[$dataKey])) {
 									$newData['checksum'] = '';
@@ -292,7 +292,7 @@ class Scanner extends BasicEmitter implements IScanner {
 	 * @throws \OC\ServerNotAvailableException
 	 */
 	protected function updateCache($path, $data, $fileId = -1) {
-		\OC_Hook::emit('Scanner', 'addToCache', ['file' => $path, 'data' => $data]);
+		\OC_Hook::emit('Scanner', 'updateCache', ['file' => $path, 'data' => $data]);
 		$this->emit('\OC\Files\Cache\Scanner', 'updateCache', [$path, $this->storageId, $data]);
 		if ($this->cacheActive) {
 			if ($fileId !== -1) {
@@ -367,6 +367,7 @@ class Scanner extends BasicEmitter implements IScanner {
 						$children[] = \trim(\OC\Files\Filesystem::normalizePath($file), '/');
 					}
 				}
+				\closedir($dh);
 			}
 		}
 		return $children;
@@ -396,12 +397,19 @@ class Scanner extends BasicEmitter implements IScanner {
 
 		foreach ($childQueue as $child => $childId) {
 			$childSize = $this->scanChildren($child, $recursive, $reuse, $childId, $lock);
-			if ($childSize === -1) {
-				$size = -1;
-			} elseif ($size !== -1) {
+			if ($childSize === IScanner::SIZE_NEEDS_SCAN) {
+				$size = IScanner::SIZE_NEEDS_SCAN;
+			} elseif ($size !== IScanner::SIZE_NEEDS_SCAN) {
 				$size += $childSize;
 			}
 		}
+
+		if ($size === IScanner::SIZE_NEEDS_SCAN) {
+			// Mark this folder as shallow scanned to avoid hitting the storage.
+			// The shallow contents are known, but not the whole.
+			$size = IScanner::SIZE_SHALLOW_SCANNED;
+		}
+
 		if ($this->cacheActive) {
 			$this->cache->update($folderId, ['size' => $size]);
 		}
@@ -428,12 +436,12 @@ class Scanner extends BasicEmitter implements IScanner {
 				if ($data) {
 					if ($data['mimetype'] === 'httpd/unix-directory' and $recursive === self::SCAN_RECURSIVE) {
 						$childQueue[$child] = $data['fileid'];
-					} elseif ($data['mimetype'] === 'httpd/unix-directory' and $recursive === self::SCAN_RECURSIVE_INCOMPLETE and $data['size'] === -1) {
+					} elseif ($data['mimetype'] === 'httpd/unix-directory' and $recursive === self::SCAN_RECURSIVE_INCOMPLETE and $data['size'] === IScanner::SIZE_NEEDS_SCAN) {
 						// only recurse into folders which aren't fully scanned
 						$childQueue[$child] = $data['fileid'];
-					} elseif (!isset($data['size']) || $data['size'] === -1) {
-						$size = -1;
-					} elseif ($size !== -1) {
+					} elseif (!isset($data['size']) || $data['size'] === IScanner::SIZE_NEEDS_SCAN) {
+						$size = IScanner::SIZE_NEEDS_SCAN;
+					} elseif ($size !== IScanner::SIZE_NEEDS_SCAN) {
 						$size += $data['size'];
 					}
 				}
@@ -496,14 +504,10 @@ class Scanner extends BasicEmitter implements IScanner {
 				$this->scan('', self::SCAN_RECURSIVE, self::REUSE_ETAG);
 			}, '');
 		} else {
-			$lastPath = null;
-			while (($path = $this->cache->getIncomplete()) !== false && $path !== $lastPath) {
+			while (($path = $this->cache->getIncomplete()) !== false) {
 				$this->runBackgroundScanJob(function () use ($path) {
 					$this->scan($path, self::SCAN_RECURSIVE_INCOMPLETE, self::REUSE_ETAG | self::REUSE_SIZE);
 				}, $path);
-				// FIXME: this won't proceed with the next item, needs revamping of getIncomplete()
-				// to make this possible
-				$lastPath = $path;
 			}
 		}
 	}

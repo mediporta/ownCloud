@@ -31,7 +31,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Disable extends Command {
-
 	/** @var IAppManager */
 	protected $manager;
 
@@ -54,7 +53,7 @@ class Disable extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$appId = $input->getArgument('app-id');
 		if ($this->manager->isInstalled($appId)) {
 			try {
@@ -67,5 +66,6 @@ class Disable extends Command {
 		} else {
 			$output->writeln('No such app enabled: ' . $appId);
 		}
+		return 0;
 	}
 }

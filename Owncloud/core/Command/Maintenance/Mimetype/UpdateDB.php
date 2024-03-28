@@ -30,7 +30,7 @@ use OCP\Files\IMimeTypeDetector;
 use OCP\Files\IMimeTypeLoader;
 
 class UpdateDB extends Command {
-	const DEFAULT_MIMETYPE = 'application/octet-stream';
+	public const DEFAULT_MIMETYPE = 'application/octet-stream';
 
 	/** @var IMimeTypeDetector */
 	protected $mimetypeDetector;
@@ -60,7 +60,8 @@ class UpdateDB extends Command {
 		;
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
+		'@phan-var \OC\Files\MimetypeDetector $this->mimetypeDetector';
 		$mappings = $this->mimetypeDetector->getAllMappings();
 
 		$totalFilecacheUpdates = 0;
@@ -82,6 +83,7 @@ class UpdateDB extends Command {
 			}
 
 			if (!$existing || $input->getOption('repair-filecache')) {
+				/* @phan-suppress-next-line PhanUndeclaredMethod */
 				$touchedFilecacheRows = $this->mimetypeLoader->updateFilecache($ext, $mimetypeId);
 				if ($touchedFilecacheRows > 0) {
 					$output->writeln('Updated '.$touchedFilecacheRows.' filecache rows for mimetype "'.$mimetype.'"');
@@ -92,5 +94,6 @@ class UpdateDB extends Command {
 
 		$output->writeln('Added '.$totalNewMimetypes.' new mimetypes');
 		$output->writeln('Updated '.$totalFilecacheUpdates.' filecache rows');
+		return 0;
 	}
 }

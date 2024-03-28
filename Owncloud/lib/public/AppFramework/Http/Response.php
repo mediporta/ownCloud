@@ -40,13 +40,12 @@ use OCP\AppFramework\Http;
  * @since 6.0.0
  */
 class Response {
-
 	/**
-	 * Headers - defaults to ['Cache-Control' => 'no-cache, must-revalidate']
+	 * Headers - defaults to ['Cache-Control' => 'no-cache, no-store, must-revalidate']
 	 * @var array
 	 */
 	private $headers = [
-		'Cache-Control' => 'no-cache, must-revalidate'
+		'Cache-Control' => 'no-cache, no-store, must-revalidate'
 	];
 
 	/**
@@ -214,8 +213,11 @@ class Response {
 	}
 
 	/**
-	 * By default renders no output
-	 * @return null
+	 * Return a string to be used in the body of an HTTP response.
+	 * By default returns null and so renders no output.
+	 * Can be overridden to provide the desired response body content.
+	 *
+	 * @return string|null
 	 * @since 6.0.0
 	 */
 	public function render() {

@@ -64,7 +64,7 @@ class Add extends Command {
 			->addArgument(
 				'uid',
 				InputArgument::REQUIRED,
-				'User ID used to login (must only contain a-z, A-Z, 0-9, -, _ and @).'
+				'User ID used to login (must only contain a-z, A-Z, 0-9, "+_.@-\'").'
 			)
 			->addOption(
 				'password-from-env',
@@ -92,7 +92,7 @@ class Add extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$uid = $input->getArgument('uid');
 		if ($this->userManager->userExists($uid)) {
 			$output->writeln('<error>The user "' . $uid . '" already exists.</error>');
@@ -122,6 +122,7 @@ class Add extends Command {
 		} elseif ($input->isInteractive()) {
 			/** @var $dialog \Symfony\Component\Console\Helper\QuestionHelper */
 			$dialog = $this->getHelperSet()->get('question');
+			'@phan-var \Symfony\Component\Console\Helper\QuestionHelper $dialog';
 			$q = new Question('<question>Enter password: </question>', false);
 			$q->setHidden(true);
 			$password = $dialog->ask($input, $output, $q);
@@ -179,5 +180,6 @@ class Add extends Command {
 			$group->addUser($user);
 			$output->writeln('User "' . $user->getUID() . '" added to group "' . $group->getGID() . '"');
 		}
+		return 0;
 	}
 }

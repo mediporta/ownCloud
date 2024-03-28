@@ -58,12 +58,12 @@ class Verify extends Base {
 				'config',
 				'c',
 				InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
-				'Additional config option to set before checking in key=value pairs, required for certain auth backends such as login credentails'
+				'Additional config option to set before checking in key=value pairs, required for certain auth backends such as login credentials'
 			);
 		parent::configure();
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$mountId = $input->getArgument('mount_id');
 		$configInput = $input->getOption('config');
 
@@ -71,7 +71,7 @@ class Verify extends Base {
 			$mount = $this->globalService->getStorage($mountId);
 		} catch (NotFoundException $e) {
 			$output->writeln('<error>Mount with id "' . $mountId . ' not found, check "occ files_external:list" to get available mounts"</error>');
-			return 404;
+			return 1;
 		}
 
 		$this->updateStorageStatus($mount, $configInput, $output);
@@ -81,6 +81,7 @@ class Verify extends Base {
 			'code' => $mount->getStatus(),
 			'message' => $mount->getStatusMessage()
 		]);
+		return 0;
 	}
 
 	private function manipulateStorageConfig(IStorageConfig $storage) {

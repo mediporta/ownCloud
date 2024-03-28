@@ -32,6 +32,7 @@ use GuzzleHttp\Exception\ConnectException;
 use OC\Files\Storage\DAV;
 use OCA\FederatedFileSharing\DiscoveryManager;
 use OCA\Files_Sharing\ISharedStorage;
+use OCP\IConfig;
 use OCP\Files\StorageInvalidException;
 use OCP\Files\StorageNotAvailableException;
 use Sabre\DAV\Client;
@@ -49,6 +50,10 @@ class Storage extends DAV implements ISharedStorage {
 	private $memcacheFactory;
 	/** @var \OCP\Http\Client\IClientService */
 	private $httpClient;
+	/** @var \OCP\ILogger */
+	private $logger;
+	/** @var IConfig */
+	private $config;
 	/** @var \OCP\ICertificateManager */
 	private $certificateManager;
 	/** @var bool */
@@ -62,6 +67,8 @@ class Storage extends DAV implements ISharedStorage {
 	public function __construct($options) {
 		$this->memcacheFactory = \OC::$server->getMemCacheFactory();
 		$this->httpClient = \OC::$server->getHTTPClientService();
+		$this->logger = \OC::$server->getLogger();
+		$this->config = \OC::$server->getConfig();
 		$this->manager = $options['manager'];
 		$this->certificateManager = $options['certificateManager'];
 		$this->remote = $options['remote'];
@@ -86,6 +93,13 @@ class Storage extends DAV implements ISharedStorage {
 			// Federated sharing always uses BASIC auth
 			'authType' => Client::AUTH_BASIC
 		]);
+	}
+
+	/**
+	 * @return boolean
+	 */
+	public function usePartFile() {
+		return false;
 	}
 
 	protected function init() {
@@ -211,29 +225,89 @@ class Storage extends DAV implements ISharedStorage {
 	 * @throws \OCP\Files\StorageInvalidException
 	 */
 	public function checkStorageAvailability() {
+		// WARNING: Disabling this setting is recommended only in tightly integrated federated setups as temporarly setting,
+		// should NOT be used in decentralized federation setup. It could cause bad user experience when dealing
+		// with deleted external shares
+		// NOTE: This allows administrator to disable cleanup of invalid shares so only manual removal by user or admin is possible,
+		// this is particularly useful when dealing with complex migrations that could cause unexpected server responses and instabilities.
+		$cleanupInvalidEnabled = $this->config->getAppValue('files_sharing', 'enable_cleanup_invalid_external_shares', 'yes');
+
 		// see if we can find out why the share is unavailable
 		try {
-			if (! $this->propfind('')) {
-				// a 404 can either mean that the share no longer exists or there is no ownCloud on the remote
-				if ($this->testRemote()) {
-					// valid ownCloud instance means that the public share no longer exists
-					// since this is permanent (re-sharing the file will create a new token)
-					// we remove the invalid storage
-					$this->manager->removeShare($this->mountPoint);
-					$this->manager->getMountManager()->removeMount($this->mountPoint);
-					throw new StorageInvalidException();
-				} else {
-					// ownCloud instance is gone, likely to be a temporary server configuration error
-					throw new StorageNotAvailableException();
-				}
-			}
+			// do propfind with strictNotFoundCheck=true
+			$checkShareStorage = $this->propfind('', true);
 		} catch (StorageInvalidException $e) {
-			// auth error, remove share for now (provide a dialog in the future)
-			$this->manager->removeShare($this->mountPoint);
-			$this->manager->getMountManager()->removeMount($this->mountPoint);
+			// DAV Propfind returns StorageInvalidException on e.g. auth error (401 Unauthorized),
+			// share likely has been removed on remote with failure on removal hook to receiving federated server
+
+			if ($cleanupInvalidEnabled === 'yes') {
+				// FIXME: for now delete, but maybe provide a dialog in the future to the user
+				// to inform that share no longer valid and should contact owner? Likely big refactor
+				$this->manager->removeShare($this->mountPoint);
+				$this->manager->getMountManager()->removeMount($this->mountPoint);
+				$this->logger->error(
+					'Propfind check for storage availability on external share {shareId} returns share invalid. Removing invalid share.',
+					['shareId' => $this->getId()]
+				);
+			} else {
+				$this->logger->error(
+					'Propfind check for storage availability on external share {shareId} returns share invalid. Ignoring due to app config files_sharing.enable_cleanup_invalid_external_shares={cleanupInvalidEnabled}.',
+					['shareId' => $this->getId(), 'cleanupInvalidEnabled' => $cleanupInvalidEnabled]
+				);
+			}
+
+			// rethrow exception
+			throw $e;
+		} catch (StorageNotAvailableException $e) {
+			$this->logger->error(
+				'Propfind check for storage availability on external share {shareId} returns storage not available error.',
+				['shareId' => $this->getId()]
+			);
 			throw $e;
 		} catch (\Exception $e) {
+			$this->logger->error(
+				'Propfind check for storage availability on external share {shareId} returns unexpected error.',
+				['shareId' => $this->getId()]
+			);
 			throw $e;
+		}
+
+		if (!$checkShareStorage) {
+			// propfind returns false if not found returned,
+			// can either mean that the share no longer exists or there is no ownCloud on
+			// the remote (proxy could return 404 for that path), check remote if accessible
+			if ($this->testRemote()) {
+				// valid ownCloud instance means that the external share no longer exists,
+				// since this is permanent (re-sharing the file will create a new token)
+				// we remove the invalid storage
+				if ($cleanupInvalidEnabled === 'yes') {
+					// FIXME: for now delete, but maybe provide a dialog in the future to the user
+					// to inform that share no longer valid and should contact owner? Likely big refactor
+					// NOTE: we remove share here to improve user experience for 99,9% of cases, however it can happen that
+					// server is misbehaving/unstable (returning wrong responses) and valid share gets removed
+					$this->manager->removeShare($this->mountPoint);
+					$this->manager->getMountManager()->removeMount($this->mountPoint);
+					$this->logger->error(
+						'Storage for external share {shareId} returns not found error. Removing share as testing of remote succeeded.',
+						['shareId' => $this->getId()]
+					);
+				} else {
+					// Ignore removal due to app config
+					$this->logger->error(
+						'Storage for external share {shareId} returns not found error. Ignoring due to app config files_sharing.enable_cleanup_invalid_external_shares={cleanupInvalidEnabled}.',
+						['shareId' => $this->getId(), 'cleanupInvalidEnabled' => $cleanupInvalidEnabled]
+					);
+				}
+
+				throw new StorageInvalidException();
+			} else {
+				// ownCloud instance is gone, likely to be a temporary server configuration error
+				$this->logger->error(
+					'Storage for external share {shareId} returns not found error. Throwing error as testing of remote failed.',
+					['shareId' => $this->getId()]
+				);
+				throw new StorageNotAvailableException();
+			}
 		}
 	}
 
@@ -299,7 +373,7 @@ class Storage extends DAV implements ISharedStorage {
 		}
 		return ($this->getPermissions($path) & \OCP\Constants::PERMISSION_SHARE);
 	}
-	
+
 	public function getPermissions($path) {
 		$response = $this->propfind($path);
 		if (isset($response['{http://open-collaboration-services.org/ns}share-permissions'])) {

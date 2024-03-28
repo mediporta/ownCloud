@@ -43,7 +43,6 @@ use OC\Share20\DefaultShareProvider;
  * folder.
  */
 class RepairUnmergedShares implements IRepairStep {
-
 	/** @var \OCP\IConfig */
 	protected $config;
 
@@ -335,13 +334,29 @@ class RepairUnmergedShares implements IRepairStep {
 		}
 	}
 
+	/**
+	 * Count all the users
+	 *
+	 * @return int
+	 */
+	private function countUsers() {
+		$allCount = $this->userManager->countUsers();
+
+		$totalCount = 0;
+		foreach ($allCount as $backend => $count) {
+			$totalCount += $count;
+		}
+
+		return $totalCount;
+	}
+
 	public function run(IOutput $output) {
 		$ocVersionFromBeforeUpdate = $this->config->getSystemValue('version', '0.0.0');
 		// this situation was only possible between 9.0.0 and 9.0.3 included, and 9.1.0
 		if (
 			\version_compare($ocVersionFromBeforeUpdate, '9.1.0', '>=')
 			&& \version_compare($ocVersionFromBeforeUpdate, '9.1.0.16', '<')
-			) {
+		) {
 			$function = function (IUser $user) use ($output) {
 				$this->fixUnmergedShares($output, $user);
 				$output->advance();
@@ -349,7 +364,7 @@ class RepairUnmergedShares implements IRepairStep {
 
 			$this->buildPreparedQueries();
 
-			$output->startProgress($this->userManager->countUsers());
+			$output->startProgress($this->countUsers());
 
 			$this->userManager->callForAllUsers($function);
 

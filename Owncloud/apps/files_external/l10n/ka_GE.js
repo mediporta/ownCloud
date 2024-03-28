@@ -8,8 +8,6 @@ OC.L10N.register(
     "Password" : "პაროლი",
     "Save" : "შენახვა",
     "API key" : "API გასაღები",
-    "Port" : "პორტი",
-    "Region" : "რეგიონი",
     "WebDAV" : "WebDAV",
     "URL" : "URL",
     "Location" : "ადგილმდებარეობა",
@@ -23,4 +21,4 @@ OC.L10N.register(
     "Add storage" : "საცავის დამატება",
     "Delete" : "წაშლა"
 },
-"nplurals=1; plural=0;");
+"nplurals=2; plural=(n!=1);");

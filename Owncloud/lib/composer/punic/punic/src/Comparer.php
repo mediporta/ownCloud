@@ -16,6 +16,11 @@ class Comparer
     private $cache;
 
     /**
+     * @var string
+     */
+    private $locale;
+
+    /**
      * @var bool
      */
     private $caseSensitive;
@@ -33,15 +38,14 @@ class Comparer
     /**
      * Initializes the instance.
      *
-     * @param string $locale
+     * @param string|null $locale
      * @param bool $caseSensitive
      */
     public function __construct($locale = null, $caseSensitive = false)
     {
         $this->cache = array();
-        $this->locale = isset($locale) ? $locale : \Punic\Data::getDefaultLocale();
+        $this->locale = (string) $locale !== '' ? $locale : \Punic\Data::getDefaultLocale();
         $this->caseSensitive = (bool) $caseSensitive;
-        $this->collator = null;
         if (class_exists('\Collator')) {
             try {
                 $this->collator = new Collator($this->locale);
@@ -103,7 +107,7 @@ class Comparer
      * @param array $array
      * @param bool $keepKeys
      *
-     * @return array
+     * @return bool
      */
     public function sort(&$array, $keepKeys = false)
     {
@@ -112,9 +116,9 @@ class Comparer
         if (isset($this->collator)) {
             try {
                 if ($keepKeys) {
-                    $result = $this->collator->asort($array);
+                    $result = $this->collator->asort($array, Collator::SORT_STRING);
                 } else {
-                    $result = $this->collator->sort($array);
+                    $result = $this->collator->sort($array, Collator::SORT_STRING);
                 }
             } catch (PHPException $x) {
             }
@@ -152,7 +156,9 @@ class Comparer
             $this->cache[$str] = $str;
             if ($str !== '') {
                 if ($this->iconv) {
+                    $previousErrorHandler = set_error_handler(function () {}, E_NOTICE);
                     $transliterated = @iconv('UTF-8', 'ASCII//TRANSLIT', $str);
+                    set_error_handler($previousErrorHandler);
                     if ($transliterated !== false) {
                         $this->cache[$str] = $transliterated;
                     }

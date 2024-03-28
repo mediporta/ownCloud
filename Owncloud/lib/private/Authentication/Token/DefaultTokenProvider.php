@@ -32,7 +32,6 @@ use OCP\IUser;
 use OCP\Security\ICrypto;
 
 class DefaultTokenProvider implements IProvider {
-
 	/** @var DefaultTokenMapper */
 	private $mapper;
 
@@ -75,7 +74,8 @@ class DefaultTokenProvider implements IProvider {
 	 * @return IToken
 	 */
 	public function generateToken($token, $uid, $loginName, $password, $name, $type = IToken::TEMPORARY_TOKEN) {
-		$this->logger->debug('generating token {token}, uid {uid}, loginName {loginName}, pwd {pwd}, name {name}, type {type}',
+		$this->logger->debug(
+			'generating token {token}, uid {uid}, loginName {loginName}, pwd {pwd}, name {name}, type {type}',
 			[
 				'app' => __METHOD__,
 				'token' => $this->hashToken($token),
@@ -112,10 +112,6 @@ class DefaultTokenProvider implements IProvider {
 		if (!($token instanceof DefaultToken)) {
 			throw new InvalidTokenException();
 		}
-		$this->logger->debug(
-			'updating token {tokenId}, last check is now {now}',
-			['app' => __METHOD__, 'tokenId' => $token->getId(), 'now' => $token->getLastCheck()]
-		);
 		$this->mapper->update($token);
 	}
 
@@ -166,10 +162,6 @@ class DefaultTokenProvider implements IProvider {
 		try {
 			return $this->mapper->getToken($this->hashToken($tokenId));
 		} catch (DoesNotExistException $ex) {
-			$this->logger->debug(
-				'token {token} does not exist',
-				['app'=>__METHOD__, 'token' => $this->hashToken($tokenId) ]
-			);
 			throw new InvalidTokenException();
 		}
 	}
@@ -241,7 +233,7 @@ class DefaultTokenProvider implements IProvider {
 			'invalidating old tokens',
 			['app' => __METHOD__]
 		);
-		$olderThan = $this->time->getTime() - (int) $this->config->getSystemValue('session_lifetime', 60 * 60 * 24);
+		$olderThan = $this->time->getTime() - (int) $this->config->getSystemValue('session_lifetime', 60 * 20);
 		$this->logger->info('Invalidating tokens older than ' . \date('c', $olderThan), ['app' => 'cron']);
 		$this->mapper->invalidateOld($olderThan);
 	}

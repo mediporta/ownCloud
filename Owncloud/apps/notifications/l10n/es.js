@@ -13,6 +13,7 @@ OC.L10N.register(
     "Notify only when an action is required" : "Notificar solamente cuando se requiere una acción",
     "Notify about all events" : "Notificar acerca de todos los eventos",
     "Choose an option" : "Elige una opción",
+    "Hello," : "Hola,",
     "See <a href=\"%s\">%s</a> on %s for more information" : "Consulta <a href=\"%s\">%s</a> en %s para más información",
     "See %s on %s for more information" : "Consulta %s en %s para más información",
     "Mail Notifications" : "Notificaciones por correo electrónico.",
@@ -20,4 +21,4 @@ OC.L10N.register(
     "It was not possible to get your session. Please, try reloading the page or logout and login again" : "No fue posible obtener tu sesión. Por favor, intenta recargar la página o sal y entra de nuevo.",
     "To be able to receive mail notifications it is required to specify an email address for your account." : "Para poder recibir notificaciones por correo electrónico se debe especificar una dirección de correo para tu cuenta."
 },
-"nplurals=2; plural=(n != 1);");
+"nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;");

@@ -30,7 +30,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use OCP\IConfig;
 
 class SingleUser extends Command {
-
 	/** @var IConfig */
 	protected $config;
 
@@ -60,7 +59,7 @@ class SingleUser extends Command {
 			);
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if ($input->getOption('on')) {
 			$this->config->setSystemValue('singleuser', true);
 			$output->writeln('Single user mode enabled');
@@ -74,5 +73,6 @@ class SingleUser extends Command {
 				$output->writeln('Single user mode is currently disabled');
 			}
 		}
+		return 0;
 	}
 }

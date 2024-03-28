@@ -50,7 +50,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class Scan extends Base {
-
 	/** @var IUserManager $userManager */
 	private $userManager;
 	/** @var  IGroupManager $groupManager */
@@ -103,6 +102,12 @@ class Scan extends Base {
 				'p',
 				InputArgument::OPTIONAL,
 				'Limit rescan to this path, e.g., --path="/alice/files/Music", the user_id is determined by the path and the user_id parameter and --all are ignored.'
+			)
+			->addOption(
+				'group',
+				'',
+				InputOption::VALUE_IS_ARRAY|InputOption::VALUE_REQUIRED,
+				'Scan user(s) under the group(s). This option can be used as --group=foo --group=bar to scan groups foo and bar'
 			)
 			->addOption(
 				'groups',
@@ -216,15 +221,15 @@ class Scan extends Base {
 			$scanner->listen('\OC\Files\Utils\Scanner', 'StorageNotAvailable', function (StorageNotAvailableException $e) use ($output) {
 				$output->writeln("Error while scanning, storage not available (" . $e->getMessage() . ")");
 			});
-		# count only
+			# count only
 		} else {
-			$scanner->listen('\OC\Files\Utils\Scanner', 'scanFile', function () use ($output) {
+			$scanner->listen('\OC\Files\Utils\Scanner', 'scanFile', function () {
 				$this->filesCounter += 1;
 				if ($this->hasBeenInterrupted()) {
 					throw new InterruptedException();
 				}
 			});
-			$scanner->listen('\OC\Files\Utils\Scanner', 'scanFolder', function () use ($output) {
+			$scanner->listen('\OC\Files\Utils\Scanner', 'scanFolder', function () {
 				$this->foldersCounter += 1;
 				if ($this->hasBeenInterrupted()) {
 					throw new InterruptedException();
@@ -274,9 +279,10 @@ class Scan extends Base {
 		}
 	}
 
-	protected function execute(InputInterface $input, OutputInterface $output) {
+	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$inputPath = $input->getOption('path');
 		$groups = $input->getOption('groups') ? \explode(',', $input->getOption('groups')) : [];
+		$groups = \array_unique(\array_merge($groups, $input->getOption('group')));
 		$shouldRepairStoragesIndividually = (bool) $input->getOption('repair');
 
 		if (\count($groups) >= 1) {
@@ -320,6 +326,7 @@ class Scan extends Base {
 		if (\count($groups) === 0) {
 			$this->processUserChunks($input, $output, $users, $inputPath, $shouldRepairStoragesIndividually);
 		}
+		return 0;
 	}
 
 	protected function processUserChunks($input, $output, $users, $inputPath, $shouldRepairStoragesIndividually, $group = null) {
@@ -379,9 +386,10 @@ class Scan extends Base {
 			if (\is_object($user)) {
 				$user = $user->getUID();
 			}
-			$path = $inputPath ? $inputPath : '/' . $user;
 			$user_count += 1;
 			if ($this->userManager->userExists($user)) {
+				$user = $this->userManager->get($user)->getUID();
+				$path = $inputPath ? $inputPath : '/' . $user;
 				# add an extra line when verbose is set to optical separate users
 				if ($verbose) {
 					$output->writeln("");
@@ -494,6 +502,7 @@ class Scan extends Base {
 	protected function reconnectToDatabase(OutputInterface $output) {
 		/** @var Connection | IDBConnection $connection*/
 		$connection = \OC::$server->getDatabaseConnection();
+		'@phan-var Connection | IDBConnection $connection';
 		try {
 			$connection->close();
 		} catch (\Exception $ex) {
