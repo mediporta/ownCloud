@@ -29,22 +29,29 @@
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+	require_once 'telemetry.php';
+	initializeTelemetry();
 	OC::handleRequest();
+	executeTelemetry(null);
 } catch (\OC\ServiceUnavailableException $ex) {
 	\OC::$server->getLogger()->logException($ex, ['app' => 'index']);
 
 	//show the user a detailed error page
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printExceptionErrorPage($ex);
+	executeTelemetry($ex);
 } catch (\OC\HintException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_SERVICE_UNAVAILABLE);
 	OC_Template::printErrorPage($ex->getMessage(), $ex->getHint());
+	executeTelemetry($ex);
 } catch (\OC\User\LoginException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
+	executeTelemetry($ex);
 } catch (\OCP\Files\ForbiddenException $ex) {
 	OC_Response::setStatus(OC_Response::STATUS_FORBIDDEN);
 	OC_Template::printErrorPage($ex->getMessage());
+	executeTelemetry($ex);
 } catch (\Throwable $ex) {
 	try {
 		\OC::$server->getLogger()->logException($ex, ['app' => 'index']);
@@ -52,6 +59,16 @@ try {
 		//show the user a detailed error page
 		OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 		OC_Template::printExceptionErrorPage($ex);
+		executeTelemetry($ex);
+	} catch (Exception $ex2) {
+		// with some env issues, it can happen that the logger couldn't log properly,
+		// so print out the exception directly
+		// NOTE: If we've reached this point, something has gone really wrong because
+		// we couldn't even get the logger, so don't rely on ownCloud here.
+		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");
+		\OC::crashLog($ex);
+		\OC::crashLog($ex2);
+		executeTelemetry($ex2);
 	} catch (\Throwable $ex2) {
 		// with some env issues, it can happen that the logger couldn't log properly,
 		// so print out the exception directly

@@ -1,4 +1,5 @@
 <?php
+require_once 'vendor/autoload.php';
 
 $telemetry = array(
 	'key' => '',
@@ -15,7 +16,6 @@ function initializeTelemetry() {
 		return;
 	}
 
-	require_once 'vendor/autoload.php';
 	$telemetry['self'] = $_SERVER['REQUEST_METHOD'] . ' ' . $_SERVER['PHP_SELF'];
 	$telemetry['url'] = "http" . (($_SERVER['SERVER_PORT'] == 443) ? "s://" : "://") . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 }

@@ -32,6 +32,8 @@
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+	require_once 'telemetry.php';
+	initializeTelemetry();
 
 	# show the version details based on config.php parameter,
 	# but do not expose the servername in the public via url
@@ -48,10 +50,18 @@ try {
 		\header('Content-Type: application/json');
 		echo \json_encode($values);
 	}
+	executeTelemetry(null);
 } catch (\Throwable $ex) {
 	try {
 		OC_Response::setStatus(OC_Response::STATUS_INTERNAL_SERVER_ERROR);
 		\OCP\Util::writeLog('remote', $ex->getMessage(), \OCP\Util::FATAL);
+		executeTelemetry($ex);
+	} catch (Exception $ex2) {
+		// log through the crashLog
+		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");
+		\OC::crashLog($ex);
+		\OC::crashLog($ex2);
+		executeTelemetry($ex2);
 	} catch (\Throwable $ex2) {
 		// log through the crashLog
 		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");

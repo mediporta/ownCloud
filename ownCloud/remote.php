@@ -108,6 +108,8 @@ function resolveService($service) {
 
 try {
 	require_once __DIR__ . '/lib/base.php';
+	require_once 'telemetry.php';
+	initializeTelemetry();
 
 	// All resources served via the DAV endpoint should have the strictest possible
 	// policy. Exempted from this is the SabreDAV browser plugin which overwrites
@@ -163,9 +165,17 @@ try {
 	}
 	$baseuri = OC::$WEBROOT . '/remote.php/'.$service.'/';
 	require_once $file;
+	executeTelemetry(null);
 } catch (\Throwable $ex) {
 	try {
 		handleException($ex);
+		executeTelemetry($ex);
+	} catch (Exception $ex2) {
+		// log through the crashLog
+		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");
+		\OC::crashLog($ex);
+		\OC::crashLog($ex2);
+		executeTelemetry($ex2);
 	} catch (\Throwable $ex2) {
 		// log through the crashLog
 		\header("{$_SERVER['SERVER_PROTOCOL']} 599 Broken");
