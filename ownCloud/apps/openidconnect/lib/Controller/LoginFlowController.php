@@ -43,7 +43,6 @@ use OCP\IUserSession;
 use OCP\Util;
 
 class LoginFlowController extends Controller {
-
 	/**
 	 * @var ISession
 	 */
@@ -157,7 +156,6 @@ class LoginFlowController extends Controller {
 
 		// trigger login process
 		if ($this->userSession->createSessionToken($this->request, $user->getUID(), $user->getUID()) &&
-			// @phpstan-ignore-next-line because loginUser does not have the third argument in older versions
 			$this->userSession->loginUser($user, null, OpenIdConnectAuthModule::class)) {
 			$this->session->set('oca.openid-connect.id-token', $openid->getIdToken());
 			$this->session->set('oca.openid-connect.access-token', $openid->getAccessToken());
@@ -178,7 +176,7 @@ class LoginFlowController extends Controller {
 			$openIdConfig = $openid->getOpenIdConfig();
 			$cookieName = $openIdConfig['ocis-routing-policy-cookie'] ?? 'owncloud-selector';
 			$cookieDirectives = $openIdConfig['ocis-routing-policy-cookie-directives'] ?? 'path=/;';
-			$attribute = $openIdConfig['ocis-routing-poclicy-claim'] ?? 'ocis.routing.policy';
+			$attribute = $openIdConfig['ocis-routing-policy-claim'] ?? 'ocis.routing.policy';
 			if (\property_exists($userInfo, $attribute)) {
 				$response->addHeader('Set-Cookie', "$cookieName={$userInfo->$attribute};$cookieDirectives");
 			}

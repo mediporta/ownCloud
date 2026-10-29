@@ -57,7 +57,7 @@ class DocumentProperties {
 	 * @param string|null $fileName the name of the file. Has to be set in case $path is a temporary file which holds no extension
 	 * @return SimpleXMLElement|null
 	 */
-	public function scan(string $path, string $fileName = null): ?SimpleXMLElement {
+	public function scan(string $path, ?string $fileName = null): ?SimpleXMLElement {
 		$this->logger->debug("[files_classifier] DocumentProperties:scan: $path, $fileName");
 		if (!\file_exists($path)) {
 			$this->logger->warning("[files_classifier] File not found: $path, $fileName");

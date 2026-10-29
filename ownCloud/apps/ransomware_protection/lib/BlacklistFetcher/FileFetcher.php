@@ -22,20 +22,24 @@ class FileFetcher implements IBlacklistFetcher {
 	 * @return array the patterns read from the file
 	 * @throws BlacklistFetcherException if the content can't be read
 	 */
-	public function fetchBlacklist(string $location) {
+	public function fetchBlacklist(string $location): array {
+		$scheme = parse_url($location, PHP_URL_SCHEME);
+		if ($scheme !== null) {
+			throw new BlacklistFetcherException("$location not located on the local file system. PHP stream wrappers are not supported.");
+		}
 		if (!\is_readable($location)) {
-			throw new BlacklistFetcherException("{$location} not found or not readable");
+			throw new BlacklistFetcherException("$location not found or not readable");
 		}
 
-		$handle = \fopen($location, 'r');
+		$handle = \fopen($location, 'rb');
 		if ($handle === false) {
-			throw new BlacklistFetcherException("An error happened while opening the blacklist in {$location}");
+			throw new BlacklistFetcherException("An error happened while opening the blacklist in $location");
 		}
 
 		$blacklist = [];
 		while (!\feof($handle)) {
 			$line = \fgets($handle);
-			if (\strlen(\trim($line)) !== 0) {
+			if (\trim($line) !== '') {
 				$blacklist[] = $line;
 			}
 		}

@@ -36,7 +36,7 @@ For more information regarding setup, usage and limitations, please read the [ow
 	</description>
 	<licence>OCL</licence>
 	<author>ownCloud GmbH, BW-Tech GmbH, Viedev GmbH</author>
-	<version>1.7.0</version>
+	<version>1.7.1</version>
 	<category>security</category>
 	<documentation>
     		<admin>https://doc.owncloud.com/server/latest/admin_manual/enterprise/ransomware-protection/</admin>

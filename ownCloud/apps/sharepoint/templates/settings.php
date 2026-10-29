@@ -22,7 +22,7 @@ vendor_style('core', 'select2/select2');
 <div id="SPadmin" class="section">
     <h2><?php p($l->t('SharePoint Configuration'));?></h2>
     <div>
-        <p><?php p($l->t('Listing credentials. These fields are only used to list available SharePoint document list.')); ?>
+        <p><?php p($l->t('Listing credentials. These fields are only used to list available SharePoint document libraries.')); ?>
                           <strong>
                             <?php p($l->t('They are not stored.')); ?>
                         </strong>

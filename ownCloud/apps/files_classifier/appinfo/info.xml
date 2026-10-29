@@ -48,7 +48,7 @@ For more information about Document Classification and Policy Enforcement with o
 </description>
 	<licence>OCL</licence>
 	<author>ownCloud GmbH</author>
-	<version>1.5.1</version>
+	<version>1.5.3</version>
 	<category>security</category>
   	<documentation>
     		<admin>https://doc.owncloud.com/server/latest/admin_manual/enterprise/document_classification/classification_and_policy_enforcement.html</admin>

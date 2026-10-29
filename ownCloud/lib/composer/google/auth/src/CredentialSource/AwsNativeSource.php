@@ -50,9 +50,9 @@ class AwsNativeSource implements ExternalAccountCredentialSourceInterface
     public function __construct(
         string $audience,
         string $regionalCredVerificationUrl,
-        string $regionUrl = null,
-        string $securityCredentialsUrl = null,
-        string $imdsv2SessionTokenUrl = null
+        ?string $regionUrl = null,
+        ?string $securityCredentialsUrl = null,
+        ?string $imdsv2SessionTokenUrl = null
     ) {
         $this->audience = $audience;
         $this->regionalCredVerificationUrl = $regionalCredVerificationUrl;
@@ -61,7 +61,7 @@ class AwsNativeSource implements ExternalAccountCredentialSourceInterface
         $this->imdsv2SessionTokenUrl = $imdsv2SessionTokenUrl;
     }
 
-    public function fetchSubjectToken(callable $httpHandler = null): string
+    public function fetchSubjectToken(?callable $httpHandler = null): string
     {
         if (is_null($httpHandler)) {
             $httpHandler = HttpHandlerFactory::build(HttpClientCache::getHttpClient());
@@ -153,8 +153,8 @@ class AwsNativeSource implements ExternalAccountCredentialSourceInterface
         $service = 'sts';
 
         # Create a date for headers and the credential string in ISO-8601 format
-        $amzdate = date('Ymd\THis\Z');
-        $datestamp = date('Ymd'); # Date w/o time, used in credential scope
+        $amzdate = gmdate('Ymd\THis\Z');
+        $datestamp = gmdate('Ymd'); # Date w/o time, used in credential scope
 
         # Create the canonical headers and signed headers. Header names
         # must be trimmed and lowercase, and sorted in code point order from

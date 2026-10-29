@@ -43,3 +43,4 @@ Unlock write access for sync clients
 In the ransomguard app directory run make test as HTTP user:
 
 	sudo -u www-data make test
+

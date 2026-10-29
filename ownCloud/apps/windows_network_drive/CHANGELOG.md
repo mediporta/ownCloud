@@ -4,8 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [2.4.1] - 2024-06-10
 
-## [2.4.0] - 2023-12-27
+### Fixed
+
+- [#478](https://github.com/owncloud/windows_network_drive/pull/478) - fix: do not log sensitive information
+
+
+## [2.4.0] - 2024-01-18
 
 ### Added
 
@@ -190,7 +196,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Improved rename logic
 - wnd:listen command rewrite, it won't block while listening for notifications
 
-[Unreleased]: https://github.com/owncloud/windows_network_drive/compare/v2.4.0...master
+[Unreleased]: https://github.com/owncloud/windows_network_drive/compare/v2.4.1...master
+[2.4.1]: https://github.com/owncloud/windows_network_drive/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/owncloud/windows_network_drive/compare/v2.3.2...v2.4.0
 [2.3.2]: https://github.com/owncloud/windows_network_drive/compare/v2.3.1...v2.3.2
 [2.3.1]: https://github.com/owncloud/windows_network_drive/compare/v2.3.0...v2.3.1

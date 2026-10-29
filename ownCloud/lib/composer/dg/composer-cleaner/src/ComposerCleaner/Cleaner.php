@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /**
  * Victor The Cleaner for Composer.
@@ -52,12 +50,17 @@ class Cleaner
 					continue;
 				}
 				$name = $packageVendor->getFileName() . '/' . $packageName->getFileName();
+				$path = (string) $packageName;
+				if ($this->fileSystem->isSymlinkedDirectory($path) || $this->fileSystem->isJunction($path)) {
+					$this->io->write("Composer cleaner: Skipped symlinked/junction package $name", true, IOInterface::VERBOSE);
+					continue;
+				}
 				$ignore = $ignorePaths[$name] ?? null;
 				if ($ignore === true) {
 					$this->io->write("Composer cleaner: Skipped package $name", true, IOInterface::VERBOSE);
 				} else {
 					$this->io->write("Composer cleaner: Package $name", true, IOInterface::VERBOSE);
-					$this->processPackage((string) $packageName, (array) $ignore);
+					$this->processPackage($path, (array) $ignore);
 				}
 			}
 		}
@@ -135,9 +138,9 @@ class Cleaner
 		foreach ($data->autoload as $type => $items) {
 			if ($type === 'psr-0') {
 				foreach ($items as $namespace => $paths) {
-					$namespace = strtr($namespace, '\\_', '//');
+					$namespace = strtr($namespace, '\_', '//');
 					foreach ((array) $paths as $path) {
-						$sources[] = rtrim($path, '\\/') . '/' . $namespace;
+						$sources[] = rtrim($path, '\/') . '/' . $namespace;
 					}
 				}
 			} elseif ($type === 'psr-4') {

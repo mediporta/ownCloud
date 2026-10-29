@@ -45,16 +45,6 @@ class UserStoragesController extends StoragesController {
 	 */
 	private $userSession;
 
-	/**
-	 * Creates a new user storages controller.
-	 *
-	 * @param string $AppName application name
-	 * @param IRequest $request request object
-	 * @param IL10N $l10n l10n service
-	 * @param IUserStoragesService $userStoragesService storage service
-	 * @param IUserSession $userSession
-	 * @param ILogger $logger
-	 */
 	public function __construct(
 		$AppName,
 		IRequest $request,
@@ -122,15 +112,11 @@ class UserStoragesController extends StoragesController {
 		$backendOptions,
 		$mountOptions
 	) {
-		$canCreateNewLocalStorage = \OC::$server->getConfig()->getSystemValue('files_external_allow_create_new_local', false);
-
-		if ($backend === 'local' && $canCreateNewLocalStorage === false) {
-			return new DataResponse(
-				null,
-				Http::STATUS_FORBIDDEN
-			);
-		}
-
+		// NOTE: local backend isn't allowed for regular users regardless
+		// of the value of files_external_allow_create_new_local. The backend
+		// won't be visible for regular users, so the `validate` method will fail.
+		// Only admins can create local storages (if files_external_allow_create_new_local
+		// is true)
 		$newStorage = $this->createStorage(
 			$mountPoint,
 			$backend,

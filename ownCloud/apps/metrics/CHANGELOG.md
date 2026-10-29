@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [1.4.1] - 2025-09-22
+
+### Changed
+
+- Dependency updates
+
 ## [1.4.0] - 2023-08-11
 
 ### Changed
@@ -104,7 +110,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## 0.0.1 - Initial Release
 
-[Unreleased]: https://github.com/owncloud/metrics/compare/v1.4.0...master
+[Unreleased]: https://github.com/owncloud/metrics/compare/v1.4.1...master
+[1.4.1]: https://github.com/owncloud/metrics/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/owncloud/metrics/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/owncloud/metrics/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/owncloud/metrics/compare/v1.1.0...v1.2.0

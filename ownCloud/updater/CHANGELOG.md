@@ -4,14 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [1.1.0] - 2023-07-13
+
+## [Unreleased]
+
+
+## [1.1.2] - 2025-07-02
 
 ### Changed
 
-* [#712](https://github.com/owncloud/updater/pull/712) - Bump guzzlehttp/guzzle to 7.7.0
-* [#711](https://github.com/owncloud/updater/pull/711) - Always return an int from Symfony Command execute method
-* Strings updated
-* Bump libraries
+- [#752](https://github.com/owncloud/updater/pull/752) - fix: disable web updater by default
+
+## [1.1.1] - 2024-06-20
+
+### Changed
+
+- [#730](https://github.com/owncloud/updater/pull/730) - exit with success command line status 0 for not implemented methods
+- Bump libraries
+
+## [1.1.0]
+
+### Changed
+
+- [#711](https://github.com/owncloud/updater/pull/711) - Always return an int from Symfony Command execute method
+- Bump libraries
 
 ## [1.0.1]
 
@@ -40,7 +55,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 - Removed support for PHP 5.6
 
 
-[Unreleased]: https://github.com/owncloud/updater/compare/v1.1.0...master
+[Unreleased]: https://github.com/owncloud/updater/compare/v1.1.2...master
+[1.1.2]: https://github.com/owncloud/updater/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/owncloud/updater/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/owncloud/updater/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/owncloud/updater/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/owncloud/updater/compare/v10.1.1...v1.0.0

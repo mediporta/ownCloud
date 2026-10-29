@@ -147,6 +147,8 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
      */
     public function normalize($object, ?string $format = null, array $context = [])
     {
+        $context['_read_attributes'] = true;
+
         if (!isset($context['cache_key'])) {
             $context['cache_key'] = $this->getCacheKey($format, $context);
         }
@@ -359,6 +361,8 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
      */
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
+        $context['_read_attributes'] = false;
+
         if (!isset($context['cache_key'])) {
             $context['cache_key'] = $this->getCacheKey($format, $context);
         }
@@ -367,6 +371,10 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
 
         if (null === $data && isset($context['value_type']) && $context['value_type'] instanceof Type && $context['value_type']->isNullable()) {
             return null;
+        }
+
+        if (XmlEncoder::FORMAT === $format && !\is_array($data)) {
+            $data = ['#' => $data];
         }
 
         $allowedAttributes = $this->getAllowedAttributes($type, $context, true);
@@ -613,12 +621,34 @@ abstract class AbstractObjectNormalizer extends AbstractNormalizer
                     return (float) $data;
                 }
 
-                if (Type::BUILTIN_TYPE_FALSE === $builtinType && false === $data) {
-                    return $data;
-                }
+                switch ($builtinType) {
+                    case Type::BUILTIN_TYPE_ARRAY:
+                    case Type::BUILTIN_TYPE_BOOL:
+                    case Type::BUILTIN_TYPE_CALLABLE:
+                    case Type::BUILTIN_TYPE_FLOAT:
+                    case Type::BUILTIN_TYPE_INT:
+                    case Type::BUILTIN_TYPE_ITERABLE:
+                    case Type::BUILTIN_TYPE_NULL:
+                    case Type::BUILTIN_TYPE_OBJECT:
+                    case Type::BUILTIN_TYPE_RESOURCE:
+                    case Type::BUILTIN_TYPE_STRING:
+                        if (('is_'.$builtinType)($data)) {
+                            return $data;
+                        }
 
-                if (('is_'.$builtinType)($data)) {
-                    return $data;
+                        break;
+                    case Type::BUILTIN_TYPE_FALSE:
+                        if (false === $data) {
+                            return $data;
+                        }
+
+                        break;
+                    case Type::BUILTIN_TYPE_TRUE:
+                        if (true === $data) {
+                            return $data;
+                        }
+
+                        break;
                 }
             } catch (NotNormalizableValueException $e) {
                 if (!$isUnionType && !$isNullable) {

@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [1.7.0] - 2023-06-30
+## [1.7.1] - 2025-03-11
+
+### Changed
+
+- [#337](https://github.com/owncloud/ransomware_protection/pull/337) - file fetcher shall only fetch from the filesystem and not via any php stream wrapper
+
+
+## [1.7.0] - 2023-07-27
 
 ### Changed
 

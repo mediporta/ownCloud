@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] - XXXXXX
+
+
+## [1.2.3] - 2025-06-26
+
+### Fixed
+
+- [#554](https://github.com/owncloud/files_antivirus/issues/554) - Fix cron execution with too few arguments
+- [#559](https://github.com/owncloud/files_antivirus/issues/559) - Verify ClamAV connection
+
 
 ## [1.2.2] - 2023-06-13
 

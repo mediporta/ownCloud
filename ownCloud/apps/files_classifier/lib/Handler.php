@@ -531,7 +531,7 @@ class Handler {
 			}
 		}
 
-		if ($properties === null) {
+		if ($properties === null || $properties === false) {
 			\OC::$server->getLogger()->debug("[files_classifier] no metadata extracted: " . $file->getName());
 			return [];
 		}
@@ -542,11 +542,16 @@ class Handler {
 			$tag = $this->tagManager->getTagsByIds($tagId)[$tagId];
 			if ($rule->hasDocumentIdQuery()) {
 				$docIds = $properties->xpath($rule->getDocumentIdXpath());
-				$this->logger->info("Checking classified file '{$file->getName()}' with document id '{$docIds[0]}'", ['app' => 'files_classifier']);
+				$docId = $docIds[0] ?? '???';
+				$this->logger->info("Checking classified file '{$file->getName()}' with document id '{$docId}'", ['app' => 'files_classifier']);
 			}
 
 			// check if file matches classification
-			foreach ($properties->xpath($rule->getXpath()) as $property) {
+			$matching_nodes = $properties->xpath($rule->getXpath());
+			if (!\is_array($matching_nodes)) {
+				continue;
+			}
+			foreach ($matching_nodes as $property) {
 				$this->logger->info($this->getUserId()." uploaded a classified file '{$file->getName()}' with document class '$property'", ['app' => 'files_classifier']);
 				if ((string) $property === $rule->getValue()) {
 					$this->logger->debug("Assigning tag '{$tag->getName()}' to '{$file->getName()}'", ['app' => 'files_classifier']);
@@ -610,7 +615,7 @@ class Handler {
 		// and exposes caching logic to outside (filePath&originalPath logic..)
 		$fileName = \basename($filePath);
 		$properties = $this->documentProperties->scan($filePath, $originalPath);
-		$this->propertiesCache[$originalPath] = $properties;
+		$this->propertiesCache[$originalPath] = ($properties ?? false);
 
 		if ($properties === null) {
 			return;

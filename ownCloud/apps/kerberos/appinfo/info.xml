@@ -15,7 +15,7 @@
   </documentation>
   <licence>OCL</licence>
   <author>ownCloud GmbH</author>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <dependencies>
     <owncloud min-version="10.11" max-version="10"/>
     <lib>krb5</lib>>

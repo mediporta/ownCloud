@@ -4,8 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
-## [1.5.1] - 2024-02-23
+## [Unreleased] - 
 
+
+## [1.5.3] - 2025-09-22
+
+### Fixed
+
+- Dependencies updated
+
+
+## [1.5.2] - 2024-04-15
+
+### Fixed
+
+- [#933](https://github.com/owncloud/files_classifier/pull/933) - fix: meta data detection after #928
+- [#928](https://github.com/owncloud/files_classifier/issues/928) - fix: handling of docs without properties
+- Dependencies updated
+
+
+## [1.5.1] - 2024-02-23
 
 ### Fixed
 
@@ -108,7 +126,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 - Initial release
 
-[Unreleased]: https://github.com/owncloud/files_classifier/compare/v1.5.1...master
+[Unreleased]: https://github.com/owncloud/files_classifier/compare/v1.5.3...master
+[1.5.3]: https://github.com/owncloud/files_classifier/compare/v1.5.2...v1.5.3
+[1.5.2]: https://github.com/owncloud/files_classifier/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/owncloud/files_classifier/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/owncloud/files_classifier/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/owncloud/files_classifier/compare/v1.3.2...v1.4.0

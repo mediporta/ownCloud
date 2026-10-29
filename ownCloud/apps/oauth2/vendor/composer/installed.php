@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'owncloud/oauth2',
-        'pretty_version' => 'v0.6.1-rc.1',
-        'version' => '0.6.1.0-RC1',
-        'reference' => 'f64b89a2d89669e0e7b0f247aed75649412ab35a',
+        'pretty_version' => 'v0.6.3',
+        'version' => '0.6.3.0',
+        'reference' => '38936164080c48298cb78c1724884aaf3a8ffebd',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'owncloud/oauth2' => array(
-            'pretty_version' => 'v0.6.1-rc.1',
-            'version' => '0.6.1.0-RC1',
-            'reference' => 'f64b89a2d89669e0e7b0f247aed75649412ab35a',
+            'pretty_version' => 'v0.6.3',
+            'version' => '0.6.3.0',
+            'reference' => '38936164080c48298cb78c1724884aaf3a8ffebd',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

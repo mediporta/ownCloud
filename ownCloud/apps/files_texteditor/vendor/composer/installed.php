@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'owncloud/files_texteditor',
-        'pretty_version' => 'v2.6.1-rc.2',
-        'version' => '2.6.1.0-RC2',
-        'reference' => '2a01e494529b0cc64c43915581f62ffafcd81839',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '2ae2e8363690d9628042647fe85908e234d710ec',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -17,9 +17,9 @@
             ),
         ),
         'owncloud/files_texteditor' => array(
-            'pretty_version' => 'v2.6.1-rc.2',
-            'version' => '2.6.1.0-RC2',
-            'reference' => '2a01e494529b0cc64c43915581f62ffafcd81839',
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '2ae2e8363690d9628042647fe85908e234d710ec',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -82,8 +82,12 @@ class WND extends StorageAdapter {
 		$copiedParams = $params;
 
 		if (isset($params['password'])) {
-			// if password is set, change it so it doesn't appear in the logs
+			// if password is set, change it, so it doesn't appear in the logs
 			$copiedParams['password'] = '***removed***';
+		}
+		if (isset($params['service-account-password'])) {
+			// if password is set, change it, so it doesn't appear in the logs
+			$copiedParams['service-account-password'] = '***removed***';
 		}
 		$this->logEnter('__construct', $copiedParams);
 

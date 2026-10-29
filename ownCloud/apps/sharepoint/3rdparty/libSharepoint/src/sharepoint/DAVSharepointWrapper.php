@@ -115,6 +115,9 @@ class DAVSharepointWrapper {
         curl_setopt($curl, CURLOPT_HTTPAUTH, $auth);
 
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        if (\defined('CURLOPT_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
         $response = curl_exec ($curl);
 
         if (curl_errno($curl) !== 0) {
@@ -175,6 +178,9 @@ class DAVSharepointWrapper {
 
         curl_setopt($curl, CURLOPT_HTTPHEADER, $h);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+        if (\defined('CURLOPT_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
         curl_exec ($curl);
 
         if (curl_errno($curl) !== 0) {
@@ -245,6 +251,9 @@ class DAVSharepointWrapper {
         curl_setopt($curl, CURLOPT_HTTPAUTH, $auth);
 
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        if (\defined('CURLOPT_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
         curl_exec($curl);
 
         $status_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);

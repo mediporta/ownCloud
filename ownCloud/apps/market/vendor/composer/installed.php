@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'owncloud/market',
-        'pretty_version' => 'v0.8.0',
-        'version' => '0.8.0.0',
-        'reference' => 'ef4c4588b6a0727afe08649d7ec6d80aaf2f9ee7',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '7cd335ec17fcc44251624e6356f6408c989e0a10',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'owncloud/market' => array(
-            'pretty_version' => 'v0.8.0',
-            'version' => '0.8.0.0',
-            'reference' => 'ef4c4588b6a0727afe08649d7ec6d80aaf2f9ee7',
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '7cd335ec17fcc44251624e6356f6408c989e0a10',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

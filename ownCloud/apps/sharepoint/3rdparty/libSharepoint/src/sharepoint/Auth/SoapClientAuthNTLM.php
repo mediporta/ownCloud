@@ -99,6 +99,9 @@ class SoapClientAuthNTLM extends \SoapClient {
         $auth = ($this->auth === 'NTLM') ?  CURLAUTH_NTLM : CURLAUTH_BASIC;
         curl_setopt($curl, CURLOPT_HTTPAUTH, $auth);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
+        if (\defined('CURLOPT_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
 
         $response = curl_exec($curl);
 

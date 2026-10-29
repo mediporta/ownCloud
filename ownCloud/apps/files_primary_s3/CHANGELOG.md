@@ -4,6 +4,79 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
+## [1.6.5] - 2026-10-05
+
+### Fixed
+
+- [#738](https://github.com/owncloud/files_primary_s3/issues/738) - restore downloads from S3
+  primary storage. `LazyReadStream` issued its `headObject` size lookup on the client that
+  streams the object body. That client is built on guzzle's `StreamHandler`, whose response
+  bodies are not seekable, and aws-sdk-php 3.337.3 inspects every non-streaming S3 response for
+  S3's "HTTP 200 carrying an error document" case by reading the first bytes of the body and
+  rewinding it. The rewind threw `Stream is not seekable`, so every download failed; the
+  ownCloud 10 server reported HTTP 503. `GetObject` was never affected, because its output shape
+  has a streaming member and is skipped by that check - which is why a direct
+  `PutObject`/`GetObject` round-trip against a bucket still passed. The non-streaming operations
+  are now issued on the buffering client, and the object body is still streamed.
+
+  The download connection also opts out of response checksum validation
+  (`response_checksum_validation` is set to `when_required`). It defaults to `when_supported`,
+  so whenever a backend volunteers an `x-amz-checksum-*` header on `GetObject` the SDK hashes
+  the whole response body: that rewinds the non-seekable body, failing the download the same
+  way, and buffers the entire object in memory even when the body can be rewound, which
+  defeats the streamed read. This app never sets `ChecksumMode` to enabled, so `when_required`
+  disables it.
+
+
+## [1.6.4] - 2026-09-23
+
+### Fixed
+
+- [#736](https://github.com/owncloud/files_primary_s3/pull/736) - ship an artifact whose code
+  signature ownCloud 10 can verify. The v1.6.3 package was signed in the current signature
+  format, which ownCloud 10's integrity checker does not understand: it reads a single
+  `certificate` field and only RSA/PSS signatures, so the app failed
+  `occ integrity:check-app files_primary_s3` with *App Certificate is not valid* on every
+  ownCloud 10 install, and the code-integrity warning appeared in admin settings. v1.6.4 is
+  the same code as v1.6.3, signed in the format this release line requires. The release
+  workflow is removed from this branch, since it can only produce the newer format; this
+  release line is built and signed locally instead.
+
+
+## [1.6.3] - 2026-09-17
+
+### Fixed
+
+- [#712](https://github.com/owncloud/files_primary_s3/issues/712) - restore the bundled
+  aws-sdk-php `src/data` directory in the release artifact. aws-sdk-php 3.337.3 lists
+  `src/data/` in `autoload.exclude-from-classmap`, which made `dg/composer-cleaner` delete
+  the SDK's manifest, endpoints and per-service API models while building the app package.
+  Without them every S3 client construction failed with
+  `File not found: .../aws-sdk-php/src/data/manifest.json`, so S3 primary object storage was
+  unusable in v1.6.1 and v1.6.2. The directory is now protected with `extra.cleaner-ignore`,
+  and `make appstore` refuses to package a tree that is missing it.
+
+
+## [1.6.2] - 2026-08-21
+
+### Security
+
+- Update mtdowling/jmespath.php to 2.9.2, fixing CVE-2026-54133 (critical)
+
+### Changed
+
+- aws-sdk-php stays at 3.337.3: it is the last release that supports PHP 7.4, which
+  this release line requires. GHSA-27qh-8cxx-2cr5 and CVE-2025-14761 therefore remain
+  open on the 1.6.x line and are fixed only in 1.7.x, which requires ownCloud 11.
+
+
+## [1.6.1] - 2026-04-07
+
+### Changed
+
+- [#697](https://github.com/owncloud/files_primary_s3/pull/697) - update aws-sdk-php to 3.337.3
+
+
 ## [1.6.0]  - 2024-10-25
 
 ### Added
@@ -111,7 +184,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 - First marketplace release
 
-[Unreleased]: https://github.com/owncloud/files_primary_s3/compare/v1.6.0...master
+[Unreleased]: https://github.com/owncloud/files_primary_s3/compare/v1.6.5...release-1.6.2
+[1.6.5]: https://github.com/owncloud/files_primary_s3/compare/v1.6.4...v1.6.5
+[1.6.4]: https://github.com/owncloud/files_primary_s3/compare/v1.6.3...v1.6.4
+[1.6.3]: https://github.com/owncloud/files_primary_s3/compare/v1.6.2...v1.6.3
+[1.6.2]: https://github.com/owncloud/files_primary_s3/compare/v1.6.1...v1.6.2
+[1.6.1]: https://github.com/owncloud/files_primary_s3/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/owncloud/files_primary_s3/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/owncloud/files_primary_s3/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/owncloud/files_primary_s3/compare/v1.3.0...v1.4.0

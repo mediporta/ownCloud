@@ -56,7 +56,7 @@ The following data is available:
   - Number of federated shares
 
 For more information on setup and usage, please consult the ownCloud Documentation.</description>
-	<version>1.4.0</version>
+	<version>1.4.1</version>
 	<screenshot>https://raw.githubusercontent.com/owncloud/screenshots/master/metrics/ownCloud-app-metrics.jpg</screenshot>
 	<documentation>
 		<admin>https://doc.owncloud.com/server/latest/admin_manual/enterprise/reporting/metrics.html</admin>

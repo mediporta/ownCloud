@@ -26,6 +26,7 @@
  */
 namespace OC\Preview;
 
+use OC\Preview;
 use OCP\Files\File;
 use OCP\Files\FileInfo;
 use OCP\Preview\IProvider2;
@@ -35,13 +36,9 @@ abstract class Image implements IProvider2 {
 	 * {@inheritDoc}
 	 */
 	public function getThumbnail(File $file, $maxX, $maxY, $scalingUp) {
-		$maxSizeForImages = \OC::$server->getConfig()->getSystemValue('preview_max_filesize_image', 50);
-		$size = $file->getSize();
-
-		if ($maxSizeForImages !== -1 && $size > ($maxSizeForImages * 1024 * 1024)) {
+		if (Preview::isImageFileSizeTooBig($file)) {
 			return false;
 		}
-
 		$image = new \OC_Image();
 		$handle = $file->fopen('r');
 		$image->load($handle);
@@ -75,17 +72,17 @@ abstract class Image implements IProvider2 {
 	}
 
 	private function getMaxDimensions(): array {
-		// 24 MP - 6016 x 4000
-		$maxDimension = \OC::$server->getConfig()->getSystemValue('preview_max_dimensions', '6016x4000');
+		// 24 MP - 6016 x 6016
+		$maxDimension = \OC::$server->getConfig()->getSystemValue('preview_max_dimensions', '6016x6016');
 		$exploded = explode('x', strtolower($maxDimension));
 		if ($exploded === false || \count($exploded) !== 2) {
-			return [6016, 4000];
+			return [6016, 6016];
 		}
 		[$w, $h] = $exploded;
 		if (is_numeric($w) && is_numeric($h)) {
 			return [(int)$w, (int)$h];
 		}
 
-		return [6016, 4000];
+		return [6016, 6016];
 	}
 }

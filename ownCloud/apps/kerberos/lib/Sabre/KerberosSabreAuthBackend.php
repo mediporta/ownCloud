@@ -103,7 +103,6 @@ class KerberosSabreAuthBackend implements BackendInterface {
 				$this->session->close();
 				return [true, $this->principalPrefix . $userId];
 			} catch (Exception $ex) {
-				$this->session->close();
 				OC::$server->getLogger()->logException($ex);
 				return [false, "SPNEGO failed"];
 			}
@@ -121,11 +120,9 @@ class KerberosSabreAuthBackend implements BackendInterface {
 				return [true, $this->principalPrefix . $userId];
 			}
 
-			$this->session->close();
 			OC::$server->getLogger()->error("KERBEROS: no login via any auth module");
 			return [false, "SPNEGO failed"];
 		} catch (Exception $ex) {
-			$this->session->close();
 			OC::$server->getLogger()->logException($ex);
 			return [false, "SPNEGO failed"];
 		}

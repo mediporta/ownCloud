@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'owncloud/metrics',
-        'pretty_version' => 'v1.4.0',
-        'version' => '1.4.0.0',
-        'reference' => '3a8b38160507affb0c9e89b6f21078c273664a7d',
+        'pretty_version' => 'dev-master',
+        'version' => 'dev-master',
+        'reference' => '48f8444d925971eabb95bd318f89369be2cabfeb',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'owncloud/metrics' => array(
-            'pretty_version' => 'v1.4.0',
-            'version' => '1.4.0.0',
-            'reference' => '3a8b38160507affb0c9e89b6f21078c273664a7d',
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'reference' => '48f8444d925971eabb95bd318f89369be2cabfeb',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

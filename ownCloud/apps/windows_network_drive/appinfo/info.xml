@@ -31,7 +31,7 @@ Additional ownCloud configuration is required. More information is available in 
         <command>OCA\windows_network_drive\Command\ProcessQueue</command>
         <command>OCA\windows_network_drive\Command\SetServiceAccount</command>
     </commands>
-    <version>2.4.0</version>
+    <version>2.4.1</version>
     <settings>
         <admin>OCA\Windows_network_drive\Panels\Admin</admin>
         <personal>OCA\Windows_network_drive\Panels\Personal</personal>
